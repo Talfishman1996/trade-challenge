@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { Shield, Target, Flame, Zap, TrendingUp, Trophy, X, Info } from 'lucide-react';
+import { Shield, Target, Flame, Zap, TrendingUp, Trophy, X, Info, Navigation2, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fmt } from '../math/format.js';
 import { rN, getPhaseName, getPhase } from '../math/risk.js';
-import { E0 } from '../math/constants.js';
+import { E0, GPS_Z } from '../math/constants.js';
 import TradeEntry from './TradeEntry.jsx';
 import EquityCurve from './EquityCurve.jsx';
+import GPSJourney from './GPSJourney.jsx';
 
 const PHASE_INFO = {
   pre: 'Aggressive growth mode. High risk compounds your account toward the $87.5K anchor. This is by design.',
@@ -59,6 +60,7 @@ export default function Home({ trades, settings }) {
   const [showEntry, setShowEntry] = useState(false);
   const [showCurve, setShowCurve] = useState(false);
   const [showPhaseInfo, setShowPhaseInfo] = useState(false);
+  const [showJourney, setShowJourney] = useState(false);
 
   const eq = trades.currentEquity;
   const phase = getPhase(eq);
@@ -82,6 +84,16 @@ export default function Home({ trades, settings }) {
   const sparkPts = sparkData.map((v, i) => `${i},${40 - ((v - sparkMin) / sparkRange) * 36}`).join(' ');
   const sparkArea = sparkPts + ` ${sparkData.length - 1},40 0,40`;
   const sparkEndY = 40 - ((sparkData[sparkData.length - 1] - sparkMin) / sparkRange) * 36;
+
+  // Journey progress (log-scale mapping from $20K to $110K)
+  const journeyPct = useMemo(() => {
+    const logMin = Math.log10(20000);
+    const logMax = Math.log10(110000);
+    const t = (Math.log10(Math.max(eq, 20000)) - logMin) / (logMax - logMin);
+    return Math.max(0, Math.min(100, t * 100));
+  }, [eq]);
+  const journeyClr = eq >= 87500 ? '#10b981' : eq >= 50000 ? '#eab308' : '#ef4444';
+  const journeyZone = eq >= 100000 ? 'Goal' : eq >= 87500 ? 'Basecamp' : eq >= 50000 ? 'Danger Zone' : 'Wipe Zone';
 
   // Stats data
   const stats = [
@@ -227,6 +239,52 @@ export default function Home({ trades, settings }) {
       )}
       </div>{/* end right column */}
       </div>{/* end desktop grid */}
+
+      {/* 7. GPS JOURNEY (collapsible) */}
+      <div className="bg-slate-900/50 rounded-xl border border-slate-800/50 overflow-hidden">
+        <button
+          onClick={() => setShowJourney(!showJourney)}
+          className="w-full flex items-center gap-2.5 p-3 hover:bg-slate-800/30 transition-colors"
+        >
+          <Navigation2 className="w-4 h-4 text-cyan-400 shrink-0" />
+          <span className="text-xs text-slate-400 font-medium whitespace-nowrap">Journey</span>
+          <div className="flex-1 relative h-1.5 rounded-full mx-1">
+            <div
+              className="absolute inset-0 rounded-full"
+              style={{ background: 'linear-gradient(to right, #ef4444, #eab308 54%, #10b981 87%, #22c55e)' }}
+            />
+            <div
+              className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-2 border-slate-950"
+              style={{ left: `calc(${journeyPct}% - 5px)`, backgroundColor: journeyClr, boxShadow: `0 0 6px ${journeyClr}` }}
+            />
+          </div>
+          <span className="text-[10px] text-slate-500 font-mono whitespace-nowrap">{journeyZone}</span>
+          <ChevronDown className={`w-3.5 h-3.5 text-slate-600 shrink-0 transition-transform duration-200 ${showJourney ? 'rotate-180' : ''}`} />
+        </button>
+        <AnimatePresence>
+          {showJourney && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              className="overflow-hidden"
+            >
+              <div className="flex flex-col items-center pt-1 pb-4 px-3 border-t border-slate-800/50">
+                <GPSJourney equity={eq} compact />
+                <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2">
+                  {GPS_Z.map((z, i) => (
+                    <div key={i} className="flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: z.c, boxShadow: eq >= z.eq ? `0 0 4px ${z.c}` : 'none' }} />
+                      <span className={`text-[10px] font-mono ${eq >= z.eq ? z.tc : 'text-slate-600'}`}>{z.l}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Equity Curve Overlay */}
       <AnimatePresence>
