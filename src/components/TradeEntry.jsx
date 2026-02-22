@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 import { fmt } from '../math/format.js';
+import { rN, r$N, getPhase, getPhaseName } from '../math/risk.js';
 
 export default function TradeEntry({ open, onClose, onSave, onEdit, editData, currentEquity, nextRisk }) {
   const isEditMode = !!editData;
@@ -54,6 +55,10 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
   const previewEquity = amount
     ? Math.max(1, currentEquity + (isWin ? 1 : -1) * parseFloat(amount.replace(/,/g, '') || '0'))
     : currentEquity;
+  const previewRisk = rN(previewEquity);
+  const previewRiskDol = r$N(previewEquity);
+  const previewPhase = getPhase(previewEquity);
+  const previewPhaseName = getPhaseName(previewPhase);
 
   return (
     <AnimatePresence>
@@ -134,12 +139,12 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                 </div>
               </div>
 
-              {/* Preview (new trades only) */}
+              {/* Impact Preview (new trades only) */}
               {!isEditMode && amount && parseFloat(amount) > 0 && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
-                  className="mb-5 bg-deep rounded-xl p-4 border border-line"
+                  className="mb-5 bg-deep rounded-xl p-4 border border-line space-y-3"
                 >
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-slate-500">New Equity</span>
@@ -147,6 +152,26 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                       ${fmt(previewEquity)}
                     </span>
                   </div>
+                  <div className="border-t border-line/50 pt-3 grid grid-cols-3 gap-2 text-center">
+                    <div>
+                      <div className={'text-sm font-bold font-mono tabular-nums ' + (previewRisk * 100 > 33.1 ? 'text-amber-400' : 'text-emerald-400')}>{(previewRisk * 100).toFixed(1)}%</div>
+                      <div className="text-[10px] text-slate-600">Next Risk</div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold font-mono tabular-nums text-rose-400">${fmt(previewRiskDol)}</div>
+                      <div className="text-[10px] text-slate-600">At Risk</div>
+                    </div>
+                    <div>
+                      <div className={'text-sm font-bold font-mono ' + (previewPhase === 'pre' ? 'text-amber-400' : previewPhase === 'anchor' ? 'text-emerald-400' : 'text-cyan-400')}>{previewPhaseName}</div>
+                      <div className="text-[10px] text-slate-600">Phase</div>
+                    </div>
+                  </div>
+                  {Math.abs(previewRisk - nextRisk.pct) > 0.001 && (
+                    <div className={'flex items-center justify-center gap-1 text-xs font-semibold ' + (previewRisk < nextRisk.pct ? 'text-emerald-400' : 'text-amber-400')}>
+                      {previewRisk < nextRisk.pct ? <TrendingDown className="w-3 h-3" /> : <TrendingUp className="w-3 h-3" />}
+                      Risk {previewRisk < nextRisk.pct ? 'decreases' : 'increases'} {Math.abs((previewRisk - nextRisk.pct) * 100).toFixed(1)}pp
+                    </div>
+                  )}
                 </motion.div>
               )}
 
