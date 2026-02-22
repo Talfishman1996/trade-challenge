@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Shield, Target, Flame, Zap, TrendingUp, Trophy, X, Info, Navigation2, ChevronDown } from 'lucide-react';
+import { Shield, Target, Flame, Zap, TrendingUp, Trophy, X, Info, Navigation2, ChevronDown, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fmt } from '../math/format.js';
 import { rN, getPhaseName, getPhase } from '../math/risk.js';
@@ -59,6 +59,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
   const [showCurve, setShowCurve] = useState(false);
   const [showPhaseInfo, setShowPhaseInfo] = useState(false);
   const [showJourney, setShowJourney] = useState(false);
+  const [dismissAlert, setDismissAlert] = useState(false);
 
   const eq = trades.currentEquity;
   const phase = getPhase(eq);
@@ -136,6 +137,28 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
           <ZIcon className="w-3 h-3" /> {getPhaseName(phase)}
         </div>
       </div>
+
+      {/* DRAWDOWN ALERT */}
+      {!dismissAlert && trades.currentDrawdownPct > 0 && trades.stats.maxDrawdownPct > 0 &&
+        trades.currentDrawdownPct > trades.stats.maxDrawdownPct * 0.7 && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-start gap-2.5 bg-amber-500/5 border border-amber-500/20 rounded-xl px-3 py-2.5"
+        >
+          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <div className="text-xs font-semibold text-amber-400">Drawdown Warning</div>
+            <div className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+              {'\u2212'}{trades.currentDrawdownPct.toFixed(1)}% from peak (${fmt(trades.peakEquity)}).
+              {' '}Max historical: {'\u2212'}{trades.stats.maxDrawdownPct.toFixed(1)}%.
+            </div>
+          </div>
+          <button onClick={() => setDismissAlert(true)} className="text-slate-600 hover:text-slate-400 transition-colors shrink-0">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </motion.div>
+      )}
 
       {/* 2. DESKTOP GRID: Risk card + right panel */}
       <div className="md:grid md:grid-cols-2 md:gap-4 space-y-4 md:space-y-0">

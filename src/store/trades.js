@@ -243,6 +243,12 @@ export const useTrades = (initialEquity = 20000) => {
     };
   }, [data, initialEquity]);
 
+  // Current drawdown from peak
+  const currentDrawdownPct = useMemo(() => {
+    if (peakEquity <= 0 || currentEquity >= peakEquity) return 0;
+    return ((peakEquity - currentEquity) / peakEquity) * 100;
+  }, [peakEquity, currentEquity]);
+
   // Next trade risk
   const nextRisk = useMemo(() => ({
     pct: rN(currentEquity),
@@ -263,6 +269,7 @@ export const useTrades = (initialEquity = 20000) => {
     trades: data.trades,
     currentEquity,
     peakEquity,
+    currentDrawdownPct,
     initialEquity: data.initialEquity || initialEquity,
     stats,
     nextRisk,
