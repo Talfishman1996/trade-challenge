@@ -1,11 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { Shield, Target, Flame, Zap, TrendingUp, Trophy, X, Info, Navigation2, ChevronDown, AlertTriangle } from 'lucide-react';
+import { Shield, Target, Flame, Zap, TrendingUp, Trophy, X, Info, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fmt } from '../math/format.js';
 import { rN, r$N, getPhaseName, getPhase, riskSeverity } from '../math/risk.js';
-import { E0, GPS_Z } from '../math/constants.js';
+import { E0, MILES } from '../math/constants.js';
 import EquityCurve from './EquityCurve.jsx';
-import GPSJourney from './GPSJourney.jsx';
 
 const PHASE_INFO = {
   pre: 'Aggressive growth mode. High risk compounds your account toward the $87.5K anchor. This is by design.',
@@ -37,7 +36,6 @@ function RiskGauge({ riskPct, riskDol }) {
 export default function Home({ trades, settings, onOpenTradeEntry }) {
   const [showCurve, setShowCurve] = useState(false);
   const [showPhaseInfo, setShowPhaseInfo] = useState(false);
-  const [showJourney, setShowJourney] = useState(false);
   const [dismissAlert, setDismissAlert] = useState(false);
   const [exploreEq, setExploreEq] = useState(20000);
 
@@ -85,15 +83,25 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
   const peakIdx = sparkData.indexOf(sparkMax);
   const peakPt = sparkPoints[peakIdx];
 
-  // Journey progress (log-scale mapping from $20K to $110K)
-  const journeyPct = useMemo(() => {
-    const logMin = Math.log10(20000);
-    const logMax = Math.log10(110000);
-    const t = (Math.log10(Math.max(eq, 20000)) - logMin) / (logMax - logMin);
-    return Math.max(0, Math.min(100, t * 100));
+  // Summit tracker (log-scale $20K to $10M)
+  const summitMiles = useMemo(() => {
+    const logS = Math.log10(20000);
+    const logE = Math.log10(10000000);
+    const logR = logE - logS;
+    return MILES.map(m => {
+      const t = (Math.log10(m.v) - logS) / logR;
+      const prev = MILES.filter(p => p.v < m.v);
+      return { ...m, t, x: 10 + t * 280, y: 62 - t * 54, achieved: eq >= m.v,
+        isNext: eq < m.v && prev.every(p => eq >= p.v || p.v >= m.v) };
+    });
   }, [eq]);
-  const journeyClr = eq >= 87500 ? '#10b981' : eq >= 50000 ? '#eab308' : '#ef4444';
-  const journeyZone = eq >= 100000 ? 'Goal' : eq >= 87500 ? 'Basecamp' : eq >= 50000 ? 'Danger Zone' : 'Wipe Zone';
+  const summitT = useMemo(() => {
+    const logS = Math.log10(20000);
+    const logR = Math.log10(10000000) - logS;
+    return Math.max(0, Math.min(1, (Math.log10(Math.max(eq, 20000)) - logS) / logR));
+  }, [eq]);
+  const summitX = 10 + summitT * 280;
+  const summitY = 62 - summitT * 54;
 
   // Stats data
   const stats = [
@@ -315,50 +323,61 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
       </div>
       )}
 
-      {/* 7. GPS JOURNEY (collapsible) */}
-      <div className="bg-surface rounded-xl border border-line/50 overflow-hidden">
-        <button
-          onClick={() => setShowJourney(!showJourney)}
-          className="w-full flex items-center gap-2.5 p-3 hover:bg-elevated/30 transition-colors"
-        >
-          <Navigation2 className="w-4 h-4 text-cyan-400 shrink-0" />
-          <span className="text-xs text-slate-400 font-medium whitespace-nowrap">Journey</span>
-          <div className="flex-1 relative h-1.5 rounded-full mx-1">
-            <div
-              className="absolute inset-0 rounded-full"
-              style={{ background: 'linear-gradient(to right, #ef4444, #eab308 54%, #10b981 87%, #22c55e)' }}
-            />
-            <div
-              className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-2 border-deep"
-              style={{ left: `calc(${journeyPct}% - 5px)`, backgroundColor: journeyClr, boxShadow: `0 0 6px ${journeyClr}` }}
-            />
+      {/* 7. SUMMIT TRACKER */}
+      <div className="bg-surface rounded-xl p-3 border border-line/50">
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-1.5">
+            <Trophy className="w-3.5 h-3.5 text-amber-400" />
+            <span className="text-xs text-slate-400 font-medium">Summit</span>
           </div>
-          <span className="text-[10px] text-slate-500 font-mono whitespace-nowrap">{journeyZone}</span>
-          <ChevronDown className={`w-3.5 h-3.5 text-slate-600 shrink-0 transition-transform duration-200 ${showJourney ? 'rotate-180' : ''}`} />
-        </button>
-        <AnimatePresence>
-          {showJourney && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25, ease: 'easeInOut' }}
-              className="overflow-hidden"
-            >
-              <div className="flex flex-col items-center pt-1 pb-4 px-3 border-t border-line/50">
-                <GPSJourney equity={eq} compact />
-                <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2">
-                  {GPS_Z.map((z, i) => (
-                    <div key={i} className="flex items-center gap-1">
-                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: z.c, boxShadow: eq >= z.eq ? `0 0 4px ${z.c}` : 'none' }} />
-                      <span className={`text-[10px] font-mono ${eq >= z.eq ? z.tc : 'text-slate-600'}`}>{z.l}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+          <span className="text-[10px] text-slate-500 font-mono tabular-nums">
+            ${fmt(eq)} of $10M
+          </span>
+        </div>
+
+        <svg viewBox="0 0 300 78" className="w-full" style={{ height: 78 }} aria-label="Journey to $10M">
+          <polygon points="0,78 25,58 55,65 90,42 130,52 170,32 210,40 250,18 280,10 300,6 300,78"
+            fill="#1C2333" opacity="0.35" />
+
+          <line x1={10} y1={62} x2={summitX} y2={summitY}
+            stroke="#10b981" strokeWidth="2" strokeLinecap="round" opacity="0.7" />
+          <line x1={summitX} y1={summitY} x2={290} y2={8}
+            stroke="#2D3748" strokeWidth="1" strokeDasharray="3,3" />
+
+          {summitMiles.map((m, i) => (
+            <g key={i}>
+              {m.achieved && <circle cx={m.x} cy={m.y} r="6" fill="#10b981" opacity="0.12" />}
+              <circle cx={m.x} cy={m.y} r={m.achieved ? 3.5 : 2.5}
+                fill={m.achieved ? '#10b981' : m.isNext ? '#0D1117' : '#2D3748'}
+                stroke={m.isNext ? '#f59e0b' : 'none'} strokeWidth={m.isNext ? 1.5 : 0} />
+              <text x={m.x} y={m.y + 11} textAnchor="middle"
+                fontSize="7" fontFamily="'JetBrains Mono', monospace"
+                fill={m.achieved ? '#94a3b8' : m.isNext ? '#f59e0b' : '#475569'}>
+                {m.l}
+              </text>
+            </g>
+          ))}
+
+          <circle cx={summitX} cy={summitY} r="5" fill="#10b981" opacity="0.25" />
+          <circle cx={summitX} cy={summitY} r="2.5" fill="#10b981" />
+
+          <polygon points="287,5 290,0 293,5" fill="#f59e0b" opacity="0.8" />
+        </svg>
+
+        {nextMilestone && (
+          <div className="mt-1">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-[10px] text-slate-500">Next: <span className="text-amber-400/80 font-mono">{nextMilestone.l}</span></span>
+              <span className="text-[10px] text-slate-500 font-mono tabular-nums">{nextMilestone.progress.toFixed(1)}%</span>
+            </div>
+            <div className="h-1 bg-elevated rounded-full overflow-hidden">
+              <motion.div className="h-full bg-emerald-500/60 rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: Math.max(1, nextMilestone.progress) + '%' }}
+                transition={{ duration: 0.8, ease: 'easeOut' }} />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Equity Curve Overlay */}
