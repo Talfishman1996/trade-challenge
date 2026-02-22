@@ -319,61 +319,57 @@ export default function Trades({ trades, settings, onOpenTradeEntry }) {
         </div>
       )}
 
-      {/* Action Buttons */}
-      <div className="space-y-2 pt-2">
-        {trades.trades.length > 0 && (
+      {/* Action Buttons (only when trades exist) */}
+      {trades.trades.length > 0 && (
+        <div className="space-y-2 pt-2">
           <button
             onClick={() => trades.undoLastTrade()}
             className="w-full flex items-center justify-center gap-2 py-3 bg-surface text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
           >
             <Undo2 className="w-4 h-4" /> Undo Last Trade
           </button>
-        )}
 
-        <div className="flex gap-2">
-          <button
-            onClick={handleExport}
-            className="flex-1 flex items-center justify-center gap-2 py-3 bg-surface text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
-          >
-            <Download className="w-4 h-4" /> Export
-          </button>
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="flex-1 flex items-center justify-center gap-2 py-3 bg-surface text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
-          >
-            <Upload className="w-4 h-4" /> Import
-          </button>
-          <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
-        </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleExport}
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-surface text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
+            >
+              <Download className="w-4 h-4" /> Export
+            </button>
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-surface text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
+            >
+              <Upload className="w-4 h-4" /> Import
+            </button>
+            <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
+          </div>
 
-        {trades.trades.length > 0 && (
-          <>
-            {showConfirm === 'clear' ? (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => { trades.clearTrades(); setShowConfirm(null); }}
-                  className="flex-1 py-3 bg-rose-500/15 text-rose-400 text-sm font-semibold rounded-xl border border-rose-500/30 active:scale-[0.98] transition-all"
-                >
-                  Confirm Clear All
-                </button>
-                <button
-                  onClick={() => setShowConfirm(null)}
-                  className="flex-1 py-3 bg-surface text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] transition-all"
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
+          {showConfirm === 'clear' ? (
+            <div className="flex gap-2">
               <button
-                onClick={() => setShowConfirm('clear')}
-                className="w-full flex items-center justify-center gap-2 py-3 text-rose-500/60 text-sm font-medium rounded-xl border border-rose-500/10 active:scale-[0.98] hover:bg-rose-500/5 transition-all"
+                onClick={() => { trades.clearTrades(); setShowConfirm(null); }}
+                className="flex-1 py-3 bg-rose-500/15 text-rose-400 text-sm font-semibold rounded-xl border border-rose-500/30 active:scale-[0.98] transition-all"
               >
-                <Trash2 className="w-4 h-4" /> Clear All Trades
+                Confirm Clear All
               </button>
-            )}
-          </>
-        )}
-      </div>
+              <button
+                onClick={() => setShowConfirm(null)}
+                className="flex-1 py-3 bg-surface text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowConfirm('clear')}
+              className="w-full flex items-center justify-center gap-2 py-3 text-rose-500/60 text-sm font-medium rounded-xl border border-rose-500/10 active:scale-[0.98] hover:bg-rose-500/5 transition-all"
+            >
+              <Trash2 className="w-4 h-4" /> Clear All Trades
+            </button>
+          )}
+        </div>
+      )}
 
     </div>
   );

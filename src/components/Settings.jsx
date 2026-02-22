@@ -104,7 +104,7 @@ export default function Settings({ settings, trades }) {
             step={1}
             value={settings.winRate}
             onChange={e => settings.setWinRate(+e.target.value)}
-            className="w-full h-1.5 rounded-full appearance-none bg-elevated accent-emerald-500 cursor-pointer"
+            className="w-full"
           />
         </div>
 
@@ -122,7 +122,7 @@ export default function Settings({ settings, trades }) {
             step={1}
             value={settings.rewardRatio * 10}
             onChange={e => settings.setRewardRatio(+e.target.value / 10)}
-            className="w-full h-1.5 rounded-full appearance-none bg-elevated accent-emerald-500 cursor-pointer"
+            className="w-full"
           />
         </div>
       </div>
