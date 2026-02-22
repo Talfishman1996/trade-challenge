@@ -90,8 +90,8 @@ export default function Trades({ trades, settings, onOpenTradeEntry }) {
       {trades.trades.length > 0 && (
         <div className="flex gap-1 bg-surface rounded-xl p-1 border border-line">
           {[
-            { id: 'list', l: 'List', ic: List },
             { id: 'calendar', l: 'Calendar', ic: CalendarDays },
+            { id: 'list', l: 'List', ic: List },
           ].map(v => {
             const Ic = v.ic;
             const on = view === v.id;
