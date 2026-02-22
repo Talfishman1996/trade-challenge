@@ -56,6 +56,8 @@ export default function Trades({ trades, settings }) {
           {[
             { l: 'Total P&L', v: (trades.stats.totalPnl >= 0 ? '+$' : '-$') + fmt(Math.abs(trades.stats.totalPnl)), c: trades.stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400' },
             { l: 'Win Rate', v: trades.stats.winRate.toFixed(0) + '%', c: trades.stats.winRate >= 50 ? 'text-emerald-400' : 'text-rose-400' },
+            { l: 'Expectancy', v: trades.stats.expectancy !== 0 ? (trades.stats.expectancy >= 0 ? '+$' : '-$') + fmt(Math.abs(trades.stats.expectancy)) : '--', c: trades.stats.expectancy > 0 ? 'text-emerald-400' : trades.stats.expectancy < 0 ? 'text-rose-400' : 'text-slate-500' },
+            { l: 'Avg R', v: trades.stats.avgR !== 0 ? (trades.stats.avgR >= 0 ? '+' : '') + trades.stats.avgR.toFixed(2) + 'R' : '--', c: trades.stats.avgR > 0 ? 'text-emerald-400' : trades.stats.avgR < 0 ? 'text-rose-400' : 'text-slate-500' },
             { l: 'Avg Win', v: trades.stats.wins > 0 ? '$' + fmt(trades.stats.avgWin) : '--', c: trades.stats.wins > 0 ? 'text-emerald-400' : 'text-slate-500' },
             { l: 'Avg Loss', v: trades.stats.losses > 0 ? '$' + fmt(trades.stats.avgLoss) : '--', c: trades.stats.losses > 0 ? 'text-rose-400' : 'text-slate-500' },
             { l: 'Profit Factor', v: trades.stats.profitFactor === Infinity ? '\u221E' : trades.stats.profitFactor.toFixed(2), c: trades.stats.profitFactor >= 1 ? 'text-emerald-400' : 'text-rose-400' },

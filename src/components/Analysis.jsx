@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useDeferredValue } from 'react';
 import {
-  LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  LineChart, Line, AreaChart, Area, BarChart, Bar, Cell,
+  XAxis, YAxis, CartesianGrid,
   Tooltip as RTooltip, ResponsiveContainer, ReferenceLine
 } from 'recharts';
 import {
@@ -213,6 +214,49 @@ export default function Analysis({ trades, settings }) {
                     </div>
                   </div>
                 )}
+                {/* R-Multiple Distribution */}
+                {trades.stats.rMultiples.length > 0 && (() => {
+                  const rm = trades.stats.rMultiples;
+                  const buckets = [
+                    { range: '<-2R', count: 0, fill: '#f43f5e' },
+                    { range: '-2 to -1R', count: 0, fill: '#fb7185' },
+                    { range: '-1R to 0', count: 0, fill: '#fda4af' },
+                    { range: '0 to 1R', count: 0, fill: '#6ee7b7' },
+                    { range: '1R to 2R', count: 0, fill: '#34d399' },
+                    { range: '>2R', count: 0, fill: '#10b981' },
+                  ];
+                  for (const r of rm) {
+                    if (r < -2) buckets[0].count++;
+                    else if (r < -1) buckets[1].count++;
+                    else if (r < 0) buckets[2].count++;
+                    else if (r < 1) buckets[3].count++;
+                    else if (r < 2) buckets[4].count++;
+                    else buckets[5].count++;
+                  }
+                  const data = buckets.filter(b => b.count > 0);
+                  return (
+                    <div className="pt-2">
+                      <h3 className="text-sm font-bold text-white mb-1">R-Multiple Distribution</h3>
+                      <p className="text-xs text-slate-500 mb-3">Outcome distribution in risk units.</p>
+                      <div className="h-40">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                            <XAxis dataKey="range" tick={{ fill: '#64748b', fontSize: 9 }} axisLine={false} tickLine={false} />
+                            <YAxis tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                            <RTooltip contentStyle={TT} formatter={(v) => [v, 'Trades']} />
+                            <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                              {data.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="flex justify-between text-xs text-slate-500 font-mono mt-1">
+                        <span>Avg R: <span className={trades.stats.avgR >= 0 ? 'text-emerald-400' : 'text-rose-400'}>{trades.stats.avgR >= 0 ? '+' : ''}{trades.stats.avgR.toFixed(2)}R</span></span>
+                        <span>Expect: <span className={trades.stats.expectancy >= 0 ? 'text-emerald-400' : 'text-rose-400'}>{trades.stats.expectancy >= 0 ? '+$' : '-$'}{fmt(Math.abs(trades.stats.expectancy))}</span></span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
