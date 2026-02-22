@@ -83,7 +83,7 @@ export default function Trades({ trades, settings }) {
             { l: 'Profit Factor', v: trades.stats.profitFactor === Infinity ? '\u221E' : trades.stats.profitFactor.toFixed(2), c: trades.stats.profitFactor >= 1 ? 'text-emerald-400' : 'text-rose-400' },
             { l: 'Max Drawdown', v: trades.stats.maxDrawdownPct.toFixed(1) + '%', c: 'text-amber-400' },
           ].map((s, i) => (
-            <div key={i} className="bg-slate-900/60 rounded-xl p-3 border border-slate-800">
+            <div key={i} className="bg-surface rounded-xl p-3 border border-line">
               <div className="text-xs text-slate-500 mb-1">{s.l}</div>
               <div className={'text-base font-bold font-mono tabular-nums ' + s.c}>{s.v}</div>
             </div>
@@ -93,7 +93,7 @@ export default function Trades({ trades, settings }) {
 
       {/* View Toggle */}
       {trades.trades.length > 0 && (
-        <div className="flex gap-1 bg-slate-900/60 rounded-xl p-1 border border-slate-800">
+        <div className="flex gap-1 bg-surface rounded-xl p-1 border border-line">
           {[
             { id: 'list', l: 'List', ic: List },
             { id: 'calendar', l: 'Calendar', ic: CalendarDays },
@@ -115,7 +115,7 @@ export default function Trades({ trades, settings }) {
       {view === 'calendar' && trades.trades.length > 0 && (
         <div className="space-y-3">
           {/* Win Rate header */}
-          <div className="bg-slate-900/70 rounded-2xl p-4 border border-slate-800">
+          <div className="bg-surface rounded-2xl p-4 border border-line">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs text-slate-500 font-medium mb-1">Win Rate</div>
@@ -129,14 +129,14 @@ export default function Trades({ trades, settings }) {
                   <div className="text-lg font-bold font-mono text-emerald-400 tabular-nums">{trades.stats.wins}</div>
                   <div className="text-xs text-slate-600">wins</div>
                 </div>
-                <div className="w-px bg-slate-800" />
+                <div className="w-px bg-elevated" />
                 <div>
                   <div className="text-lg font-bold font-mono text-rose-400 tabular-nums">{trades.stats.losses}</div>
                   <div className="text-xs text-slate-600">losses</div>
                 </div>
               </div>
             </div>
-            <div className="flex mt-3 h-1.5 rounded-full overflow-hidden bg-slate-800">
+            <div className="flex mt-3 h-1.5 rounded-full overflow-hidden bg-elevated">
               <div className="bg-emerald-500 rounded-l-full transition-all duration-500"
                 style={{ width: trades.stats.winRate + '%' }} />
               <div className="bg-rose-500 rounded-r-full transition-all duration-500"
@@ -203,13 +203,13 @@ export default function Trades({ trades, settings }) {
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, height: 0 }}
-                  className={'bg-slate-900/60 rounded-xl border overflow-hidden transition-colors ' +
+                  className={'bg-surface rounded-xl border overflow-hidden transition-colors ' +
                     (t.pnl >= 0 ? 'border-emerald-500/15' : 'border-rose-500/15') +
                     (isExpanded ? ' ring-1 ring-slate-700' : '')}
                 >
                   {/* Trade row - tap to expand */}
                   <div
-                    className="p-3.5 cursor-pointer active:bg-slate-800/30 transition-colors"
+                    className="p-3.5 cursor-pointer active:bg-elevated/30 transition-colors"
                     onClick={() => setExpandedId(isExpanded ? null : t.id)}
                   >
                     <div className="flex items-center justify-between mb-2">
@@ -253,7 +253,7 @@ export default function Trades({ trades, settings }) {
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.15 }}
-                        className="border-t border-slate-800/60"
+                        className="border-t border-line/60"
                       >
                         {isDeleting ? (
                           <div className="flex gap-2 p-3">
@@ -265,7 +265,7 @@ export default function Trades({ trades, settings }) {
                             </button>
                             <button
                               onClick={() => setDeleteConfirm(null)}
-                              className="flex-1 py-2.5 bg-slate-800 text-slate-400 text-xs font-medium rounded-lg active:scale-[0.97] transition-all"
+                              className="flex-1 py-2.5 bg-elevated text-slate-400 text-xs font-medium rounded-lg active:scale-[0.97] transition-all"
                             >
                               Cancel
                             </button>
@@ -274,13 +274,13 @@ export default function Trades({ trades, settings }) {
                           <div className="flex gap-2 p-3">
                             <button
                               onClick={() => openEdit(t)}
-                              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-slate-800 text-slate-300 text-xs font-semibold rounded-lg hover:bg-slate-700 active:scale-[0.97] transition-all"
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-elevated text-slate-300 text-xs font-semibold rounded-lg hover:bg-line active:scale-[0.97] transition-all"
                             >
                               <Pencil className="w-3.5 h-3.5" /> Edit
                             </button>
                             <button
                               onClick={() => setDeleteConfirm(t.id)}
-                              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-slate-800 text-rose-400 text-xs font-semibold rounded-lg hover:bg-rose-500/10 active:scale-[0.97] transition-all"
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-elevated text-rose-400 text-xs font-semibold rounded-lg hover:bg-rose-500/10 active:scale-[0.97] transition-all"
                             >
                               <Trash2 className="w-3.5 h-3.5" /> Delete
                             </button>
@@ -301,7 +301,7 @@ export default function Trades({ trades, settings }) {
         {trades.trades.length > 0 && (
           <button
             onClick={() => trades.undoLastTrade()}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-slate-900/60 text-slate-400 text-sm font-medium rounded-xl border border-slate-800 active:scale-[0.98] hover:bg-slate-800 transition-all"
+            className="w-full flex items-center justify-center gap-2 py-3 bg-surface text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
           >
             <Undo2 className="w-4 h-4" /> Undo Last Trade
           </button>
@@ -310,13 +310,13 @@ export default function Trades({ trades, settings }) {
         <div className="flex gap-2">
           <button
             onClick={handleExport}
-            className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-900/60 text-slate-400 text-sm font-medium rounded-xl border border-slate-800 active:scale-[0.98] hover:bg-slate-800 transition-all"
+            className="flex-1 flex items-center justify-center gap-2 py-3 bg-surface text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
           >
             <Download className="w-4 h-4" /> Export
           </button>
           <button
             onClick={() => fileRef.current?.click()}
-            className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-900/60 text-slate-400 text-sm font-medium rounded-xl border border-slate-800 active:scale-[0.98] hover:bg-slate-800 transition-all"
+            className="flex-1 flex items-center justify-center gap-2 py-3 bg-surface text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
           >
             <Upload className="w-4 h-4" /> Import
           </button>
@@ -335,7 +335,7 @@ export default function Trades({ trades, settings }) {
                 </button>
                 <button
                   onClick={() => setShowConfirm(null)}
-                  className="flex-1 py-3 bg-slate-900/60 text-slate-400 text-sm font-medium rounded-xl border border-slate-800 active:scale-[0.98] transition-all"
+                  className="flex-1 py-3 bg-surface text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] transition-all"
                 >
                   Cancel
                 </button>

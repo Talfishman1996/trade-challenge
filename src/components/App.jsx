@@ -19,7 +19,7 @@ class ErrorBoundary extends Component {
           <AlertTriangle className="w-8 h-8 text-amber-400 mb-3" />
           <p className="text-sm text-slate-400 mb-4">Something went wrong rendering this view.</p>
           <button onClick={() => this.setState({ error: null })}
-            className="px-4 py-2 text-sm font-medium bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors">
+            className="px-4 py-2 text-sm font-medium bg-elevated text-white rounded-lg hover:bg-line transition-colors">
             Try Again
           </button>
         </div>
@@ -42,7 +42,7 @@ export default function App() {
   const trades = useTrades(settings.initialEquity);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-deep text-slate-200 flex flex-col md:flex-row">
       <style dangerouslySetInnerHTML={{ __html: [
         '.no-sb::-webkit-scrollbar{display:none}.no-sb{-ms-overflow-style:none;scrollbar-width:none}',
         '@keyframes gPulse{0%,100%{opacity:.3}50%{opacity:.65}}.gps-pulse{animation:gPulse 2.5s infinite}',
@@ -54,7 +54,7 @@ export default function App() {
       ].join('') }} />
 
       {/* Desktop Sidebar (md+) */}
-      <aside className="hidden md:flex flex-col items-center fixed left-0 top-0 bottom-0 w-16 bg-slate-900 border-r border-slate-800 z-50 py-5 gap-1">
+      <aside className="hidden md:flex flex-col items-center fixed left-0 top-0 bottom-0 w-16 bg-surface border-r border-line z-50 py-5 gap-1">
         {/* Logo */}
         <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 mb-6">
           <Shield className="w-5 h-5 text-emerald-400" />
@@ -72,7 +72,7 @@ export default function App() {
               className={'relative flex items-center justify-center w-10 h-10 rounded-xl transition-all ' +
                 (active
                   ? 'bg-emerald-500/10 text-emerald-400'
-                  : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800')}
+                  : 'text-slate-500 hover:text-slate-300 hover:bg-elevated')}
             >
               <Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 1.5} />
               {active && (
@@ -108,7 +108,7 @@ export default function App() {
       </main>
 
       {/* Mobile Bottom tab bar (hidden on md+) */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-slate-950/95 backdrop-blur-lg border-t border-slate-800 z-50 safe-bottom">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-deep/95 backdrop-blur-lg border-t border-line z-50 safe-bottom">
         <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
           {TABS.map(t => {
             const Icon = t.icon;

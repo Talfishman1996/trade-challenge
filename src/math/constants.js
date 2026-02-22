@@ -55,8 +55,8 @@ export const GPS_Z = [
 
 // Chart styles
 export const TT = {
-  backgroundColor: '#0f172a',
-  border: '1px solid #1e293b',
+  backgroundColor: '#0D1117',
+  border: '1px solid #2D3748',
   borderRadius: 12,
   fontSize: 12,
   padding: '10px 14px',

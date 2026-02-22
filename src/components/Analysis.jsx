@@ -28,7 +28,7 @@ const TABS = [
 
 function SectionDivider({ title, subtitle }) {
   return (
-    <div className="pt-5 pb-2 border-t border-slate-800/60 mt-5">
+    <div className="pt-5 pb-2 border-t border-line/60 mt-5">
       <h3 className="text-sm font-bold text-white">{title}</h3>
       {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
     </div>
@@ -116,7 +116,7 @@ export default function Analysis({ trades, settings }) {
   return (
     <div className="px-4 pt-4 md:pt-6 pb-6 max-w-lg md:max-w-4xl mx-auto space-y-4">
       {/* Equity Control */}
-      <div className="bg-slate-900/70 rounded-2xl p-4 border border-slate-800 space-y-3">
+      <div className="bg-surface rounded-2xl p-4 border border-line space-y-3">
         <div className="flex items-center justify-between">
           <div className="text-xs text-slate-500 font-medium">Analysis Equity</div>
           <button
@@ -132,16 +132,16 @@ export default function Analysis({ trades, settings }) {
 
         {!useReal && (
           <div className="space-y-2">
-            <div className="relative flex items-center bg-slate-950 border border-slate-700 rounded-xl overflow-hidden focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/30 transition-all">
+            <div className="relative flex items-center bg-deep border border-line rounded-xl overflow-hidden focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/30 transition-all">
               <button onClick={() => stepEq(-1)} className="p-2.5 text-slate-500 hover:text-white transition-colors active:scale-95" tabIndex={-1}><Minus className="w-4 h-4" /></button>
               <span className="text-lg font-bold text-slate-600 select-none">$</span>
               <input type="text" value={eqInput} onChange={handleEqChange} onFocus={() => setIsEqFocused(true)} onBlur={() => setIsEqFocused(false)} className="w-full bg-transparent text-center text-xl font-bold font-mono tabular-nums tracking-tight text-white py-2 outline-none" />
               <button onClick={() => stepEq(1)} className="p-2.5 text-slate-500 hover:text-white transition-colors active:scale-95" tabIndex={-1}><Plus className="w-4 h-4" /></button>
             </div>
-            <input type="range" min={0} max={1000} step="any" value={e2s(simEq)} onChange={e => { const v = s2e(+e.target.value); setSimEq(v); setEqInput(fmt(v)); }} className="w-full h-1.5 rounded-full appearance-none bg-slate-800 accent-emerald-500 cursor-pointer" />
+            <input type="range" min={0} max={1000} step="any" value={e2s(simEq)} onChange={e => { const v = s2e(+e.target.value); setSimEq(v); setEqInput(fmt(v)); }} className="w-full h-1.5 rounded-full appearance-none bg-elevated accent-emerald-500 cursor-pointer" />
             <div className="flex flex-wrap gap-1.5 justify-center">
               {QK.map(q => (
-                <button key={q.v} onClick={() => { setSimEq(q.v); setEqInput(fmt(q.v)); }} className={'text-xs px-2 py-1 rounded-md font-mono font-medium transition-all ' + (Math.abs(simEq - q.v) < q.v * 0.05 ? 'bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800')}>{q.l}</button>
+                <button key={q.v} onClick={() => { setSimEq(q.v); setEqInput(fmt(q.v)); }} className={'text-xs px-2 py-1 rounded-md font-mono font-medium transition-all ' + (Math.abs(simEq - q.v) < q.v * 0.05 ? 'bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30' : 'text-slate-500 hover:text-slate-300 hover:bg-elevated')}>{q.l}</button>
               ))}
             </div>
           </div>
@@ -172,12 +172,12 @@ export default function Analysis({ trades, settings }) {
       </div>
 
       {/* 3 Analysis Tabs */}
-      <div className="flex gap-1 pb-px border-b border-slate-800/80">
+      <div className="flex gap-1 pb-px border-b border-line/80">
         {TABS.map(t => {
           const Ic = t.ic;
           const on = tab === t.id;
           return (
-            <button key={t.id} onClick={() => setTab(t.id)} className={'flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-semibold transition-colors whitespace-nowrap relative rounded-t-lg ' + (on ? 'text-emerald-400 bg-slate-900/60' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900/30')}>
+            <button key={t.id} onClick={() => setTab(t.id)} className={'flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-semibold transition-colors whitespace-nowrap relative rounded-t-lg ' + (on ? 'text-emerald-400 bg-surface' : 'text-slate-500 hover:text-slate-300 hover:bg-surface/30')}>
               <Ic className="w-3.5 h-3.5" /> {t.l}
               {on && <motion.div layoutId="analysisTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" transition={{ type: 'spring', stiffness: 500, damping: 35 }} />}
             </button>
@@ -186,7 +186,7 @@ export default function Analysis({ trades, settings }) {
       </div>
 
       {/* Tab Content */}
-      <div className={'bg-slate-900/60 rounded-2xl border border-slate-800 p-4 relative transition-all duration-200 ' + (isCalc ? 'opacity-40 blur-sm' : '')}>
+      <div className={'bg-surface rounded-2xl border border-line p-4 relative transition-all duration-200 ' + (isCalc ? 'opacity-40 blur-sm' : '')}>
         <AnimatePresence mode="wait">
           <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}>
 
@@ -200,19 +200,19 @@ export default function Analysis({ trades, settings }) {
                 <EquityCurve trades={trades} height={280} />
                 {trades.trades.length > 0 && (
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-slate-950 rounded-xl p-3 text-center border border-slate-800">
+                    <div className="bg-deep rounded-xl p-3 text-center border border-line">
                       <div className={'text-lg font-bold font-mono tabular-nums ' + (trades.stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
                         {trades.stats.totalPnl >= 0 ? '+$' : '-$'}{fmt(Math.abs(trades.stats.totalPnl))}
                       </div>
                       <div className="text-xs text-slate-600 mt-0.5">Total P&L</div>
                     </div>
-                    <div className="bg-slate-950 rounded-xl p-3 text-center border border-slate-800">
+                    <div className="bg-deep rounded-xl p-3 text-center border border-line">
                       <div className="text-lg font-bold font-mono tabular-nums text-amber-400">
                         ${fmt(trades.peakEquity)}
                       </div>
                       <div className="text-xs text-slate-600 mt-0.5">Peak</div>
                     </div>
-                    <div className="bg-slate-950 rounded-xl p-3 text-center border border-slate-800">
+                    <div className="bg-deep rounded-xl p-3 text-center border border-line">
                       <div className="text-lg font-bold font-mono tabular-nums text-rose-400">
                         {trades.stats.maxDrawdownPct > 0 ? '-' + trades.stats.maxDrawdownPct.toFixed(1) + '%' : '--'}
                       </div>
@@ -275,7 +275,7 @@ export default function Analysis({ trades, settings }) {
                   <p className="text-xs text-slate-500 mt-1 mb-3">Risk parameters across every portfolio level.</p>
                   <div className="overflow-x-auto -mx-4 px-4 rounded-xl">
                     <table className="w-full text-xs font-mono whitespace-nowrap min-w-[500px]">
-                      <thead className="bg-slate-950 text-slate-400 border-b border-slate-800">
+                      <thead className="bg-deep text-slate-400 border-b border-line">
                         <tr>
                           <th className="py-2 px-2 text-left font-medium">Equity</th>
                           <th className="py-2 px-2 text-right font-medium">Risk %</th>
@@ -289,7 +289,7 @@ export default function Analysis({ trades, settings }) {
                         const tc = m.ph === 'pre' ? 'text-amber-400' : m.ph === 'anchor' ? 'text-emerald-400' : 'text-cyan-400';
                         const Ico = m.ph === 'pre' ? Flame : m.ph === 'anchor' ? Target : Shield;
                         return (
-                          <tr key={m.v} onClick={() => { if (!useReal) { setSimEq(m.v); setEqInput(fmt(m.v)); } }} className={'transition-colors ' + (isA ? 'bg-emerald-500/10' : i % 2 ? 'bg-slate-800/15' : '') + (!useReal ? ' cursor-pointer hover:bg-slate-800/40' : '')} style={isA ? { boxShadow: 'inset 3px 0 0 #10b981' } : {}}>
+                          <tr key={m.v} onClick={() => { if (!useReal) { setSimEq(m.v); setEqInput(fmt(m.v)); } }} className={'transition-colors ' + (isA ? 'bg-emerald-500/10' : i % 2 ? 'bg-elevated/15' : '') + (!useReal ? ' cursor-pointer hover:bg-elevated/40' : '')} style={isA ? { boxShadow: 'inset 3px 0 0 #10b981' } : {}}>
                             <td className={'py-2 px-2 font-semibold flex items-center gap-1.5 ' + tc}><Ico className="w-3 h-3" /> {m.l}</td>
                             <td className={'py-2 px-2 text-right font-semibold ' + (m.r > K0 ? 'text-amber-400' : 'text-emerald-400')}>{(m.r * 100).toFixed(1)}%</td>
                             <td className="py-2 px-2 text-right text-rose-400">{fmt(m.rd)}</td>
@@ -351,7 +351,7 @@ export default function Analysis({ trades, settings }) {
                   </div>
                   <ChartLegend />
                   <div className="grid grid-cols-2 gap-2">
-                    {[{ l: 'Fixed 33%', d: hm.mdd.f, c: 'text-amber-500', bg: 'bg-slate-900/60 border-slate-800' }, { l: '\u2154 Power', d: hm.mdd.n, c: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' }].map((x, i) => (
+                    {[{ l: 'Fixed 33%', d: hm.mdd.f, c: 'text-amber-500', bg: 'bg-surface border-line' }, { l: '\u2154 Power', d: hm.mdd.n, c: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' }].map((x, i) => (
                       <div key={i} className={'rounded-lg flex flex-col items-center justify-center p-3 border ' + x.bg}>
                         <div className={'text-xs font-medium mb-1 ' + x.c}>{x.l}</div>
                         <div className={'text-xl font-bold font-mono tabular-nums ' + x.c}>{'\u2212'}{(x.d.m * 100).toFixed(0)}%</div>
@@ -399,33 +399,33 @@ export default function Analysis({ trades, settings }) {
                     <h3 className="text-base font-bold text-white">Milestone Roadmap</h3>
                     <p className="text-xs text-slate-500 mt-1">From ${fmt(dEq)} at {wr}% WR, {rr.toFixed(1)}:1 RR</p>
                   </div>
-                  <button onClick={() => setSimSeed(s => s + 1)} className="px-2.5 py-1 text-xs font-semibold bg-slate-800 text-slate-400 rounded-lg border border-slate-700 hover:bg-slate-700 hover:text-white transition-colors">Re-Roll</button>
+                  <button onClick={() => setSimSeed(s => s + 1)} className="px-2.5 py-1 text-xs font-semibold bg-elevated text-slate-400 rounded-lg border border-line hover:bg-line hover:text-white transition-colors">Re-Roll</button>
                 </div>
 
                 {msA.length > 0 && <div className="flex flex-wrap gap-1.5">{msA.map(m => (<div key={m.v} className="flex items-center gap-1 bg-emerald-500/10 text-emerald-400 text-xs font-semibold font-mono px-2.5 py-1 rounded-lg border border-emerald-500/20"><CheckCircle2 className="w-3 h-3" /> {m.l}</div>))}</div>}
 
                 {msF.length > 0 ? (<>
                   {/* Next target */}
-                  <div className="bg-slate-950 rounded-xl p-4 border border-emerald-500/20 ring-1 ring-emerald-500/10">
+                  <div className="bg-deep rounded-xl p-4 border border-emerald-500/20 ring-1 ring-emerald-500/10">
                     <div className="flex items-center gap-2 mb-3"><Zap className="w-3.5 h-3.5 text-emerald-400" /><span className="text-xs text-emerald-400 font-semibold uppercase tracking-wider">Next Target</span></div>
                     <div className="flex items-baseline gap-2 mb-3"><span className="text-2xl font-bold text-white font-mono tracking-tight">{msF[0].l}</span><span className="text-xs text-slate-500">from ${fmt(dEq)}</span></div>
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" initial={{ width: 0 }} animate={{ width: Math.max(1, msF[0].progress) + '%' }} transition={{ duration: 0.8, ease: 'easeOut' }} /></div>
+                      <div className="flex-1 h-2 bg-elevated rounded-full overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" initial={{ width: 0 }} animate={{ width: Math.max(1, msF[0].progress) + '%' }} transition={{ duration: 0.8, ease: 'easeOut' }} /></div>
                       <span className="text-xs text-slate-400 font-mono tabular-nums w-12 text-right">{msF[0].progress.toFixed(1)}%</span>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center">
-                      <div className="bg-slate-900/60 rounded-lg p-2.5"><div className="text-xl font-bold font-mono text-emerald-400 tabular-nums">{msF[0].bestN}</div><div className="text-xs text-slate-500 mt-0.5">wins min</div></div>
-                      <div className="bg-slate-900/60 rounded-lg p-2.5"><div className="text-xl font-bold font-mono text-white tabular-nums">{msF[0].mcN.median != null ? '~' + msF[0].mcN.median : '\u2014'}</div><div className="text-xs text-slate-500 mt-0.5">trades exp</div>{msF[0].mcN.p25 != null && <div className="text-xs text-slate-600 font-mono mt-0.5">{msF[0].mcN.p25 + '\u2013' + msF[0].mcN.p75}</div>}</div>
-                      <div className="bg-slate-900/60 rounded-lg p-2.5"><div className={'text-xl font-bold font-mono tabular-nums ' + (msF[0].mcN.reached > 60 ? 'text-emerald-400' : msF[0].mcN.reached > 30 ? 'text-amber-400' : 'text-rose-400')}>{msF[0].mcN.reached.toFixed(0)}%</div><div className="text-xs text-slate-500 mt-0.5">probability</div></div>
+                      <div className="bg-surface rounded-lg p-2.5"><div className="text-xl font-bold font-mono text-emerald-400 tabular-nums">{msF[0].bestN}</div><div className="text-xs text-slate-500 mt-0.5">wins min</div></div>
+                      <div className="bg-surface rounded-lg p-2.5"><div className="text-xl font-bold font-mono text-white tabular-nums">{msF[0].mcN.median != null ? '~' + msF[0].mcN.median : '\u2014'}</div><div className="text-xs text-slate-500 mt-0.5">trades exp</div>{msF[0].mcN.p25 != null && <div className="text-xs text-slate-600 font-mono mt-0.5">{msF[0].mcN.p25 + '\u2013' + msF[0].mcN.p75}</div>}</div>
+                      <div className="bg-surface rounded-lg p-2.5"><div className={'text-xl font-bold font-mono tabular-nums ' + (msF[0].mcN.reached > 60 ? 'text-emerald-400' : msF[0].mcN.reached > 30 ? 'text-amber-400' : 'text-rose-400')}>{msF[0].mcN.reached.toFixed(0)}%</div><div className="text-xs text-slate-500 mt-0.5">probability</div></div>
                     </div>
                   </div>
 
                   {/* Other milestones */}
                   {msF.length > 1 && (
                     <div className="space-y-2">{msF.slice(1).map(m => (
-                      <div key={m.v} onClick={() => { if (!useReal) { setSimEq(m.v); setEqInput(fmt(m.v)); } }} className={'bg-slate-950 rounded-xl p-3 border border-slate-800 ' + (!useReal ? 'cursor-pointer hover:border-slate-700' : '') + ' transition-colors'}>
+                      <div key={m.v} onClick={() => { if (!useReal) { setSimEq(m.v); setEqInput(fmt(m.v)); } }} className={'bg-deep rounded-xl p-3 border border-line ' + (!useReal ? 'cursor-pointer hover:border-line' : '') + ' transition-colors'}>
                         <div className="flex justify-between items-center mb-2"><span className="text-base font-bold text-white font-mono tracking-tight">{m.l}</span><span className="text-xs text-slate-600 font-mono tabular-nums">{m.progress.toFixed(1)}%</span></div>
-                        <div className="h-1 bg-slate-800 rounded-full overflow-hidden mb-2"><div className="h-full bg-emerald-500/60 rounded-full" style={{ width: Math.max(0.5, m.progress) + '%' }} /></div>
+                        <div className="h-1 bg-elevated rounded-full overflow-hidden mb-2"><div className="h-full bg-emerald-500/60 rounded-full" style={{ width: Math.max(0.5, m.progress) + '%' }} /></div>
                         <div className="grid grid-cols-3 gap-2 text-center text-xs">
                           <div><span className="font-bold font-mono text-emerald-400 tabular-nums">{m.bestN}</span> <span className="text-slate-600">wins</span></div>
                           <div><span className="font-bold font-mono text-slate-300 tabular-nums">{m.mcN.median != null ? '~' + m.mcN.median : '\u2014'}</span> <span className="text-slate-600">trades</span></div>

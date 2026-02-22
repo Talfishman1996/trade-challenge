@@ -1,1 +1,9 @@
 @import "tailwindcss";
+
+@theme {
+  --color-deep: #0D1117;
+  --color-surface: #161C24;
+  --color-elevated: #1C2333;
+  --color-line: #2D3748;
+  --color-line-dim: #1E2736;
+}

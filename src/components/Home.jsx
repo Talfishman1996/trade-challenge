@@ -137,7 +137,7 @@ export default function Home({ trades, settings }) {
       <div className="md:grid md:grid-cols-2 md:gap-4 space-y-4 md:space-y-0">
 
       {/* HERO RISK CARD */}
-      <div className="bg-slate-900/70 rounded-2xl p-6 pt-4 border border-slate-800 flex flex-col items-center">
+      <div className="bg-surface rounded-2xl p-6 pt-4 border border-line flex flex-col items-center">
         <div className="flex items-center gap-2 mb-1 self-start">
           <Zap className={`w-3.5 h-3.5 ${rPct > 50 ? 'text-amber-400' : 'text-emerald-400'}`} />
           <span className={`text-xs font-semibold uppercase tracking-wider ${rPct > 50 ? 'text-amber-400' : 'text-emerald-400'}`}>
@@ -150,7 +150,7 @@ export default function Home({ trades, settings }) {
         {/* Phase explanation */}
         <button
           onClick={() => setShowPhaseInfo(!showPhaseInfo)}
-          className={`mt-2 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${rPct > 50 ? 'text-amber-400/70 hover:text-amber-400 hover:bg-amber-500/5' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'}`}
+          className={`mt-2 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${rPct > 50 ? 'text-amber-400/70 hover:text-amber-400 hover:bg-amber-500/5' : 'text-slate-500 hover:text-slate-300 hover:bg-elevated/50'}`}
         >
           <Info className="w-3 h-3" />
           {rPct > 50 ? 'Why so high?' : 'About this phase'}
@@ -182,7 +182,7 @@ export default function Home({ trades, settings }) {
         {/* 4. QUICK STATS ROW */}
         <div className="grid grid-cols-4 md:grid-cols-2 gap-2">
           {stats.map((s, i) => (
-            <div key={i} className="bg-slate-900/50 rounded-xl p-2.5 text-center border border-slate-800/50">
+            <div key={i} className="bg-surface rounded-xl p-2.5 text-center border border-line/50">
               <div className={'text-sm font-bold font-mono tabular-nums ' + s.c}>{s.v}</div>
               <div className="text-[10px] text-slate-600 mt-0.5">{s.l}</div>
             </div>
@@ -191,7 +191,7 @@ export default function Home({ trades, settings }) {
 
         {/* 5. SPARKLINE (tap to expand) */}
         {sparkData.length > 1 && (
-          <div className="bg-slate-900/50 rounded-xl p-3 border border-slate-800/50 cursor-pointer group"
+          <div className="bg-surface rounded-xl p-3 border border-line/50 cursor-pointer group"
             onClick={() => setShowCurve(true)}>
             <div className="flex items-center justify-between mb-1">
               <span className="text-[10px] text-slate-600 font-medium">Equity Curve</span>
@@ -214,7 +214,7 @@ export default function Home({ trades, settings }) {
 
         {/* 6. MILESTONE PROGRESS (slim) */}
       {nextMilestone && (
-        <div className="bg-slate-900/50 rounded-xl p-3 border border-slate-800/50">
+        <div className="bg-surface rounded-xl p-3 border border-line/50">
           <div className="flex justify-between items-center mb-2">
             <div className="flex items-center gap-1.5">
               <Trophy className="w-3.5 h-3.5 text-amber-400" />
@@ -223,7 +223,7 @@ export default function Home({ trades, settings }) {
             <span className="text-sm font-bold font-mono text-white">{nextMilestone.l}</span>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+            <div className="flex-1 h-1.5 bg-elevated rounded-full overflow-hidden">
               <motion.div
                 className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"
                 initial={{ width: 0 }}
@@ -241,10 +241,10 @@ export default function Home({ trades, settings }) {
       </div>{/* end desktop grid */}
 
       {/* 7. GPS JOURNEY (collapsible) */}
-      <div className="bg-slate-900/50 rounded-xl border border-slate-800/50 overflow-hidden">
+      <div className="bg-surface rounded-xl border border-line/50 overflow-hidden">
         <button
           onClick={() => setShowJourney(!showJourney)}
-          className="w-full flex items-center gap-2.5 p-3 hover:bg-slate-800/30 transition-colors"
+          className="w-full flex items-center gap-2.5 p-3 hover:bg-elevated/30 transition-colors"
         >
           <Navigation2 className="w-4 h-4 text-cyan-400 shrink-0" />
           <span className="text-xs text-slate-400 font-medium whitespace-nowrap">Journey</span>
@@ -254,7 +254,7 @@ export default function Home({ trades, settings }) {
               style={{ background: 'linear-gradient(to right, #ef4444, #eab308 54%, #10b981 87%, #22c55e)' }}
             />
             <div
-              className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-2 border-slate-950"
+              className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-2 border-deep"
               style={{ left: `calc(${journeyPct}% - 5px)`, backgroundColor: journeyClr, boxShadow: `0 0 6px ${journeyClr}` }}
             />
           </div>
@@ -270,7 +270,7 @@ export default function Home({ trades, settings }) {
               transition={{ duration: 0.25, ease: 'easeInOut' }}
               className="overflow-hidden"
             >
-              <div className="flex flex-col items-center pt-1 pb-4 px-3 border-t border-slate-800/50">
+              <div className="flex flex-col items-center pt-1 pb-4 px-3 border-t border-line/50">
                 <GPSJourney equity={eq} compact />
                 <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2">
                   {GPS_Z.map((z, i) => (
@@ -294,7 +294,7 @@ export default function Home({ trades, settings }) {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
           >
-            <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-sm" onClick={() => setShowCurve(false)} />
+            <div className="absolute inset-0 bg-deep/95 backdrop-blur-sm" onClick={() => setShowCurve(false)} />
             <div className="relative flex-1 flex flex-col p-4 pt-10 max-w-lg md:max-w-3xl mx-auto w-full">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-bold text-white">Equity Curve</h2>
@@ -304,17 +304,17 @@ export default function Home({ trades, settings }) {
               </div>
               <EquityCurve trades={trades} height={320} />
               <div className="mt-4 grid grid-cols-3 gap-2">
-                <div className="bg-slate-900/70 rounded-xl p-3 text-center border border-slate-800">
+                <div className="bg-surface rounded-xl p-3 text-center border border-line">
                   <div className={'text-base font-bold font-mono tabular-nums ' + (trades.stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
                     {trades.stats.totalPnl >= 0 ? '+$' : '-$'}{fmt(Math.abs(trades.stats.totalPnl))}
                   </div>
                   <div className="text-xs text-slate-600">Total P&L</div>
                 </div>
-                <div className="bg-slate-900/70 rounded-xl p-3 text-center border border-slate-800">
+                <div className="bg-surface rounded-xl p-3 text-center border border-line">
                   <div className="text-base font-bold font-mono tabular-nums text-white">{trades.stats.totalTrades}</div>
                   <div className="text-xs text-slate-600">Trades</div>
                 </div>
-                <div className="bg-slate-900/70 rounded-xl p-3 text-center border border-slate-800">
+                <div className="bg-surface rounded-xl p-3 text-center border border-line">
                   <div className="text-base font-bold font-mono tabular-nums text-amber-400">${fmt(trades.peakEquity)}</div>
                   <div className="text-xs text-slate-600">Peak</div>
                 </div>

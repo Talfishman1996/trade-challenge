@@ -45,7 +45,7 @@ export default function Settings({ settings, trades }) {
       <h2 className="text-lg font-bold text-white">Settings</h2>
 
       {/* Starting Equity */}
-      <div className="bg-slate-900/60 rounded-2xl p-4 border border-slate-800 space-y-3">
+      <div className="bg-surface rounded-2xl p-4 border border-line space-y-3">
         <div className="text-xs text-slate-500 font-medium">Starting Equity</div>
         <div className="relative">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-slate-600">$</span>
@@ -54,20 +54,20 @@ export default function Settings({ settings, trades }) {
             inputMode="numeric"
             value={eqInput}
             onChange={handleEqChange}
-            className="w-full bg-slate-950 border border-slate-700 rounded-xl text-xl font-bold font-mono text-white py-3 pl-10 pr-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all tabular-nums"
+            className="w-full bg-deep border border-line rounded-xl text-xl font-bold font-mono text-white py-3 pl-10 pr-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all tabular-nums"
           />
         </div>
         <p className="text-xs text-slate-600">Your challenge starting balance. Only affects new calculations if no trades logged.</p>
       </div>
 
       {/* Analysis Defaults */}
-      <div className="bg-slate-900/60 rounded-2xl p-4 border border-slate-800 space-y-4">
+      <div className="bg-surface rounded-2xl p-4 border border-line space-y-4">
         <div className="text-xs text-slate-500 font-medium">Analysis Defaults</div>
 
         <div>
           <div className="flex justify-between items-center mb-2">
             <label className="text-sm text-slate-400">Win Rate</label>
-            <span className="text-sm text-emerald-400 font-bold font-mono bg-slate-950 px-2 py-0.5 rounded-md border border-slate-800 tabular-nums">
+            <span className="text-sm text-emerald-400 font-bold font-mono bg-deep px-2 py-0.5 rounded-md border border-line tabular-nums">
               {settings.winRate}%
             </span>
           </div>
@@ -78,14 +78,14 @@ export default function Settings({ settings, trades }) {
             step={1}
             value={settings.winRate}
             onChange={e => settings.setWinRate(+e.target.value)}
-            className="w-full h-1.5 rounded-full appearance-none bg-slate-800 accent-emerald-500 cursor-pointer"
+            className="w-full h-1.5 rounded-full appearance-none bg-elevated accent-emerald-500 cursor-pointer"
           />
         </div>
 
         <div>
           <div className="flex justify-between items-center mb-2">
             <label className="text-sm text-slate-400">Risk:Reward</label>
-            <span className="text-sm text-emerald-400 font-bold font-mono bg-slate-950 px-2 py-0.5 rounded-md border border-slate-800 tabular-nums">
+            <span className="text-sm text-emerald-400 font-bold font-mono bg-deep px-2 py-0.5 rounded-md border border-line tabular-nums">
               {settings.rewardRatio.toFixed(1)}:1
             </span>
           </div>
@@ -96,25 +96,25 @@ export default function Settings({ settings, trades }) {
             step={1}
             value={settings.rewardRatio * 10}
             onChange={e => settings.setRewardRatio(+e.target.value / 10)}
-            className="w-full h-1.5 rounded-full appearance-none bg-slate-800 accent-emerald-500 cursor-pointer"
+            className="w-full h-1.5 rounded-full appearance-none bg-elevated accent-emerald-500 cursor-pointer"
           />
         </div>
       </div>
 
       {/* Data Management */}
-      <div className="bg-slate-900/60 rounded-2xl p-4 border border-slate-800 space-y-3">
+      <div className="bg-surface rounded-2xl p-4 border border-line space-y-3">
         <div className="text-xs text-slate-500 font-medium">Data Management</div>
 
         <div className="flex gap-2">
           <button
             onClick={handleExport}
-            className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-950 text-slate-400 text-sm font-medium rounded-xl border border-slate-800 active:scale-[0.98] hover:bg-slate-800 transition-all"
+            className="flex-1 flex items-center justify-center gap-2 py-3 bg-deep text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
           >
             <Download className="w-4 h-4" /> Export JSON
           </button>
           <button
             onClick={() => fileRef.current?.click()}
-            className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-950 text-slate-400 text-sm font-medium rounded-xl border border-slate-800 active:scale-[0.98] hover:bg-slate-800 transition-all"
+            className="flex-1 flex items-center justify-center gap-2 py-3 bg-deep text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
           >
             <Upload className="w-4 h-4" /> Import JSON
           </button>
@@ -133,7 +133,7 @@ export default function Settings({ settings, trades }) {
                 </button>
                 <button
                   onClick={() => setShowConfirm(null)}
-                  className="flex-1 py-3 bg-slate-950 text-slate-400 text-sm font-medium rounded-xl border border-slate-800 active:scale-[0.98] transition-all"
+                  className="flex-1 py-3 bg-deep text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] transition-all"
                 >
                   Cancel
                 </button>
@@ -151,7 +151,7 @@ export default function Settings({ settings, trades }) {
       </div>
 
       {/* About */}
-      <div className="bg-slate-900/60 rounded-2xl p-4 border border-slate-800 space-y-2">
+      <div className="bg-surface rounded-2xl p-4 border border-line space-y-2">
         <div className="text-xs text-slate-500 font-medium">About</div>
         <div className="text-sm text-slate-400">
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-white font-bold tracking-widest">APEX</span> <span className="text-slate-600">v1.0</span>
