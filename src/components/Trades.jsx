@@ -7,7 +7,7 @@ export default function Trades({ trades, settings, onOpenTradeEntry }) {
   const [showConfirm, setShowConfirm] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
-  const [view, setView] = useState('list');
+  const [view, setView] = useState('calendar');
   const fileRef = useRef(null);
 
   const handleExport = () => {

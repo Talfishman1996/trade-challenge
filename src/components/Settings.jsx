@@ -191,10 +191,11 @@ export default function Settings({ settings, trades }) {
       <div className="bg-surface rounded-2xl p-4 border border-line space-y-2">
         <div className="text-xs text-slate-500 font-medium">About</div>
         <div className="text-sm text-slate-400">
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-white font-bold tracking-widest">APEX</span> <span className="text-slate-600">v1.0</span>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-white font-bold tracking-widest">TRADEVAULT</span> <span className="text-slate-600">v2.0</span>
         </div>
-        <p className="text-xs text-slate-600 leading-relaxed">
-          {'\u2154'} Power Decay position sizing model for the $20K to $10M challenge.
+        <p className="text-xs text-slate-500 font-medium mt-0.5">$20K {'\u2192'} $10M</p>
+        <p className="text-xs text-slate-600 leading-relaxed mt-1">
+          {'\u2154'} Power Decay position sizing. Risk scales with equity to protect gains and maximize growth.
           All data stored locally in your browser.
         </p>
       </div>
