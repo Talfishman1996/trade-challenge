@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Download, Upload, Trash2, RotateCcw, Info } from 'lucide-react';
+import { Download, Upload, Trash2, RotateCcw, Info, FileSpreadsheet } from 'lucide-react';
 import { fmt } from '../math/format.js';
+import { getPhaseName } from '../math/risk.js';
 
 export default function Settings({ settings, trades }) {
   const [showConfirm, setShowConfirm] = useState(null);
@@ -38,6 +39,31 @@ export default function Settings({ settings, trades }) {
     };
     reader.readAsText(file);
     e.target.value = '';
+  };
+
+  const handleCSVExport = () => {
+    const rows = [['Trade #', 'Date', 'P&L', 'Equity Before', 'Equity After', 'Risk %', 'Phase', 'Notes']];
+    for (const t of trades.trades) {
+      const esc = (s) => s && s.includes(',') ? `"${s.replace(/"/g, '""')}"` : (s || '');
+      rows.push([
+        t.id,
+        new Date(t.date).toISOString().slice(0, 10),
+        t.pnl,
+        t.equityBefore,
+        t.equityAfter,
+        (t.riskPct * 100).toFixed(2) + '%',
+        getPhaseName(t.phase),
+        esc(t.notes),
+      ]);
+    }
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `apex-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -103,20 +129,31 @@ export default function Settings({ settings, trades }) {
 
       {/* Data Management */}
       <div className="bg-surface rounded-2xl p-4 border border-line space-y-3">
-        <div className="text-xs text-slate-500 font-medium">Data Management</div>
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-slate-500 font-medium">Data Management</div>
+          {trades.trades.length > 0 && (
+            <span className="text-[10px] text-slate-600 font-mono tabular-nums">{trades.trades.length} trades</span>
+          )}
+        </div>
 
-        <div className="flex gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <button
             onClick={handleExport}
-            className="flex-1 flex items-center justify-center gap-2 py-3 bg-deep text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
+            className="flex flex-col items-center gap-1.5 py-3 bg-deep text-slate-400 text-xs font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
           >
-            <Download className="w-4 h-4" /> Export JSON
+            <Download className="w-4 h-4" /> JSON
+          </button>
+          <button
+            onClick={handleCSVExport}
+            className="flex flex-col items-center gap-1.5 py-3 bg-deep text-slate-400 text-xs font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
+          >
+            <FileSpreadsheet className="w-4 h-4" /> CSV
           </button>
           <button
             onClick={() => fileRef.current?.click()}
-            className="flex-1 flex items-center justify-center gap-2 py-3 bg-deep text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
+            className="flex flex-col items-center gap-1.5 py-3 bg-deep text-slate-400 text-xs font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
           >
-            <Upload className="w-4 h-4" /> Import JSON
+            <Upload className="w-4 h-4" /> Import
           </button>
           <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
         </div>
