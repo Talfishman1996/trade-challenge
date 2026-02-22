@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fmt, lg, unlg, s2e, e2s } from '../math/format.js';
-import { rN, rO, rF, r$N, geoGrowth, lossesToWipe, calcStreak, fmtGeo, getPhase } from '../math/risk.js';
+import { rN, rO, rF, r$N, geoGrowth, lossesToWipe, calcStreak, fmtGeo, getPhase, getPhaseName } from '../math/risk.js';
 import { computeHeavyMetrics, computeMilestones } from '../math/monte-carlo.js';
 import {
   E0, K0, SMIN, SMAX, LOG_MIN, LOG_MAX, LXT, QK, FM, MILES,
@@ -43,6 +43,7 @@ export default function Analysis({ trades, settings }) {
   const [isEqFocused, setIsEqFocused] = useState(false);
   const [tab, setTab] = useState('performance');
   const [simSeed, setSimSeed] = useState(555);
+  const [explorerEq, setExplorerEq] = useState(realEq);
 
   const eq = useReal ? realEq : simEq;
   const wr = settings.winRate;
@@ -78,6 +79,8 @@ export default function Analysis({ trades, settings }) {
   const kellyPct = ((wr / 100 * (1 + rr) - 1) / rr) * 100;
   const kellyMult = kellyPct > 0 ? (rp / kellyPct) : Infinity;
   const isPre = eq < E0 * 0.95, isAnc = eq >= E0 * 0.95 && eq <= E0 * 1.05;
+  const expR = rN(explorerEq) * 100, expRD = r$N(explorerEq), expGain = expRD * rr;
+  const expPhase = getPhase(explorerEq), expLtw = lossesToWipe(explorerEq);
 
   const hm = useMemo(() => computeHeavyMetrics(dEq, dWr, dRr), [dEq, dWr, dRr]);
   const milestoneData = useMemo(() => computeMilestones(dEq, dWr, dRr, simSeed), [dEq, dWr, dRr, simSeed]);
@@ -89,6 +92,20 @@ export default function Analysis({ trades, settings }) {
       const lx = LOG_MIN + (i / 149) * (LOG_MAX - LOG_MIN), e = unlg(lx);
       return { lx, fixed: 33, old: rO(e) * 100, cur: rN(e) * 100, rdol: r$N(e) };
     }), []);
+
+  const explorerSparkline = useMemo(() => {
+    const N = 45, pts = [];
+    let maxR = 0;
+    for (let i = 0; i <= N; i++) {
+      const e = 20000 + i * 2000, r = rN(e) * 100;
+      if (r > maxR) maxR = r;
+      pts.push({ x: (i / N) * 200, y: 0, r });
+    }
+    for (const p of pts) p.y = 36 - (p.r / maxR) * 32;
+    const line = 'M' + pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join('L');
+    const area = line + 'L200,40L0,40Z';
+    return { line, area, maxR };
+  }, []);
 
   const ddP = useMemo(() => {
     const p = [];
@@ -269,36 +286,48 @@ export default function Analysis({ trades, settings }) {
             {/* ═══════════════ RISK MODEL TAB ═══════════════ */}
             {tab === 'risk' && (
               <div className="space-y-0">
-                {/* Matrix */}
+                {/* Risk Explorer */}
                 <div>
-                  <h3 className="text-base font-bold text-white">System Matrix</h3>
-                  <p className="text-xs text-slate-500 mt-1 mb-3">Risk parameters across every portfolio level.</p>
-                  <div className="overflow-x-auto -mx-4 px-4 rounded-xl">
-                    <table className="w-full text-xs font-mono whitespace-nowrap min-w-[500px]">
-                      <thead className="bg-deep text-slate-400 border-b border-line">
-                        <tr>
-                          <th className="py-2 px-2 text-left font-medium">Equity</th>
-                          <th className="py-2 px-2 text-right font-medium">Risk %</th>
-                          <th className="py-2 px-2 text-right font-medium">Risk $</th>
-                          <th className="py-2 px-2 text-right font-medium">Gain $</th>
-                          <th className="py-2 px-2 text-right font-medium">Ruin</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-800/30">{hm.fMap.map((m, i) => {
-                        const isA = Math.abs(dEq - m.v) < m.v * 0.08;
-                        const tc = m.ph === 'pre' ? 'text-amber-400' : m.ph === 'anchor' ? 'text-emerald-400' : 'text-cyan-400';
-                        const Ico = m.ph === 'pre' ? Flame : m.ph === 'anchor' ? Target : Shield;
-                        return (
-                          <tr key={m.v} onClick={() => { if (!useReal) { setSimEq(m.v); setEqInput(fmt(m.v)); } }} className={'transition-colors ' + (isA ? 'bg-emerald-500/10' : i % 2 ? 'bg-elevated/15' : '') + (!useReal ? ' cursor-pointer hover:bg-elevated/40' : '')} style={isA ? { boxShadow: 'inset 3px 0 0 #10b981' } : {}}>
-                            <td className={'py-2 px-2 font-semibold flex items-center gap-1.5 ' + tc}><Ico className="w-3 h-3" /> {m.l}</td>
-                            <td className={'py-2 px-2 text-right font-semibold ' + (m.r > K0 ? 'text-amber-400' : 'text-emerald-400')}>{(m.r * 100).toFixed(1)}%</td>
-                            <td className="py-2 px-2 text-right text-rose-400">{fmt(m.rd)}</td>
-                            <td className="py-2 px-2 text-right text-emerald-400">+{fmt(m.gd)}</td>
-                            <td className={'py-2 px-2 text-right font-bold ' + (m.ltw <= 3 ? 'text-rose-500' : m.ltw <= 10 ? 'text-amber-400' : 'text-slate-500')}>{m.ltw >= 200 ? '200+' : m.ltw}</td>
-                          </tr>
-                        );
-                      })}</tbody>
-                    </table>
+                  <h3 className="text-base font-bold text-white">Risk Explorer</h3>
+                  <p className="text-xs text-slate-500 mt-1 mb-3">Drag to explore how risk scales with equity.</p>
+                  <div className="bg-deep rounded-xl p-4 border border-line space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="text-2xl font-bold font-mono tabular-nums text-white">${fmt(explorerEq)}</div>
+                      <span className={'text-xs font-semibold px-2 py-1 rounded-lg border ' + (expPhase === 'pre' ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' : expPhase === 'anchor' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20')}>{getPhaseName(expPhase)}</span>
+                    </div>
+                    <div>
+                      <input type="range" min={20000} max={110000} step={500} value={explorerEq} onChange={e => setExplorerEq(+e.target.value)} className="w-full h-1.5 rounded-full appearance-none bg-elevated accent-emerald-500 cursor-pointer" />
+                      <div className="flex justify-between text-[10px] text-slate-600 font-mono mt-1">
+                        <span>$20K</span><span>$87.5K anchor</span><span>$110K</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="bg-surface rounded-lg p-3 border border-line">
+                        <div className={'text-xl font-bold font-mono tabular-nums ' + (expR > 33.1 ? 'text-amber-400' : 'text-emerald-400')}>{expR.toFixed(1)}%</div>
+                        <div className="text-[10px] text-slate-600 mt-0.5">Risk %</div>
+                      </div>
+                      <div className="bg-surface rounded-lg p-3 border border-line">
+                        <div className="text-xl font-bold font-mono tabular-nums text-rose-400">${fmt(expRD)}</div>
+                        <div className="text-[10px] text-slate-600 mt-0.5">Risk $</div>
+                      </div>
+                      <div className="bg-surface rounded-lg p-3 border border-line">
+                        <div className="text-xl font-bold font-mono tabular-nums text-emerald-400">+${fmt(expGain)}</div>
+                        <div className="text-[10px] text-slate-600 mt-0.5">Gain $</div>
+                      </div>
+                    </div>
+                    <div className="relative h-12">
+                      <svg viewBox="0 0 200 40" className="w-full h-full" preserveAspectRatio="none">
+                        <defs><linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10b981" stopOpacity="0.15" /><stop offset="100%" stopColor="#10b981" stopOpacity="0" /></linearGradient></defs>
+                        <path d={explorerSparkline.area} fill="url(#sparkGrad)" />
+                        <path d={explorerSparkline.line} fill="none" stroke="#10b981" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+                        <line x1={((explorerEq - 20000) / 90000) * 200} y1="0" x2={((explorerEq - 20000) / 90000) * 200} y2="40" stroke="#94a3b8" strokeWidth="1" strokeDasharray="2 2" vectorEffect="non-scaling-stroke" />
+                        <circle cx={((explorerEq - 20000) / 90000) * 200} cy={36 - (expR / explorerSparkline.maxR) * 32} r="3" fill="#10b981" stroke="white" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+                      </svg>
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t border-line/50">
+                      <span className="text-xs text-slate-500">Ruin horizon</span>
+                      <span className={'text-sm font-bold font-mono tabular-nums ' + (expLtw <= 3 ? 'text-rose-500' : expLtw <= 10 ? 'text-amber-400' : 'text-emerald-400')}>{expLtw >= 200 ? '200+' : expLtw} losses</span>
+                    </div>
                   </div>
                 </div>
 
