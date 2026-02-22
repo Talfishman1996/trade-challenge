@@ -1,7 +1,7 @@
 # APEX v2 Redesign - Progress Tracker
 # Updated: 2026-02-22
 # Checkpoint: v1-pre-redesign (b8a162c)
-# Status: IN PROGRESS (autonomous execution, all waves)
+# Status: COMPLETE - All 4 waves shipped
 
 ## Wave 1: Foundation
 - [x] 1A: Color System (Glass & Obsidian palette) - 4a84d39
@@ -26,11 +26,11 @@
 - [x] Wave 3 COMPLETE
 
 ## Wave 4: Intelligence & Polish
-- [ ] 4A: Smart Drawdown Alerts (equity-based warnings)
-- [ ] 4B: Empty State (interactive risk exploration)
-- [ ] 4C: Dynamic Text Scaling (P&L input animation)
-- [ ] 4D: Enhanced Data Export (CSV + Settings backup)
-- [ ] Wave 4 tag: v2-wave4
+- [x] 4A: Smart Drawdown Alerts (equity-based warnings) - 7b1153f
+- [x] 4B: Empty State (interactive risk exploration) - 725a3e7
+- [x] 4C: Dynamic Text Scaling (P&L input animation) - 69ddfc7
+- [x] 4D: Enhanced Data Export (CSV + Settings backup) - 471ac91
+- [x] Wave 4 COMPLETE
 
 ## Commit Log
 - 1A: 4a84d39 Glass & Obsidian color system
@@ -46,13 +46,12 @@
 - 3A+3B: 34f6689 Center FAB + app-level TradeEntry
 - 3C: c48683a Embed drawdown metrics inline in Performance tab
 - Wave 3 COMPLETE - all 3 sub-phases done
+- 4A: 7b1153f Smart drawdown alert on Home
+- 4B: 725a3e7 Interactive empty states (Home + Trades)
+- 4C: 69ddfc7 Dynamic P&L text scaling
+- 4D: 471ac91 CSV export + enhanced data management
+- Wave 4 COMPLETE - all 4 sub-phases done
 
-## Notes
-<!-- Session notes, issues encountered, decisions made -->
-- Plan: .claude/REDESIGN-PLAN.md
-- Checkpoint: git tag v1-pre-redesign
-- Existing features found during planning:
-  - TradeEntry already has win/loss toggle + basic equity preview
-  - Trades already has accordion expand + export/import
-  - Analysis already has equity slider + what-if mode
-  - These are ENHANCEMENTS, not new builds
+## REDESIGN COMPLETE
+All 17 sub-phases across 4 waves shipped successfully.
+Tags: v1-pre-redesign, v2-wave1, v2-wave2, v2-wave3, v2-wave4
