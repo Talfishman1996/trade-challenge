@@ -174,18 +174,6 @@ export default function Analysis({ trades, settings }) {
           </div>
         </MetricCard>
         <MetricCard label="Capital at Risk" barColor="bg-rose-500" sub="max single-trade loss" value={{ text: fmt(rd), className: 'text-rose-400' }} />
-        <MetricCard label="Drawdown Seq" tip="Account drop after consecutive losses." barColor="bg-amber-500">
-          <div className="flex items-center gap-3 mt-1">
-            <div><div className="text-base font-bold font-mono text-amber-400 tabular-nums">{'\u2212'}{d3.toFixed(0)}%</div><div className="text-xs text-slate-600">3L</div></div>
-            <div className="w-px h-6 bg-slate-700/50" />
-            <div><div className="text-base font-bold font-mono text-rose-400 tabular-nums">{'\u2212'}{d5.toFixed(0)}%</div><div className="text-xs text-slate-600">5L</div></div>
-          </div>
-        </MetricCard>
-        <MetricCard label="Ruin Horizon" tip="Consecutive losses to reach zero." barColor={ltw <= 3 ? 'bg-rose-500' : ltw <= 10 ? 'bg-amber-500' : 'bg-emerald-500'}>
-          <div className={'text-xl font-bold font-mono tracking-tight tabular-nums mt-1 ' + (ltw <= 3 ? 'text-rose-500' : ltw <= 6 ? 'text-amber-400' : 'text-emerald-400')}>
-            {ltw >= 200 ? '200+' : ltw} <span className="text-xs font-sans text-slate-500 font-medium">losses</span>
-          </div>
-        </MetricCard>
       </div>
 
       {/* 3 Analysis Tabs */}
@@ -237,6 +225,24 @@ export default function Analysis({ trades, settings }) {
                     </div>
                   </div>
                 )}
+                {/* Drawdown & Ruin inline */}
+                <div className="flex items-center justify-between text-xs font-mono bg-deep rounded-xl px-3 py-2.5 border border-line">
+                  <div className="text-center">
+                    <div className="font-bold text-amber-400 tabular-nums">{'\u2212'}{d3.toFixed(0)}%</div>
+                    <div className="text-[10px] text-slate-600 mt-0.5">3 losses</div>
+                  </div>
+                  <div className="w-px h-6 bg-line/50" />
+                  <div className="text-center">
+                    <div className="font-bold text-rose-400 tabular-nums">{'\u2212'}{d5.toFixed(0)}%</div>
+                    <div className="text-[10px] text-slate-600 mt-0.5">5 losses</div>
+                  </div>
+                  <div className="w-px h-6 bg-line/50" />
+                  <div className="text-center">
+                    <div className={'font-bold tabular-nums ' + (ltw <= 3 ? 'text-rose-500' : ltw <= 10 ? 'text-amber-400' : 'text-emerald-400')}>{ltw >= 200 ? '200+' : ltw}</div>
+                    <div className="text-[10px] text-slate-600 mt-0.5">ruin horizon</div>
+                  </div>
+                </div>
+
                 {/* R-Multiple Distribution */}
                 {trades.stats.rMultiples.length > 0 && (() => {
                   const rm = trades.stats.rMultiples;
