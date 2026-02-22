@@ -161,6 +161,7 @@ export const useTrades = (initialEquity = 20000) => {
         maxDrawdown: 0, maxDrawdownPct: 0,
         currentStreak: 0, streakType: null,
         todayTrades: 0, todayPnl: 0,
+        last30Trades: 0, last30Pnl: 0,
         expectancy: 0, avgR: 0, rMultiples: [],
         bestTrade: 0, worstTrade: 0,
         maxWinStreak: 0, maxLossStreak: 0,
@@ -195,6 +196,10 @@ export const useTrades = (initialEquity = 20000) => {
     // Today stats
     const today = new Date().toISOString().slice(0, 10);
     const todayTrades = trades.filter(t => t.date.slice(0, 10) === today);
+
+    // Last 30 days stats
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+    const last30 = trades.filter(t => t.date.slice(0, 10) >= thirtyDaysAgo);
 
     // R-multiples
     const rMultiples = trades.map(t => t.riskDol > 0 ? t.pnl / t.riskDol : 0);
@@ -233,6 +238,8 @@ export const useTrades = (initialEquity = 20000) => {
       streakType,
       todayTrades: todayTrades.length,
       todayPnl: todayTrades.reduce((s, t) => s + t.pnl, 0),
+      last30Trades: last30.length,
+      last30Pnl: last30.reduce((s, t) => s + t.pnl, 0),
       expectancy,
       avgR,
       rMultiples,

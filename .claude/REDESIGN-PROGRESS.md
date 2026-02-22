@@ -1,7 +1,7 @@
-# APEX v2 Redesign - Progress Tracker
+# TradeVault v2 Redesign - Progress Tracker
 # Updated: 2026-02-22
 # Checkpoint: v1-pre-redesign (b8a162c)
-# Status: COMPLETE - All 4 waves shipped
+# Status: COMPLETE - All 4 waves + post-audit fixes shipped
 
 ## Wave 1: Foundation
 - [x] 1A: Color System (Glass & Obsidian palette) - 4a84d39

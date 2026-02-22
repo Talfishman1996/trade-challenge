@@ -15,9 +15,9 @@ const PHASE_INFO = {
 
 function RiskGauge({ riskPct, riskDol }) {
   const sev = riskSeverity(riskPct);
-  const textCls = sev === 'safe' ? 'text-emerald-400' : sev === 'elevated' ? 'text-amber-400' : 'text-rose-400';
-  const barCls = sev === 'safe' ? 'bg-emerald-500' : sev === 'elevated' ? 'bg-amber-500' : 'bg-rose-500';
-  const glowCls = sev === 'safe' ? 'shadow-emerald-500/30' : sev === 'elevated' ? 'shadow-amber-500/30' : 'shadow-rose-500/30';
+  const textCls = sev === 'safe' ? 'text-amber-400' : sev === 'elevated' ? 'text-orange-400' : 'text-rose-400';
+  const barCls = sev === 'safe' ? 'bg-amber-500' : sev === 'elevated' ? 'bg-orange-500' : 'bg-rose-500';
+  const glowCls = sev === 'safe' ? 'shadow-amber-500/30' : sev === 'elevated' ? 'shadow-orange-500/30' : 'shadow-rose-500/30';
 
   return (
     <div className="space-y-2.5 w-full">
@@ -45,7 +45,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
   const phase = getPhase(eq);
   const rPct = trades.nextRisk.pct * 100;
   const rSev = riskSeverity(rPct);
-  const rColor = rSev === 'safe' ? 'text-emerald-400' : rSev === 'elevated' ? 'text-amber-400' : 'text-rose-400';
+  const rColor = rSev === 'safe' ? 'text-amber-400' : rSev === 'elevated' ? 'text-orange-400' : 'text-rose-400';
   const ZIcon = phase === 'pre' ? Flame : phase === 'anchor' ? Target : Shield;
   const phaseColor = phase === 'pre' ? 'text-amber-400' : phase === 'anchor' ? 'text-emerald-400' : 'text-cyan-400';
   const phaseBg = phase === 'pre' ? 'bg-amber-500/10 border-amber-500/20' : phase === 'anchor' ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-cyan-500/10 border-cyan-500/20';
@@ -62,9 +62,28 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
   const sparkMax = Math.max(...sparkData);
   const sparkRange = sparkMax - sparkMin || 1;
   const sparkClr = sparkData.length > 1 && sparkData[sparkData.length - 1] >= sparkData[0] ? '#10b981' : '#ef4444';
-  const sparkPts = sparkData.map((v, i) => `${i},${40 - ((v - sparkMin) / sparkRange) * 36}`).join(' ');
-  const sparkArea = sparkPts + ` ${sparkData.length - 1},40 0,40`;
-  const sparkEndY = 40 - ((sparkData[sparkData.length - 1] - sparkMin) / sparkRange) * 36;
+  const sparkPoints = sparkData.map((v, i) => ({
+    x: sparkData.length > 1 ? (i / (sparkData.length - 1)) * 100 : 50,
+    y: 4 + 42 - ((v - sparkMin) / sparkRange) * 42,
+  }));
+  const smoothCurve = (pts) => {
+    if (pts.length < 2) return '';
+    if (pts.length === 2) return `M${pts[0].x},${pts[0].y} L${pts[1].x},${pts[1].y}`;
+    let d = `M${pts[0].x},${pts[0].y}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[Math.max(0, i - 1)];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[Math.min(pts.length - 1, i + 2)];
+      d += ` C${(p1.x + (p2.x - p0.x) / 6).toFixed(1)},${(p1.y + (p2.y - p0.y) / 6).toFixed(1)} ${(p2.x - (p3.x - p1.x) / 6).toFixed(1)},${(p2.y - (p3.y - p1.y) / 6).toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+    }
+    return d;
+  };
+  const sparkPath = smoothCurve(sparkPoints);
+  const sparkAreaPath = sparkPath + ' L100,50 L0,50 Z';
+  const sparkEndPt = sparkPoints[sparkPoints.length - 1];
+  const peakIdx = sparkData.indexOf(sparkMax);
+  const peakPt = sparkPoints[peakIdx];
 
   // Journey progress (log-scale mapping from $20K to $110K)
   const journeyPct = useMemo(() => {
@@ -79,7 +98,9 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
   // Stats data
   const stats = [
     { l: 'Trades', v: trades.stats.totalTrades, c: 'text-white' },
-    { l: 'Win Rate', v: trades.stats.totalTrades > 0 ? trades.stats.winRate.toFixed(0) + '%' : '--', c: 'text-white' },
+    { l: 'Win Rate', v: trades.stats.totalTrades > 0 ? trades.stats.winRate.toFixed(0) + '%' : '--',
+      c: trades.stats.winRate >= 60 ? 'text-amber-300' : trades.stats.winRate >= 50 ? 'text-amber-400' : trades.stats.totalTrades > 0 ? 'text-rose-400' : 'text-white',
+      glow: trades.stats.winRate >= 60 },
     {
       l: 'Streak',
       v: trades.stats.currentStreak > 0
@@ -88,11 +109,11 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
       c: trades.stats.streakType === 'win' ? 'text-emerald-400' : trades.stats.streakType === 'loss' ? 'text-rose-400' : 'text-white'
     },
     {
-      l: 'Today',
-      v: trades.stats.todayTrades > 0
-        ? (trades.stats.todayPnl >= 0 ? '+$' : '-$') + fmt(Math.abs(trades.stats.todayPnl))
+      l: '30 Days',
+      v: trades.stats.last30Trades > 0
+        ? (trades.stats.last30Pnl >= 0 ? '+$' : '-$') + fmt(Math.abs(trades.stats.last30Pnl))
         : '--',
-      c: trades.stats.todayPnl > 0 ? 'text-emerald-400' : trades.stats.todayPnl < 0 ? 'text-rose-400' : 'text-white'
+      c: trades.stats.last30Pnl > 0 ? 'text-emerald-400' : trades.stats.last30Pnl < 0 ? 'text-rose-400' : 'text-white'
     },
   ];
 
@@ -164,7 +185,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
             className="w-full" />
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="bg-deep rounded-xl p-2.5 border border-line/50">
-              <div className={'text-sm font-bold font-mono tabular-nums ' + (riskSeverity(rN(exploreEq) * 100) === 'safe' ? 'text-emerald-400' : riskSeverity(rN(exploreEq) * 100) === 'elevated' ? 'text-amber-400' : 'text-rose-400')}>{(rN(exploreEq) * 100).toFixed(1)}%</div>
+              <div className={'text-sm font-bold font-mono tabular-nums ' + (riskSeverity(rN(exploreEq) * 100) === 'safe' ? 'text-amber-400' : riskSeverity(rN(exploreEq) * 100) === 'elevated' ? 'text-orange-400' : 'text-rose-400')}>{(rN(exploreEq) * 100).toFixed(1)}%</div>
               <div className="text-[10px] text-slate-600 mt-0.5">Risk</div>
             </div>
             <div className="bg-deep rounded-xl p-2.5 border border-line/50">
@@ -232,7 +253,8 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
         <div className="grid grid-cols-4 md:grid-cols-2 gap-2">
           {stats.map((s, i) => (
             <div key={i} className="bg-surface rounded-xl p-2.5 text-center border border-line/50">
-              <div className={'text-sm font-bold font-mono tabular-nums ' + s.c}>{s.v}</div>
+              <div className={'text-sm font-bold font-mono tabular-nums ' + s.c}
+                style={s.glow ? { textShadow: '0 0 12px rgba(252, 211, 77, 0.5)' } : undefined}>{s.v}</div>
               <div className="text-[10px] text-slate-600 mt-0.5">{s.l}</div>
             </div>
           ))}
@@ -243,20 +265,23 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
           <div className="bg-surface rounded-xl p-3 border border-line/50 cursor-pointer group"
             onClick={() => setShowCurve(true)}>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] text-slate-600 font-medium">Equity Curve</span>
-              <span className="text-[10px] text-slate-600 group-hover:text-slate-400 transition-colors">Tap to expand</span>
+              <span className="text-[10px] text-slate-600 font-medium">P&L Curve</span>
+              <span className="text-[10px] text-amber-400/70 font-mono tabular-nums">Peak: ${fmt(sparkMax)}</span>
             </div>
-            <svg className="w-full h-10" viewBox={`0 0 ${sparkData.length - 1} 42`} preserveAspectRatio="none">
+            <svg className="w-full h-16" viewBox="0 0 100 50" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={sparkClr} stopOpacity=".3" />
                   <stop offset="100%" stopColor={sparkClr} stopOpacity="0" />
                 </linearGradient>
               </defs>
-              <polygon points={sparkArea} fill="url(#sparkFill)" />
-              <polyline fill="none" stroke={sparkClr} strokeWidth="1.5"
-                strokeLinecap="round" strokeLinejoin="round" points={sparkPts} />
-              <circle cx={sparkData.length - 1} cy={sparkEndY} r="2" fill={sparkClr} />
+              <path d={sparkAreaPath} fill="url(#sparkFill)" />
+              <path d={sparkPath} fill="none" stroke={sparkClr} strokeWidth="1.5"
+                strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx={peakPt.x} cy={peakPt.y} r="3" fill="#f59e0b" opacity="0.25" />
+              <circle cx={peakPt.x} cy={peakPt.y} r="1.5" fill="#f59e0b" />
+              <circle cx={sparkEndPt.x} cy={sparkEndPt.y} r="3" fill={sparkClr} opacity="0.25" />
+              <circle cx={sparkEndPt.x} cy={sparkEndPt.y} r="1.5" fill={sparkClr} />
             </svg>
           </div>
         )}
@@ -347,7 +372,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
             <div className="absolute inset-0 bg-deep/95 backdrop-blur-sm" onClick={() => setShowCurve(false)} />
             <div className="relative flex-1 flex flex-col p-4 pt-10 max-w-lg md:max-w-3xl mx-auto w-full">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-bold text-white">Equity Curve</h2>
+                <h2 className="text-lg font-bold text-white">Profit & Loss Curve</h2>
                 <button onClick={() => setShowCurve(false)} className="text-slate-500 hover:text-white transition-colors p-1">
                   <X className="w-5 h-5" />
                 </button>
