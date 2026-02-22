@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { fmt } from '../math/format.js';
 import { rN, getPhaseName, getPhase } from '../math/risk.js';
 import { E0, GPS_Z } from '../math/constants.js';
-import TradeEntry from './TradeEntry.jsx';
 import EquityCurve from './EquityCurve.jsx';
 import GPSJourney from './GPSJourney.jsx';
 
@@ -56,8 +55,7 @@ function RiskGauge({ riskPct, riskDol, phase }) {
   );
 }
 
-export default function Home({ trades, settings }) {
-  const [showEntry, setShowEntry] = useState(false);
+export default function Home({ trades, settings, onOpenTradeEntry }) {
   const [showCurve, setShowCurve] = useState(false);
   const [showPhaseInfo, setShowPhaseInfo] = useState(false);
   const [showJourney, setShowJourney] = useState(false);
@@ -179,7 +177,7 @@ export default function Home({ trades, settings }) {
       <div className="space-y-4">
         {/* 3. LOG TRADE CTA */}
         <button
-          onClick={() => setShowEntry(true)}
+          onClick={() => onOpenTradeEntry()}
           className="w-full py-4 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-bold text-base rounded-xl active:scale-[0.98] hover:from-emerald-500 hover:to-emerald-400 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
         >
           <TrendingUp className="w-5 h-5" /> Log Trade
@@ -330,14 +328,6 @@ export default function Home({ trades, settings }) {
         )}
       </AnimatePresence>
 
-      {/* Trade Entry Modal */}
-      <TradeEntry
-        open={showEntry}
-        onClose={() => setShowEntry(false)}
-        onSave={trades.addTrade}
-        currentEquity={eq}
-        nextRisk={trades.nextRisk}
-      />
     </div>
   );
 }

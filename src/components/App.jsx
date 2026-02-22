@@ -1,5 +1,5 @@
 import React, { useState, Component } from 'react';
-import { Home as HomeIcon, List, BarChart3, Settings as SettingsIcon, AlertTriangle, Shield } from 'lucide-react';
+import { Home as HomeIcon, List, BarChart3, Settings as SettingsIcon, AlertTriangle, Shield, Plus } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSettings } from '../store/settings.js';
 import { useTrades } from '../store/trades.js';
@@ -8,6 +8,7 @@ import Trades from './Trades.jsx';
 import Analysis from './Analysis.jsx';
 import Settings from './Settings.jsx';
 import Celebration from './Celebration.jsx';
+import TradeEntry from './TradeEntry.jsx';
 
 class ErrorBoundary extends Component {
   state = { error: null };
@@ -40,6 +41,17 @@ export default function App() {
   const [tab, setTab] = useState('home');
   const settings = useSettings();
   const trades = useTrades(settings.initialEquity);
+  const [showTradeEntry, setShowTradeEntry] = useState(false);
+  const [editTradeData, setEditTradeData] = useState(null);
+
+  const openTradeEntry = (trade = null) => {
+    setEditTradeData(trade);
+    setShowTradeEntry(true);
+  };
+  const closeTradeEntry = () => {
+    setShowTradeEntry(false);
+    setEditTradeData(null);
+  };
 
   return (
     <div className="min-h-screen bg-deep text-slate-200 flex flex-col md:flex-row">
@@ -85,6 +97,13 @@ export default function App() {
             </button>
           );
         })}
+        <button
+          onClick={() => openTradeEntry()}
+          className="mt-auto flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-500 text-white hover:bg-emerald-400 transition-all active:scale-95 shadow-lg shadow-emerald-500/25"
+          title="Log Trade"
+        >
+          <Plus className="w-5 h-5" strokeWidth={2.5} />
+        </button>
       </aside>
 
       {/* Main content area */}
@@ -98,8 +117,8 @@ export default function App() {
             transition={{ duration: 0.06 }}
           >
             <ErrorBoundary key={tab}>
-              {tab === 'home' && <Home trades={trades} settings={settings} />}
-              {tab === 'trades' && <Trades trades={trades} settings={settings} />}
+              {tab === 'home' && <Home trades={trades} settings={settings} onOpenTradeEntry={openTradeEntry} />}
+              {tab === 'trades' && <Trades trades={trades} settings={settings} onOpenTradeEntry={openTradeEntry} />}
               {tab === 'analysis' && <Analysis trades={trades} settings={settings} />}
               {tab === 'settings' && <Settings settings={settings} trades={trades} />}
             </ErrorBoundary>
@@ -107,33 +126,52 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {/* Mobile Bottom tab bar (hidden on md+) */}
+      {/* Mobile Bottom tab bar with center FAB (hidden on md+) */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 bg-deep/95 backdrop-blur-lg border-t border-line z-50 safe-bottom">
         <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
-          {TABS.map(t => {
+          {TABS.map((t, i) => {
             const Icon = t.icon;
             const active = tab === t.id;
             return (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={'flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors min-w-[64px] ' +
-                  (active ? 'text-emerald-400' : 'text-slate-500 active:text-slate-300')}
-              >
-                <Icon className={'w-5 h-5 transition-transform ' + (active ? 'scale-110' : '')} strokeWidth={active ? 2.5 : 1.5} />
-                <span className={'text-xs font-medium ' + (active ? 'font-semibold' : '')}>{t.label}</span>
-                {active && (
-                  <motion.div
-                    layoutId="bottomTab"
-                    className="absolute bottom-1 w-8 h-0.5 bg-emerald-500 rounded-full"
-                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                  />
+              <React.Fragment key={t.id}>
+                {i === 2 && (
+                  <button onClick={() => openTradeEntry()} className="relative -mt-5">
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/25 active:scale-95 transition-transform">
+                      <Plus className="w-7 h-7 text-white" strokeWidth={2.5} />
+                    </div>
+                  </button>
                 )}
-              </button>
+                <button
+                  onClick={() => setTab(t.id)}
+                  className={'flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-colors min-w-[48px] ' +
+                    (active ? 'text-emerald-400' : 'text-slate-500 active:text-slate-300')}
+                >
+                  <Icon className={'w-5 h-5 transition-transform ' + (active ? 'scale-110' : '')} strokeWidth={active ? 2.5 : 1.5} />
+                  <span className={'text-[10px] font-medium ' + (active ? 'font-semibold' : '')}>{t.label}</span>
+                  {active && (
+                    <motion.div
+                      layoutId="bottomTab"
+                      className="absolute bottom-1 w-6 h-0.5 bg-emerald-500 rounded-full"
+                      transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                    />
+                  )}
+                </button>
+              </React.Fragment>
             );
           })}
         </div>
       </nav>
+
+      {/* App-Level Trade Entry */}
+      <TradeEntry
+        open={showTradeEntry}
+        onClose={closeTradeEntry}
+        onSave={trades.addTrade}
+        onEdit={trades.editTrade}
+        editData={editTradeData}
+        currentEquity={trades.currentEquity}
+        nextRisk={trades.nextRisk}
+      />
 
       {/* Milestone Celebration Overlay */}
       <AnimatePresence>

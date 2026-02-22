@@ -3,11 +3,7 @@ import { TrendingUp, TrendingDown, Download, Upload, Trash2, Undo2, Plus, List, 
 import { motion, AnimatePresence } from 'framer-motion';
 import { fmt } from '../math/format.js';
 import { getPhaseName } from '../math/risk.js';
-import TradeEntry from './TradeEntry.jsx';
-
-export default function Trades({ trades, settings }) {
-  const [showEntry, setShowEntry] = useState(false);
-  const [editData, setEditData] = useState(null);
+export default function Trades({ trades, settings, onOpenTradeEntry }) {
   const [showConfirm, setShowConfirm] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
@@ -38,8 +34,7 @@ export default function Trades({ trades, settings }) {
   };
 
   const openEdit = (trade) => {
-    setEditData(trade);
-    setShowEntry(true);
+    onOpenTradeEntry(trade);
     setExpandedId(null);
   };
 
@@ -47,11 +42,6 @@ export default function Trades({ trades, settings }) {
     trades.deleteTrade(id);
     setDeleteConfirm(null);
     setExpandedId(null);
-  };
-
-  const handleCloseEntry = () => {
-    setShowEntry(false);
-    setEditData(null);
   };
 
   const eq = trades.currentEquity;
@@ -63,7 +53,7 @@ export default function Trades({ trades, settings }) {
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-bold text-white">Trade History</h2>
         <button
-          onClick={() => { setEditData(null); setShowEntry(true); }}
+          onClick={() => onOpenTradeEntry()}
           className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500 text-white text-sm font-semibold rounded-xl active:scale-[0.97] hover:bg-emerald-400 transition-all shrink-0"
         >
           <Plus className="w-4 h-4" /> Log
@@ -362,16 +352,6 @@ export default function Trades({ trades, settings }) {
         )}
       </div>
 
-      {/* Trade Entry Modal */}
-      <TradeEntry
-        open={showEntry}
-        onClose={handleCloseEntry}
-        onSave={trades.addTrade}
-        onEdit={trades.editTrade}
-        editData={editData}
-        currentEquity={eq}
-        nextRisk={trades.nextRisk}
-      />
     </div>
   );
 }
