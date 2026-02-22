@@ -17,13 +17,15 @@ import {
 } from '../math/constants.js';
 import MetricCard, { Tip, ChartLegend } from './MetricCard.jsx';
 import GPSJourney from './GPSJourney.jsx';
+import EquityCurve from './EquityCurve.jsx';
 
 const TABS = [
+  { id: 'equity', l: 'Equity', ic: TrendingUp },
   { id: 'milestones', l: 'Milestones', ic: Zap },
   { id: 'fullmap', l: 'Matrix', ic: Eye },
   { id: 'curves', l: 'Curves', ic: Activity },
   { id: 'stress', l: 'Stress', ic: TrendingDown },
-  { id: 'growth', l: 'Growth', ic: TrendingUp },
+  { id: 'growth', l: 'Growth', ic: Rocket },
   { id: 'compare', l: 'Compare', ic: Shield },
 ];
 
@@ -33,7 +35,7 @@ export default function Analysis({ trades, settings }) {
   const [simEq, setSimEq] = useState(realEq);
   const [eqInput, setEqInput] = useState(fmt(realEq));
   const [isEqFocused, setIsEqFocused] = useState(false);
-  const [tab, setTab] = useState('milestones');
+  const [tab, setTab] = useState('equity');
   const [simSeed, setSimSeed] = useState(555);
 
   const eq = useReal ? realEq : simEq;
@@ -181,6 +183,38 @@ export default function Analysis({ trades, settings }) {
       <div className={'bg-slate-900/60 rounded-2xl border border-slate-800 p-4 relative transition-all duration-200 ' + (isCalc ? 'opacity-40 blur-sm' : '')}>
         <AnimatePresence mode="wait">
           <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}>
+
+            {tab === 'equity' && (
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-base font-bold text-white">Equity Curve</h3>
+                  <p className="text-xs text-slate-500 mt-1">Portfolio value across all trades.</p>
+                </div>
+                <EquityCurve trades={trades} height={280} />
+                {trades.trades.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-slate-950 rounded-xl p-3 text-center border border-slate-800">
+                      <div className={'text-lg font-bold font-mono tabular-nums ' + (trades.stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                        {trades.stats.totalPnl >= 0 ? '+$' : '-$'}{fmt(Math.abs(trades.stats.totalPnl))}
+                      </div>
+                      <div className="text-xs text-slate-600 mt-0.5">Total P&L</div>
+                    </div>
+                    <div className="bg-slate-950 rounded-xl p-3 text-center border border-slate-800">
+                      <div className="text-lg font-bold font-mono tabular-nums text-amber-400">
+                        ${fmt(trades.peakEquity)}
+                      </div>
+                      <div className="text-xs text-slate-600 mt-0.5">Peak</div>
+                    </div>
+                    <div className="bg-slate-950 rounded-xl p-3 text-center border border-slate-800">
+                      <div className="text-lg font-bold font-mono tabular-nums text-rose-400">
+                        {trades.stats.maxDrawdownPct > 0 ? '-' + trades.stats.maxDrawdownPct.toFixed(1) + '%' : '--'}
+                      </div>
+                      <div className="text-xs text-slate-600 mt-0.5">Max DD</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {tab === 'milestones' && (
               <div className="space-y-4">

@@ -1,14 +1,16 @@
 import React, { useState, useMemo } from 'react';
-import { Shield, Target, Flame, Zap, TrendingUp, TrendingDown, Trophy } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Shield, Target, Flame, Zap, TrendingUp, TrendingDown, Trophy, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { fmt } from '../math/format.js';
 import { rN, getPhaseName, getPhase } from '../math/risk.js';
 import { E0 } from '../math/constants.js';
 import GPSJourney from './GPSJourney.jsx';
 import TradeEntry from './TradeEntry.jsx';
+import EquityCurve from './EquityCurve.jsx';
 
 export default function Home({ trades, settings }) {
   const [showEntry, setShowEntry] = useState(false);
+  const [showCurve, setShowCurve] = useState(false);
 
   const eq = trades.currentEquity;
   const phase = getPhase(eq);
@@ -69,20 +71,23 @@ export default function Home({ trades, settings }) {
           ${fmt(eq)}
         </motion.div>
 
-        {/* Sparkline with area fill */}
+        {/* Sparkline with area fill (tap to expand) */}
         {sparkData.length > 1 && (
-          <svg className="w-full h-12 mt-3" viewBox={`0 0 ${sparkData.length - 1} 42`} preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={sparkClr} stopOpacity=".3" />
-                <stop offset="100%" stopColor={sparkClr} stopOpacity="0" />
-              </linearGradient>
-            </defs>
-            <polygon points={sparkArea} fill="url(#sparkFill)" />
-            <polyline fill="none" stroke={sparkClr} strokeWidth="1.5"
-              strokeLinecap="round" strokeLinejoin="round" points={sparkPts} />
-            <circle cx={sparkData.length - 1} cy={sparkEndY} r="2" fill={sparkClr} />
-          </svg>
+          <div className="cursor-pointer group" onClick={() => setShowCurve(true)}>
+            <svg className="w-full h-12 mt-3" viewBox={`0 0 ${sparkData.length - 1} 42`} preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={sparkClr} stopOpacity=".3" />
+                  <stop offset="100%" stopColor={sparkClr} stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <polygon points={sparkArea} fill="url(#sparkFill)" />
+              <polyline fill="none" stroke={sparkClr} strokeWidth="1.5"
+                strokeLinecap="round" strokeLinejoin="round" points={sparkPts} />
+              <circle cx={sparkData.length - 1} cy={sparkEndY} r="2" fill={sparkClr} />
+            </svg>
+            <div className="text-center text-[10px] text-slate-600 group-hover:text-slate-400 transition-colors">Tap to expand</div>
+          </div>
         )}
 
         {/* Quick stats row */}
@@ -179,6 +184,44 @@ export default function Home({ trades, settings }) {
           </div>
         </div>
       )}
+
+      {/* Equity Curve Overlay */}
+      <AnimatePresence>
+        {showCurve && (
+          <motion.div
+            className="fixed inset-0 z-[55] flex flex-col"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+          >
+            <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-sm" onClick={() => setShowCurve(false)} />
+            <div className="relative flex-1 flex flex-col p-4 pt-10 max-w-lg mx-auto w-full">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold text-white">Equity Curve</h2>
+                <button onClick={() => setShowCurve(false)} className="text-slate-500 hover:text-white transition-colors p-1">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <EquityCurve trades={trades} height={320} />
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <div className="bg-slate-900/70 rounded-xl p-3 text-center border border-slate-800">
+                  <div className={'text-base font-bold font-mono tabular-nums ' + (trades.stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                    {trades.stats.totalPnl >= 0 ? '+$' : '-$'}{fmt(Math.abs(trades.stats.totalPnl))}
+                  </div>
+                  <div className="text-xs text-slate-600">Total P&L</div>
+                </div>
+                <div className="bg-slate-900/70 rounded-xl p-3 text-center border border-slate-800">
+                  <div className="text-base font-bold font-mono tabular-nums text-white">{trades.stats.totalTrades}</div>
+                  <div className="text-xs text-slate-600">Trades</div>
+                </div>
+                <div className="bg-slate-900/70 rounded-xl p-3 text-center border border-slate-800">
+                  <div className="text-base font-bold font-mono tabular-nums text-amber-400">${fmt(trades.peakEquity)}</div>
+                  <div className="text-xs text-slate-600">Peak</div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Trade Entry Modal */}
       <TradeEntry
