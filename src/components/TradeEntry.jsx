@@ -52,6 +52,8 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
     setAmount(val);
   };
 
+  const amountSize = amount.length <= 2 ? 'text-2xl' : amount.length <= 4 ? 'text-3xl' : 'text-4xl';
+
   const previewEquity = amount
     ? Math.max(1, currentEquity + (isWin ? 1 : -1) * parseFloat(amount.replace(/,/g, '') || '0'))
     : currentEquity;
@@ -134,7 +136,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                     value={amount}
                     onChange={handleAmountChange}
                     placeholder="0"
-                    className="w-full bg-deep border border-line rounded-xl text-2xl font-bold font-mono text-white py-4 pl-14 pr-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all tabular-nums placeholder:text-slate-700"
+                    className={`w-full bg-deep border border-line rounded-xl ${amountSize} font-bold font-mono text-white py-4 pl-14 pr-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all duration-150 tabular-nums placeholder:text-slate-700`}
                   />
                 </div>
               </div>
