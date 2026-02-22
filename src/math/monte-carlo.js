@@ -44,14 +44,21 @@ export const computeHeavyMetrics = (dEq, dWr, dRr) => {
 
   const fp = sim(rF), op = sim(rO), np = sim(rN);
 
-  // Median trajectory chart (sampled every 2 trades)
+  // Trajectory chart with confidence bands (sampled every 2 trades)
   const chart = [];
   for (let t = 0; t <= NT; t += 2) {
+    const nVals = np.map(p => p[t]);
+    const np10 = lg(ptile(nVals, 0.1)), np25v = lg(ptile(nVals, 0.25));
+    const np75v = lg(ptile(nVals, 0.75)), np90 = lg(ptile(nVals, 0.9));
     chart.push({
       t,
       fl: lg(ptile(fp.map(p => p[t]), 0.5)),
       ol: lg(ptile(op.map(p => p[t]), 0.5)),
-      nl: lg(ptile(np.map(p => p[t]), 0.5)),
+      nl: lg(ptile(nVals, 0.5)),
+      bandBase: np10,
+      band1090: np90 - np10,
+      bandBase25: np25v,
+      band2575: np75v - np25v,
     });
   }
 

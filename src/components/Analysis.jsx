@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useDeferredValue } from 'react';
 import {
-  LineChart, Line, AreaChart, Area, BarChart, Bar, Cell,
+  LineChart, Line, AreaChart, Area, BarChart, Bar, Cell, ComposedChart,
   XAxis, YAxis, CartesianGrid,
   Tooltip as RTooltip, ResponsiveContainer, ReferenceLine
 } from 'recharts';
@@ -118,7 +118,7 @@ export default function Analysis({ trades, settings }) {
   }, [dEq]);
 
   const [gYT, gYD] = useMemo(() => {
-    const all = hm.chart.flatMap(d => [d.fl, d.ol, d.nl]);
+    const all = hm.chart.flatMap(d => [d.fl, d.nl, d.bandBase, d.bandBase + d.band1090]);
     const mn = Math.floor(Math.min(...all)), mx = Math.ceil(Math.max(...all));
     const ticks = [];
     for (let d = mn; d <= mx + 1; d++) [1, 3].forEach(f => {
@@ -468,22 +468,34 @@ export default function Analysis({ trades, settings }) {
                 )}
 
                 {/* Terminal Wealth */}
-                <SectionDivider title="Terminal Wealth" subtitle="Median equity, 500 paths, 100 trades (log scale)." />
+                <SectionDivider title="Terminal Wealth" subtitle="Median equity with confidence bands, 500 paths, 100 trades." />
                 <div className="h-52">
                   <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                    <LineChart data={hm.chart} margin={cm}>
+                    <ComposedChart data={hm.chart} margin={cm}>
+                      <defs>
+                        <linearGradient id="gBand90" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10b981" stopOpacity={0.08} /><stop offset="100%" stopColor="#10b981" stopOpacity={0.03} /></linearGradient>
+                        <linearGradient id="gBand75" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10b981" stopOpacity={0.18} /><stop offset="100%" stopColor="#10b981" stopOpacity={0.06} /></linearGradient>
+                      </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                       <XAxis dataKey="t" stroke="#475569" tick={AX} axisLine={false} tickLine={false} dy={10} />
                       <YAxis type="number" domain={gYD} ticks={gYT} tickFormatter={v => fmt(unlg(v))} stroke="#475569" tick={AX} axisLine={false} tickLine={false} />
-                      <RTooltip contentStyle={TT} formatter={(v, nm) => [fmt(unlg(v)), { fl: 'Fixed 33%', ol: '\u2153 Power', nl: '\u2154 Power' }[nm]]} labelFormatter={v => 'Trade #' + v} isAnimationActive={false} cursor={{ stroke: '#475569', strokeDasharray: '4 4' }} />
+                      <RTooltip contentStyle={TT} formatter={(v, nm) => { const lb = { fl: 'Fixed 33%', nl: '\u2154 Power (median)' }; return lb[nm] ? [fmt(unlg(v)), lb[nm]] : null; }} labelFormatter={v => 'Trade #' + v} isAnimationActive={false} cursor={{ stroke: '#475569', strokeDasharray: '4 4' }} />
                       <ReferenceLine y={lg(dEq)} stroke="#475569" strokeDasharray="2 4" strokeOpacity={0.3} />
-                      <Line type="monotone" dataKey="fl" stroke="#f59e0b" strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false} />
-                      <Line type="monotone" dataKey="ol" stroke="#3b82f6" strokeWidth={2} dot={false} isAnimationActive={false} />
+                      <Area type="monotone" dataKey="bandBase" stackId="outer" fill="transparent" stroke="none" isAnimationActive={false} dot={false} activeDot={false} />
+                      <Area type="monotone" dataKey="band1090" stackId="outer" fill="url(#gBand90)" stroke="none" isAnimationActive={false} dot={false} activeDot={false} />
+                      <Area type="monotone" dataKey="bandBase25" stackId="inner" fill="transparent" stroke="none" isAnimationActive={false} dot={false} activeDot={false} />
+                      <Area type="monotone" dataKey="band2575" stackId="inner" fill="url(#gBand75)" stroke="none" isAnimationActive={false} dot={false} activeDot={false} />
+                      <Line type="monotone" dataKey="fl" stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="6 4" dot={false} isAnimationActive={false} />
                       <Line type="monotone" dataKey="nl" stroke="#10b981" strokeWidth={2.5} dot={false} isAnimationActive={false} activeDot={{ r: 4, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} />
-                    </LineChart>
+                    </ComposedChart>
                   </ResponsiveContainer>
                 </div>
-                <ChartLegend />
+                <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs mt-2">
+                  <span className="flex items-center gap-1.5"><span className="w-4 h-2 rounded-sm bg-emerald-500/10 border border-emerald-500/20" />P10{'\u2013'}P90</span>
+                  <span className="flex items-center gap-1.5"><span className="w-4 h-2 rounded-sm bg-emerald-500/20 border border-emerald-500/30" />P25{'\u2013'}P75</span>
+                  <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-emerald-500" />{'\u2154'} Power median</span>
+                  <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-amber-500 border-dashed" style={{ borderTopWidth: 2, height: 0 }} />Fixed 33%</span>
+                </div>
 
                 <div className={'rounded-xl p-4 border flex flex-col justify-center ' + (cost > 0 ? 'bg-amber-500/5 border-amber-500/20' : 'bg-emerald-500/5 border-emerald-500/20')}>
                   {cost > 0 ? (<>
