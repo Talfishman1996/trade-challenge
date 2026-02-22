@@ -107,7 +107,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
   const stats = [
     { l: 'Trades', v: trades.stats.totalTrades, c: 'text-white' },
     { l: 'Win Rate', v: trades.stats.totalTrades > 0 ? trades.stats.winRate.toFixed(0) + '%' : '--',
-      c: trades.stats.winRate >= 60 ? 'text-amber-300' : trades.stats.winRate >= 50 ? 'text-amber-400' : trades.stats.totalTrades > 0 ? 'text-rose-400' : 'text-white',
+      c: trades.stats.winRate >= 60 ? 'text-amber-300' : trades.stats.totalTrades > 0 ? 'text-rose-400' : 'text-white',
       glow: trades.stats.winRate >= 60 },
     {
       l: 'Streak',
@@ -294,31 +294,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
           </div>
         )}
 
-        {/* 6. MILESTONE PROGRESS (slim) */}
-      {nextMilestone && (
-        <div className="bg-surface rounded-xl p-3 border border-line/50">
-          <div className="flex justify-between items-center mb-2">
-            <div className="flex items-center gap-1.5">
-              <Trophy className="w-3.5 h-3.5 text-amber-400" />
-              <span className="text-xs text-slate-400 font-medium">Next Milestone</span>
-            </div>
-            <span className="text-sm font-bold font-mono text-white">{nextMilestone.l}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-1.5 bg-elevated rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: Math.max(1, nextMilestone.progress) + '%' }}
-                transition={{ duration: 0.8, ease: 'easeOut' }}
-              />
-            </div>
-            <span className="text-xs text-slate-500 font-mono tabular-nums w-12 text-right">
-              {nextMilestone.progress.toFixed(1)}%
-            </span>
-          </div>
-        </div>
-      )}
+        {/* Next milestone is integrated into Summit Tracker below */}
       </div>
       </div>
       )}
