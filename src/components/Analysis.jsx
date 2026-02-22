@@ -21,14 +21,19 @@ import GPSJourney from './GPSJourney.jsx';
 import EquityCurve from './EquityCurve.jsx';
 
 const TABS = [
-  { id: 'equity', l: 'Equity', ic: TrendingUp },
-  { id: 'milestones', l: 'Milestones', ic: Zap },
-  { id: 'fullmap', l: 'Matrix', ic: Eye },
-  { id: 'curves', l: 'Curves', ic: Activity },
-  { id: 'stress', l: 'Stress', ic: TrendingDown },
-  { id: 'growth', l: 'Growth', ic: Rocket },
-  { id: 'compare', l: 'Compare', ic: Shield },
+  { id: 'performance', l: 'Performance', ic: TrendingUp },
+  { id: 'risk', l: 'Risk Model', ic: Shield },
+  { id: 'simulation', l: 'Simulation', ic: Rocket },
 ];
+
+function SectionDivider({ title, subtitle }) {
+  return (
+    <div className="pt-5 pb-2 border-t border-slate-800/60 mt-5">
+      <h3 className="text-sm font-bold text-white">{title}</h3>
+      {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+    </div>
+  );
+}
 
 export default function Analysis({ trades, settings }) {
   const realEq = trades.currentEquity;
@@ -36,7 +41,7 @@ export default function Analysis({ trades, settings }) {
   const [simEq, setSimEq] = useState(realEq);
   const [eqInput, setEqInput] = useState(fmt(realEq));
   const [isEqFocused, setIsEqFocused] = useState(false);
-  const [tab, setTab] = useState('equity');
+  const [tab, setTab] = useState('performance');
   const [simSeed, setSimSeed] = useState(555);
 
   const eq = useReal ? realEq : simEq;
@@ -109,7 +114,7 @@ export default function Analysis({ trades, settings }) {
   const cost = hm.term.f.m > 0 ? ((hm.term.f.m - hm.term.n.m) / hm.term.f.m * 100) : 0;
 
   return (
-    <div className="px-4 pt-4 pb-6 max-w-lg mx-auto space-y-4">
+    <div className="px-4 pt-4 md:pt-6 pb-6 max-w-lg md:max-w-4xl mx-auto space-y-4">
       {/* Equity Control */}
       <div className="bg-slate-900/70 rounded-2xl p-4 border border-slate-800 space-y-3">
         <div className="flex items-center justify-between">
@@ -166,14 +171,14 @@ export default function Analysis({ trades, settings }) {
         </MetricCard>
       </div>
 
-      {/* Analysis Tabs */}
-      <div className="flex gap-1 overflow-x-auto pb-px no-sb border-b border-slate-800/80 relative">
+      {/* 3 Analysis Tabs */}
+      <div className="flex gap-1 pb-px border-b border-slate-800/80">
         {TABS.map(t => {
           const Ic = t.ic;
           const on = tab === t.id;
           return (
-            <button key={t.id} onClick={() => setTab(t.id)} className={'flex items-center gap-1 px-3 py-2 text-xs font-medium transition-colors whitespace-nowrap relative rounded-t-lg ' + (on ? 'text-emerald-400 bg-slate-900/60' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900/30')}>
-              <Ic className="w-3 h-3" /> {t.l}
+            <button key={t.id} onClick={() => setTab(t.id)} className={'flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-semibold transition-colors whitespace-nowrap relative rounded-t-lg ' + (on ? 'text-emerald-400 bg-slate-900/60' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900/30')}>
+              <Ic className="w-3.5 h-3.5" /> {t.l}
               {on && <motion.div layoutId="analysisTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" transition={{ type: 'spring', stiffness: 500, damping: 35 }} />}
             </button>
           );
@@ -185,7 +190,8 @@ export default function Analysis({ trades, settings }) {
         <AnimatePresence mode="wait">
           <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}>
 
-            {tab === 'equity' && (
+            {/* ═══════════════ PERFORMANCE TAB ═══════════════ */}
+            {tab === 'performance' && (
               <div className="space-y-4">
                 <div>
                   <h3 className="text-base font-bold text-white">Equity Curve</h3>
@@ -239,7 +245,7 @@ export default function Analysis({ trades, settings }) {
                       <h3 className="text-sm font-bold text-white mb-1">R-Multiple Distribution</h3>
                       <p className="text-xs text-slate-500 mb-3">Outcome distribution in risk units.</p>
                       <div className="h-40">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                           <BarChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                             <XAxis dataKey="range" tick={{ fill: '#64748b', fontSize: 9 }} axisLine={false} tickLine={false} />
                             <YAxis tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
@@ -260,8 +266,134 @@ export default function Analysis({ trades, settings }) {
               </div>
             )}
 
-            {tab === 'milestones' && (
+            {/* ═══════════════ RISK MODEL TAB ═══════════════ */}
+            {tab === 'risk' && (
+              <div className="space-y-0">
+                {/* Matrix */}
+                <div>
+                  <h3 className="text-base font-bold text-white">System Matrix</h3>
+                  <p className="text-xs text-slate-500 mt-1 mb-3">Risk parameters across every portfolio level.</p>
+                  <div className="overflow-x-auto -mx-4 px-4 rounded-xl">
+                    <table className="w-full text-xs font-mono whitespace-nowrap min-w-[500px]">
+                      <thead className="bg-slate-950 text-slate-400 border-b border-slate-800">
+                        <tr>
+                          <th className="py-2 px-2 text-left font-medium">Equity</th>
+                          <th className="py-2 px-2 text-right font-medium">Risk %</th>
+                          <th className="py-2 px-2 text-right font-medium">Risk $</th>
+                          <th className="py-2 px-2 text-right font-medium">Gain $</th>
+                          <th className="py-2 px-2 text-right font-medium">Ruin</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/30">{hm.fMap.map((m, i) => {
+                        const isA = Math.abs(dEq - m.v) < m.v * 0.08;
+                        const tc = m.ph === 'pre' ? 'text-amber-400' : m.ph === 'anchor' ? 'text-emerald-400' : 'text-cyan-400';
+                        const Ico = m.ph === 'pre' ? Flame : m.ph === 'anchor' ? Target : Shield;
+                        return (
+                          <tr key={m.v} onClick={() => { if (!useReal) { setSimEq(m.v); setEqInput(fmt(m.v)); } }} className={'transition-colors ' + (isA ? 'bg-emerald-500/10' : i % 2 ? 'bg-slate-800/15' : '') + (!useReal ? ' cursor-pointer hover:bg-slate-800/40' : '')} style={isA ? { boxShadow: 'inset 3px 0 0 #10b981' } : {}}>
+                            <td className={'py-2 px-2 font-semibold flex items-center gap-1.5 ' + tc}><Ico className="w-3 h-3" /> {m.l}</td>
+                            <td className={'py-2 px-2 text-right font-semibold ' + (m.r > K0 ? 'text-amber-400' : 'text-emerald-400')}>{(m.r * 100).toFixed(1)}%</td>
+                            <td className="py-2 px-2 text-right text-rose-400">{fmt(m.rd)}</td>
+                            <td className="py-2 px-2 text-right text-emerald-400">+{fmt(m.gd)}</td>
+                            <td className={'py-2 px-2 text-right font-bold ' + (m.ltw <= 3 ? 'text-rose-500' : m.ltw <= 10 ? 'text-amber-400' : 'text-slate-500')}>{m.ltw >= 200 ? '200+' : m.ltw}</td>
+                          </tr>
+                        );
+                      })}</tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Risk Curves */}
+                <SectionDivider title="Risk Curves" subtitle="How risk % and $ scale with equity." />
+                <div className="space-y-4">
+                  <div className="h-48">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                      <AreaChart data={curveData} margin={cm}>
+                        <defs><linearGradient id="gP" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10b981" stopOpacity={0.35} /><stop offset="100%" stopColor="#10b981" stopOpacity={0} /></linearGradient></defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                        <XAxis dataKey="lx" type="number" domain={[LOG_MIN, LOG_MAX]} ticks={LXT} tickFormatter={v => fmt(unlg(v))} stroke="#475569" tick={AX} axisLine={false} tickLine={false} dy={10} />
+                        <YAxis tickFormatter={v => v + '%'} stroke="#475569" tick={AX} domain={[0, 100]} axisLine={false} tickLine={false} />
+                        <RTooltip contentStyle={TT} formatter={v => [v.toFixed(1) + '%', 'Risk %']} labelFormatter={v => fmt(unlg(v))} isAnimationActive={false} cursor={{ stroke: '#475569', strokeDasharray: '4 4' }} />
+                        <ReferenceLine x={lg(dEq)} stroke="#94a3b8" strokeDasharray="4 4" label={{ value: 'You', position: 'top', fill: '#94a3b8', fontSize: 10 }} />
+                        <Area type="monotone" dataKey="cur" stroke="#10b981" fill="url(#gP)" strokeWidth={2.5} isAnimationActive={false} activeDot={{ r: 4, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="h-48">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                      <AreaChart data={curveData} margin={cm}>
+                        <defs><linearGradient id="gD" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.3} /><stop offset="100%" stopColor="#0ea5e9" stopOpacity={0} /></linearGradient></defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                        <XAxis dataKey="lx" type="number" domain={[LOG_MIN, LOG_MAX]} ticks={LXT} tickFormatter={v => fmt(unlg(v))} stroke="#475569" tick={AX} axisLine={false} tickLine={false} dy={10} />
+                        <YAxis tickFormatter={fmt} stroke="#475569" tick={AX} axisLine={false} tickLine={false} />
+                        <RTooltip contentStyle={TT} formatter={v => [fmt(v), 'Risk $']} labelFormatter={v => fmt(unlg(v))} isAnimationActive={false} cursor={{ stroke: '#475569', strokeDasharray: '4 4' }} />
+                        <ReferenceLine x={lg(dEq)} stroke="#94a3b8" strokeDasharray="4 4" />
+                        <Area type="monotone" dataKey="rdol" stroke="#0ea5e9" fill="url(#gD)" strokeWidth={2.5} isAnimationActive={false} activeDot={{ r: 4, fill: '#0ea5e9', stroke: '#fff', strokeWidth: 2 }} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Stress Test */}
+                <SectionDivider title="Stress Test" subtitle={'Consecutive losses from $' + fmt(dEq) + '.'} />
+                <div className="space-y-4">
+                  <div className="h-48">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                      <LineChart data={ddP} margin={cm}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                        <XAxis dataKey="n" stroke="#475569" tick={AX} axisLine={false} tickLine={false} dy={10} />
+                        <YAxis tickFormatter={v => '\u2212' + v.toFixed(0) + '%'} stroke="#475569" tick={AX} axisLine={false} tickLine={false} />
+                        <RTooltip contentStyle={TT} formatter={(v, nm) => ['\u2212' + v.toFixed(1) + '%', { fixed: 'Fixed 33%', old: '\u2153 Power', cur: '\u2154 Power' }[nm]]} labelFormatter={v => 'After ' + v + ' losses'} isAnimationActive={false} />
+                        <Line type="monotone" dataKey="fixed" stroke="#f59e0b" strokeWidth={2} strokeDasharray="6 4" dot={{ r: 3, fill: '#f59e0b', strokeWidth: 0 }} isAnimationActive={false} />
+                        <Line type="monotone" dataKey="old" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3, fill: '#3b82f6', strokeWidth: 0 }} isAnimationActive={false} />
+                        <Line type="monotone" dataKey="cur" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3, fill: '#10b981', strokeWidth: 0 }} isAnimationActive={false} activeDot={{ r: 5, stroke: '#fff', strokeWidth: 2 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <ChartLegend />
+                  <div className="grid grid-cols-2 gap-2">
+                    {[{ l: 'Fixed 33%', d: hm.mdd.f, c: 'text-amber-500', bg: 'bg-slate-900/60 border-slate-800' }, { l: '\u2154 Power', d: hm.mdd.n, c: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' }].map((x, i) => (
+                      <div key={i} className={'rounded-lg flex flex-col items-center justify-center p-3 border ' + x.bg}>
+                        <div className={'text-xs font-medium mb-1 ' + x.c}>{x.l}</div>
+                        <div className={'text-xl font-bold font-mono tabular-nums ' + x.c}>{'\u2212'}{(x.d.m * 100).toFixed(0)}%</div>
+                        <div className="text-xs text-slate-600 mt-0.5 font-mono tabular-nums">90th: {'\u2212'}{(x.d.p90 * 100).toFixed(0)}%</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Compare */}
+                <SectionDivider title="Model Comparison" subtitle="Three risk frameworks side by side." />
+                <div className="space-y-3">
+                  <div className="h-48">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                      <LineChart data={curveData} margin={cm}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                        <XAxis dataKey="lx" type="number" domain={[LOG_MIN, LOG_MAX]} ticks={LXT} tickFormatter={v => fmt(unlg(v))} stroke="#475569" tick={AX} axisLine={false} tickLine={false} dy={10} />
+                        <YAxis tickFormatter={v => v + '%'} stroke="#475569" tick={AX} domain={[0, 100]} axisLine={false} tickLine={false} />
+                        <RTooltip contentStyle={TT} formatter={(v, nm) => [v.toFixed(1) + '%', { fixed: 'Fixed 33%', old: '\u2153 Power', cur: '\u2154 Power' }[nm]]} labelFormatter={v => fmt(unlg(v))} isAnimationActive={false} cursor={{ stroke: '#475569', strokeDasharray: '4 4' }} />
+                        <ReferenceLine x={lg(dEq)} stroke="#475569" strokeDasharray="4 4" strokeOpacity={0.5} />
+                        <Line type="monotone" dataKey="fixed" stroke="#f59e0b" strokeWidth={2} dot={false} strokeDasharray="6 4" isAnimationActive={false} />
+                        <Line type="monotone" dataKey="old" stroke="#3b82f6" strokeWidth={2} dot={false} isAnimationActive={false} />
+                        <Line type="monotone" dataKey="cur" stroke="#10b981" strokeWidth={2.5} dot={false} isAnimationActive={false} activeDot={{ r: 4, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <ChartLegend />
+                </div>
+              </div>
+            )}
+
+            {/* ═══════════════ SIMULATION TAB ═══════════════ */}
+            {tab === 'simulation' && (
               <div className="space-y-4">
+                {/* GPS Journey */}
+                {dEq < 110000 && (
+                  <div className="flex justify-center">
+                    <GPSJourney equity={dEq} compact={false} />
+                  </div>
+                )}
+
+                {/* Milestone Roadmap */}
                 <div className="flex flex-wrap items-end justify-between gap-2">
                   <div>
                     <h3 className="text-base font-bold text-white">Milestone Roadmap</h3>
@@ -288,13 +420,6 @@ export default function Analysis({ trades, settings }) {
                     </div>
                   </div>
 
-                  {/* GPS funnel */}
-                  {dEq < 110000 && (
-                    <div className="flex justify-center">
-                      <GPSJourney equity={dEq} compact={false} />
-                    </div>
-                  )}
-
                   {/* Other milestones */}
                   {msF.length > 1 && (
                     <div className="space-y-2">{msF.slice(1).map(m => (
@@ -309,238 +434,39 @@ export default function Analysis({ trades, settings }) {
                       </div>
                     ))}</div>
                   )}
-
-                  <p className="text-xs text-slate-600 text-center font-mono">500 paths {'\u00D7'} 400 trades {'\u00B7'} Seed #{simSeed}</p>
                 </>) : (
                   <div className="text-center py-10"><div className="text-4xl mb-3">{'\uD83C\uDFC6'}</div><div className="text-lg font-bold text-emerald-400 mb-1">All Milestones Achieved</div><p className="text-xs text-slate-500">Portfolio has surpassed every tracked milestone.</p></div>
                 )}
-              </div>
-            )}
 
-            {tab === 'fullmap' && (
-              <div className="space-y-4">
-                <div><h3 className="text-base font-bold text-white">Full System Matrix</h3><p className="text-xs text-slate-500 mt-1">Risk parameters across every portfolio level.</p></div>
-                <div className="overflow-x-auto -mx-4 px-4 rounded-xl">
-                  <table className="w-full text-xs font-mono whitespace-nowrap min-w-[500px]">
-                    <thead className="bg-slate-950 text-slate-400 border-b border-slate-800">
-                      <tr>
-                        <th className="py-2 px-2 text-left font-medium">Equity</th>
-                        <th className="py-2 px-2 text-right font-medium">Risk %</th>
-                        <th className="py-2 px-2 text-right font-medium">Risk $</th>
-                        <th className="py-2 px-2 text-right font-medium">Gain $</th>
-                        <th className="py-2 px-2 text-right font-medium">3-Loss</th>
-                        <th className="py-2 px-2 text-right font-medium">Geo</th>
-                        <th className="py-2 px-2 text-right font-medium">Ruin</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/30">{hm.fMap.map((m, i) => {
-                      const isA = Math.abs(dEq - m.v) < m.v * 0.08;
-                      const tc = m.ph === 'pre' ? 'text-amber-400' : m.ph === 'anchor' ? 'text-emerald-400' : 'text-cyan-400';
-                      const Ico = m.ph === 'pre' ? Flame : m.ph === 'anchor' ? Target : Shield;
-                      return (
-                        <tr key={m.v} onClick={() => { if (!useReal) { setSimEq(m.v); setEqInput(fmt(m.v)); } }} className={'transition-colors ' + (isA ? 'bg-emerald-500/10' : i % 2 ? 'bg-slate-800/15' : '') + (!useReal ? ' cursor-pointer hover:bg-slate-800/40' : '')} style={isA ? { boxShadow: 'inset 3px 0 0 #10b981' } : {}}>
-                          <td className={'py-2 px-2 font-semibold flex items-center gap-1.5 ' + tc}><Ico className="w-3 h-3" /> {m.l}</td>
-                          <td className={'py-2 px-2 text-right font-semibold ' + (m.r > K0 ? 'text-amber-400' : 'text-emerald-400')}>{(m.r * 100).toFixed(1)}%</td>
-                          <td className="py-2 px-2 text-right text-rose-400">{fmt(m.rd)}</td>
-                          <td className="py-2 px-2 text-right text-emerald-400">+{fmt(m.gd)}</td>
-                          <td className="py-2 px-2 text-right">{m.e3l < 100 ? <span className="text-rose-500 font-bold">WIPE</span> : <span className="text-slate-400">{'\u2212'}{m.dd3.toFixed(0)}%</span>}</td>
-                          <td className={'py-2 px-2 text-right font-semibold ' + (m.g < 0 ? 'text-rose-400' : 'text-emerald-400')}>{fmtGeo(m.g)}</td>
-                          <td className={'py-2 px-2 text-right font-bold ' + (m.ltw <= 3 ? 'text-rose-500' : m.ltw <= 10 ? 'text-amber-400' : 'text-slate-500')}>{m.ltw >= 200 ? '200+' : m.ltw}</td>
-                        </tr>
-                      );
-                    })}</tbody>
-                  </table>
+                {/* Terminal Wealth */}
+                <SectionDivider title="Terminal Wealth" subtitle="Median equity, 500 paths, 100 trades (log scale)." />
+                <div className="h-52">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                    <LineChart data={hm.chart} margin={cm}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                      <XAxis dataKey="t" stroke="#475569" tick={AX} axisLine={false} tickLine={false} dy={10} />
+                      <YAxis type="number" domain={gYD} ticks={gYT} tickFormatter={v => fmt(unlg(v))} stroke="#475569" tick={AX} axisLine={false} tickLine={false} />
+                      <RTooltip contentStyle={TT} formatter={(v, nm) => [fmt(unlg(v)), { fl: 'Fixed 33%', ol: '\u2153 Power', nl: '\u2154 Power' }[nm]]} labelFormatter={v => 'Trade #' + v} isAnimationActive={false} cursor={{ stroke: '#475569', strokeDasharray: '4 4' }} />
+                      <ReferenceLine y={lg(dEq)} stroke="#475569" strokeDasharray="2 4" strokeOpacity={0.3} />
+                      <Line type="monotone" dataKey="fl" stroke="#f59e0b" strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false} />
+                      <Line type="monotone" dataKey="ol" stroke="#3b82f6" strokeWidth={2} dot={false} isAnimationActive={false} />
+                      <Line type="monotone" dataKey="nl" stroke="#10b981" strokeWidth={2.5} dot={false} isAnimationActive={false} activeDot={{ r: 4, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
-              </div>
-            )}
+                <ChartLegend />
 
-            {tab === 'curves' && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-base font-bold text-white">Percentage Risk Decay</h3>
-                  <p className="text-xs text-slate-500 mt-1 mb-3">Fraction of capital exposed collapses as portfolio scales.</p>
-                  <div className="h-56">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={curveData} margin={cm}>
-                        <defs><linearGradient id="gP" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10b981" stopOpacity={0.35} /><stop offset="100%" stopColor="#10b981" stopOpacity={0} /></linearGradient></defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                        <XAxis dataKey="lx" type="number" domain={[LOG_MIN, LOG_MAX]} ticks={LXT} tickFormatter={v => fmt(unlg(v))} stroke="#475569" tick={AX} axisLine={false} tickLine={false} dy={10} />
-                        <YAxis tickFormatter={v => v + '%'} stroke="#475569" tick={AX} domain={[0, 100]} axisLine={false} tickLine={false} />
-                        <RTooltip contentStyle={TT} formatter={v => [v.toFixed(1) + '%', 'Risk %']} labelFormatter={v => fmt(unlg(v))} isAnimationActive={false} cursor={{ stroke: '#475569', strokeDasharray: '4 4' }} />
-                        <ReferenceLine x={lg(dEq)} stroke="#94a3b8" strokeDasharray="4 4" label={{ value: 'You', position: 'top', fill: '#94a3b8', fontSize: 10 }} />
-                        <ReferenceLine x={lg(E0)} stroke="#f59e0b" strokeDasharray="4 4" strokeOpacity={0.5} />
-                        <Area type="monotone" dataKey="cur" stroke="#10b981" fill="url(#gP)" strokeWidth={2.5} isAnimationActive={false} activeDot={{ r: 4, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-                <div className="pt-4 border-t border-slate-800/50">
-                  <h3 className="text-base font-bold text-white">Dollar Risk</h3>
-                  <p className="text-xs text-slate-500 mt-1 mb-3">Dollar risk grows via cube-root scaling despite % decay.</p>
-                  <div className="h-56">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={curveData} margin={cm}>
-                        <defs><linearGradient id="gD" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.3} /><stop offset="100%" stopColor="#0ea5e9" stopOpacity={0} /></linearGradient></defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                        <XAxis dataKey="lx" type="number" domain={[LOG_MIN, LOG_MAX]} ticks={LXT} tickFormatter={v => fmt(unlg(v))} stroke="#475569" tick={AX} axisLine={false} tickLine={false} dy={10} />
-                        <YAxis tickFormatter={fmt} stroke="#475569" tick={AX} axisLine={false} tickLine={false} />
-                        <RTooltip contentStyle={TT} formatter={v => [fmt(v), 'Risk $']} labelFormatter={v => fmt(unlg(v))} isAnimationActive={false} cursor={{ stroke: '#475569', strokeDasharray: '4 4' }} />
-                        <ReferenceLine x={lg(dEq)} stroke="#94a3b8" strokeDasharray="4 4" />
-                        <ReferenceLine x={lg(E0)} stroke="#f59e0b" strokeDasharray="4 4" strokeOpacity={0.5} />
-                        <Area type="monotone" dataKey="rdol" stroke="#0ea5e9" fill="url(#gD)" strokeWidth={2.5} isAnimationActive={false} activeDot={{ r: 4, fill: '#0ea5e9', stroke: '#fff', strokeWidth: 2 }} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {tab === 'stress' && (
-              <div className="space-y-5">
-                <div>
-                  <h3 className="text-base font-bold text-white">Consecutive Drawdown</h3>
-                  <p className="text-xs text-slate-500 mt-1 mb-3">0{'\u2013'}7 losses from ${fmt(dEq)}.</p>
-                  <div className="h-56">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={ddP} margin={cm}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                        <XAxis dataKey="n" stroke="#475569" tick={AX} axisLine={false} tickLine={false} dy={10} />
-                        <YAxis tickFormatter={v => '\u2212' + v.toFixed(0) + '%'} stroke="#475569" tick={AX} axisLine={false} tickLine={false} />
-                        <RTooltip contentStyle={TT} formatter={(v, nm) => ['\u2212' + v.toFixed(1) + '%', { fixed: 'Fixed 33%', old: '\u2153 Power', cur: '\u2154 Power' }[nm]]} labelFormatter={v => 'After ' + v + ' losses'} isAnimationActive={false} />
-                        <Line type="monotone" dataKey="fixed" stroke="#f59e0b" strokeWidth={2} strokeDasharray="6 4" dot={{ r: 3, fill: '#f59e0b', strokeWidth: 0 }} isAnimationActive={false} />
-                        <Line type="monotone" dataKey="old" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3, fill: '#3b82f6', strokeWidth: 0 }} isAnimationActive={false} />
-                        <Line type="monotone" dataKey="cur" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3, fill: '#10b981', strokeWidth: 0 }} isAnimationActive={false} activeDot={{ r: 5, stroke: '#fff', strokeWidth: 2 }} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <ChartLegend />
+                <div className={'rounded-xl p-4 border flex flex-col justify-center ' + (cost > 0 ? 'bg-amber-500/5 border-amber-500/20' : 'bg-emerald-500/5 border-emerald-500/20')}>
+                  {cost > 0 ? (<>
+                    <div className="flex justify-between items-start mb-1"><span className="text-xs font-medium text-amber-500">Protection Cost</span><span className="text-lg font-bold font-mono text-amber-400 tabular-nums">{'\u2212'}{cost.toFixed(1)}%</span></div>
+                    <p className="text-xs text-amber-500/70 leading-relaxed">{'\u2154'} power sacrifices median wealth to suppress drawdowns and prioritize survival.</p>
+                  </>) : (<>
+                    <div className="flex justify-between items-start mb-1"><span className="text-xs font-medium text-emerald-500">Outperformance</span><span className="text-lg font-bold font-mono text-emerald-400 tabular-nums">+{Math.abs(cost).toFixed(1)}%</span></div>
+                    <p className="text-xs text-emerald-500/70 leading-relaxed">Fixed 33% is over-Kelly {'\u2014'} {'\u2154'} power outperforms by avoiding the penalty.</p>
+                  </>)}
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 pt-3 border-t border-slate-800/60">
-                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                    <div className="text-xs text-slate-500 font-medium mb-3">Recovery After 5 Losses ({rr.toFixed(1)}:1 RR)</div>
-                    <table className="w-full text-xs font-mono whitespace-nowrap">
-                      <thead><tr className="text-slate-500 border-b border-slate-800"><th className="pb-2 text-left font-medium">Model</th><th className="pb-2 font-medium">Drawdown</th><th className="pb-2 text-right font-medium">Wins to Recover</th></tr></thead>
-                      <tbody className="divide-y divide-slate-800/30">
-                        {[{ l: 'Fixed 33%', c: 'text-amber-500', r: hm.rec.f5 }, { l: '\u2153 Power', c: 'text-blue-500', r: hm.rec.o5 }, { l: '\u2154 Power', c: 'text-emerald-400', r: hm.rec.n5, bold: true }].map((x, i) => (
-                          <tr key={i}><td className={'py-2 ' + x.c + (x.bold ? ' font-bold' : '')}>{x.l}</td><td className="py-2 text-rose-400">{'\u2212'}{x.r.dd.toFixed(1)}%</td><td className={'py-2 text-right font-bold ' + x.c}>{x.r.w}</td></tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                    <div className="text-xs text-slate-500 font-medium mb-3">MC Max Drawdown</div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[{ l: 'Fixed 33%', d: hm.mdd.f, c: 'text-amber-500', bg: 'bg-slate-900/60 border-slate-800' }, { l: '\u2154 Power', d: hm.mdd.n, c: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' }].map((x, i) => (
-                        <div key={i} className={'rounded-lg flex flex-col items-center justify-center p-3 border ' + x.bg}>
-                          <div className={'text-xs font-medium mb-1 ' + x.c}>{x.l}</div>
-                          <div className={'text-xl font-bold font-mono tabular-nums ' + x.c}>{'\u2212'}{(x.d.m * 100).toFixed(0)}%</div>
-                          <div className="text-xs text-slate-600 mt-0.5 font-mono tabular-nums">90th: {'\u2212'}{(x.d.p90 * 100).toFixed(0)}%</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {tab === 'growth' && (
-              <div className="space-y-5">
-                <div>
-                  <h3 className="text-base font-bold text-white">Terminal Wealth</h3>
-                  <p className="text-xs text-slate-500 mt-1 mb-3">Median equity, 500 paths, 100 trades (log scale).</p>
-                  <div className="h-60">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={hm.chart} margin={cm}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                        <XAxis dataKey="t" stroke="#475569" tick={AX} axisLine={false} tickLine={false} dy={10} />
-                        <YAxis type="number" domain={gYD} ticks={gYT} tickFormatter={v => fmt(unlg(v))} stroke="#475569" tick={AX} axisLine={false} tickLine={false} />
-                        <RTooltip contentStyle={TT} formatter={(v, nm) => [fmt(unlg(v)), { fl: 'Fixed 33%', ol: '\u2153 Power', nl: '\u2154 Power' }[nm]]} labelFormatter={v => 'Trade #' + v} isAnimationActive={false} cursor={{ stroke: '#475569', strokeDasharray: '4 4' }} />
-                        <ReferenceLine y={lg(dEq)} stroke="#475569" strokeDasharray="2 4" strokeOpacity={0.3} />
-                        <Line type="monotone" dataKey="fl" stroke="#f59e0b" strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false} />
-                        <Line type="monotone" dataKey="ol" stroke="#3b82f6" strokeWidth={2} dot={false} isAnimationActive={false} />
-                        <Line type="monotone" dataKey="nl" stroke="#10b981" strokeWidth={2.5} dot={false} isAnimationActive={false} activeDot={{ r: 4, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <ChartLegend />
-                </div>
-
-                <div className="grid grid-cols-1 gap-3 pt-3 border-t border-slate-800/60">
-                  <div className="bg-slate-950 rounded-xl p-4 border border-slate-800">
-                    <div className="text-xs text-slate-500 font-medium mb-3 text-center">Terminal Wealth {'\u00B7'} Median (IQR)</div>
-                    <div className="space-y-2.5">
-                      {[{ l: 'Fixed 33%', c: 'text-amber-500', v: hm.term.f.m, lo: hm.term.f.p25, hi: hm.term.f.p75 }, { l: '\u2153 Power', c: 'text-blue-400', v: hm.term.o.m, lo: hm.term.o.p25, hi: hm.term.o.p75 }, { l: '\u2154 Power', c: 'text-emerald-400', v: hm.term.n.m, lo: hm.term.n.p25, hi: hm.term.n.p75 }].map((x, i) => (
-                        <div key={i} className="flex justify-between items-center font-mono text-sm">
-                          <span className={'font-medium text-xs ' + x.c}>{x.l}</span>
-                          <div className="text-right">
-                            <div className={'font-bold text-base tracking-tight ' + x.c}>{fmt(x.v)}</div>
-                            <div className="text-xs text-slate-600 tabular-nums">{fmt(x.lo)} {'\u2013'} {fmt(x.hi)}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className={'rounded-xl p-4 border flex flex-col justify-center ' + (cost > 0 ? 'bg-amber-500/5 border-amber-500/20' : 'bg-emerald-500/5 border-emerald-500/20')}>
-                    {cost > 0 ? (<>
-                      <div className="flex justify-between items-start mb-1"><span className="text-xs font-medium text-amber-500">Protection Cost</span><span className="text-lg font-bold font-mono text-amber-400 tabular-nums">{'\u2212'}{cost.toFixed(1)}%</span></div>
-                      <p className="text-xs text-amber-500/70 leading-relaxed">{'\u2154'} power sacrifices median wealth to suppress drawdowns and prioritize survival.</p>
-                    </>) : (<>
-                      <div className="flex justify-between items-start mb-1"><span className="text-xs font-medium text-emerald-500">Outperformance</span><span className="text-lg font-bold font-mono text-emerald-400 tabular-nums">+{Math.abs(cost).toFixed(1)}%</span></div>
-                      <p className="text-xs text-emerald-500/70 leading-relaxed">Fixed 33% is over-Kelly {'\u2014'} {'\u2154'} power outperforms by avoiding the penalty.</p>
-                    </>)}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {tab === 'compare' && (
-              <div className="space-y-5">
-                <div>
-                  <h3 className="text-base font-bold text-white">Three-Model Comparison</h3>
-                  <p className="text-xs text-slate-500 mt-1 mb-3">Risk allocation across all three frameworks.</p>
-                  <div className="h-56">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={curveData} margin={cm}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                        <XAxis dataKey="lx" type="number" domain={[LOG_MIN, LOG_MAX]} ticks={LXT} tickFormatter={v => fmt(unlg(v))} stroke="#475569" tick={AX} axisLine={false} tickLine={false} dy={10} />
-                        <YAxis tickFormatter={v => v + '%'} stroke="#475569" tick={AX} domain={[0, 100]} axisLine={false} tickLine={false} />
-                        <RTooltip contentStyle={TT} formatter={(v, nm) => [v.toFixed(1) + '%', { fixed: 'Fixed 33%', old: '\u2153 Power', cur: '\u2154 Power' }[nm]]} labelFormatter={v => fmt(unlg(v))} isAnimationActive={false} cursor={{ stroke: '#475569', strokeDasharray: '4 4' }} />
-                        <ReferenceLine x={lg(dEq)} stroke="#475569" strokeDasharray="4 4" strokeOpacity={0.5} label={{ value: 'You', position: 'insideTopLeft', style: { fill: '#94a3b8', fontSize: 10 } }} />
-                        <ReferenceLine x={lg(E0)} stroke="#10b981" strokeDasharray="2 4" strokeOpacity={0.4} />
-                        <Line type="monotone" dataKey="fixed" stroke="#f59e0b" strokeWidth={2} dot={false} strokeDasharray="6 4" isAnimationActive={false} />
-                        <Line type="monotone" dataKey="old" stroke="#3b82f6" strokeWidth={2} dot={false} isAnimationActive={false} />
-                        <Line type="monotone" dataKey="cur" stroke="#10b981" strokeWidth={2.5} dot={false} isAnimationActive={false} activeDot={{ r: 4, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <ChartLegend />
-                </div>
-                <div className="overflow-x-auto -mx-4 px-4 pt-3 border-t border-slate-800/60">
-                  <table className="w-full text-xs font-mono whitespace-nowrap">
-                    <thead className="text-slate-500 border-b border-slate-800 bg-slate-950">
-                      <tr>
-                        <th className="py-2 px-2 text-left font-medium">Equity</th>
-                        <th className="py-2 px-2 text-right font-medium text-amber-500/80">Fixed</th>
-                        <th className="py-2 px-2 text-right font-medium text-blue-400/80">{'\u2153'} Pwr</th>
-                        <th className="py-2 px-2 text-right font-medium text-emerald-400">{'\u2154'} Pwr</th>
-                        <th className="py-2 px-2 text-right font-medium">Risk $</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/30">{QK.map((q, i) => {
-                      const isA = Math.abs(dEq - q.v) < q.v * 0.08;
-                      return (
-                        <tr key={q.v} onClick={() => { if (!useReal) { setSimEq(q.v); setEqInput(fmt(q.v)); } }} className={'transition-colors ' + (isA ? 'bg-emerald-500/10' : i % 2 ? 'bg-slate-900/40' : '') + (!useReal ? ' cursor-pointer hover:bg-slate-800/40' : '')} style={isA ? { boxShadow: 'inset 3px 0 0 #10b981' } : {}}>
-                          <td className={'py-2 px-2 font-semibold ' + (isA ? 'text-emerald-400' : 'text-slate-300')}>{q.l}</td>
-                          <td className="py-2 px-2 text-right text-amber-500 tabular-nums">33.0%</td>
-                          <td className="py-2 px-2 text-right text-blue-400 tabular-nums">{(rO(q.v) * 100).toFixed(1)}%</td>
-                          <td className={'py-2 px-2 text-right font-bold tabular-nums ' + (rN(q.v) > K0 ? 'text-amber-400' : 'text-emerald-400')}>{(rN(q.v) * 100).toFixed(1)}%</td>
-                          <td className="py-2 px-2 text-right text-rose-400 tabular-nums">{fmt(r$N(q.v))}</td>
-                        </tr>
-                      );
-                    })}</tbody>
-                  </table>
-                </div>
+                <p className="text-xs text-slate-600 text-center font-mono">500 paths {'\u00D7'} 400 trades {'\u00B7'} Seed #{simSeed}</p>
               </div>
             )}
 

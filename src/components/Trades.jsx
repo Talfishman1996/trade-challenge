@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { TrendingUp, TrendingDown, Download, Upload, Trash2, Undo2, Plus, Grid3X3, List, CalendarDays } from 'lucide-react';
+import { TrendingUp, TrendingDown, Download, Upload, Trash2, Undo2, Plus, List, CalendarDays, Pencil, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fmt } from '../math/format.js';
 import { getPhaseName } from '../math/risk.js';
@@ -7,7 +7,10 @@ import TradeEntry from './TradeEntry.jsx';
 
 export default function Trades({ trades, settings }) {
   const [showEntry, setShowEntry] = useState(false);
+  const [editData, setEditData] = useState(null);
   const [showConfirm, setShowConfirm] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
   const [view, setView] = useState('list');
   const fileRef = useRef(null);
 
@@ -34,16 +37,33 @@ export default function Trades({ trades, settings }) {
     e.target.value = '';
   };
 
+  const openEdit = (trade) => {
+    setEditData(trade);
+    setShowEntry(true);
+    setExpandedId(null);
+  };
+
+  const handleDelete = (id) => {
+    trades.deleteTrade(id);
+    setDeleteConfirm(null);
+    setExpandedId(null);
+  };
+
+  const handleCloseEntry = () => {
+    setShowEntry(false);
+    setEditData(null);
+  };
+
   const eq = trades.currentEquity;
   const list = [...trades.trades].reverse();
 
   return (
-    <div className="px-4 pt-4 pb-6 max-w-lg mx-auto space-y-4">
+    <div className="px-4 pt-4 md:pt-6 pb-6 max-w-lg md:max-w-3xl mx-auto space-y-4">
       {/* Header + Log Trade */}
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-bold text-white">Trade History</h2>
         <button
-          onClick={() => setShowEntry(true)}
+          onClick={() => { setEditData(null); setShowEntry(true); }}
           className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500 text-white text-sm font-semibold rounded-xl active:scale-[0.97] hover:bg-emerald-400 transition-all shrink-0"
         >
           <Plus className="w-4 h-4" /> Log
@@ -52,7 +72,7 @@ export default function Trades({ trades, settings }) {
 
       {/* Summary Stats (only in list view) */}
       {trades.stats.totalTrades > 0 && view === 'list' && (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {[
             { l: 'Total P&L', v: (trades.stats.totalPnl >= 0 ? '+$' : '-$') + fmt(Math.abs(trades.stats.totalPnl)), c: trades.stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400' },
             { l: 'Win Rate', v: trades.stats.winRate.toFixed(0) + '%', c: trades.stats.winRate >= 50 ? 'text-emerald-400' : 'text-rose-400' },
@@ -94,7 +114,7 @@ export default function Trades({ trades, settings }) {
       {/* Trade Calendar Grid View */}
       {view === 'calendar' && trades.trades.length > 0 && (
         <div className="space-y-3">
-          {/* Auto-updating Win Rate header */}
+          {/* Win Rate header */}
           <div className="bg-slate-900/70 rounded-2xl p-4 border border-slate-800">
             <div className="flex items-center justify-between">
               <div>
@@ -116,7 +136,6 @@ export default function Trades({ trades, settings }) {
                 </div>
               </div>
             </div>
-            {/* Mini win rate bar */}
             <div className="flex mt-3 h-1.5 rounded-full overflow-hidden bg-slate-800">
               <div className="bg-emerald-500 rounded-l-full transition-all duration-500"
                 style={{ width: trades.stats.winRate + '%' }} />
@@ -126,7 +145,7 @@ export default function Trades({ trades, settings }) {
           </div>
 
           {/* Trade Grid */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {trades.trades.map(t => {
               const isWin = t.pnl >= 0;
               const rMult = t.riskDol > 0 ? Math.abs(t.pnl) / t.riskDol : 0;
@@ -135,28 +154,27 @@ export default function Trades({ trades, settings }) {
                   key={t.id}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className={'rounded-xl p-3 border-l-[3px] relative overflow-hidden ' +
+                  onClick={() => openEdit(t)}
+                  className={'rounded-xl p-3 border-l-[3px] relative overflow-hidden cursor-pointer active:scale-[0.97] transition-transform ' +
                     (isWin
                       ? 'bg-emerald-500/5 border-l-emerald-500 border border-emerald-500/10'
                       : 'bg-rose-500/5 border-l-rose-500 border border-rose-500/10')}
                 >
-                  {/* Trade # and date */}
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-slate-500 font-semibold">#{t.id}</span>
                     <span className="text-xs text-slate-600 font-mono">
                       {new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </span>
                   </div>
-                  {/* P&L - the main event */}
                   <div className={'text-lg font-bold font-mono tabular-nums tracking-tight ' +
                     (isWin ? 'text-emerald-400' : 'text-rose-400')}>
                     {(isWin ? '+$' : '-$') + fmt(Math.abs(t.pnl))}
                   </div>
-                  {/* R-multiple */}
                   <div className={'text-xs font-mono font-semibold mt-0.5 ' +
                     (isWin ? 'text-emerald-400/60' : 'text-rose-400/60')}>
                     {isWin ? '+' : '-'}{rMult.toFixed(1)}R
                   </div>
+                  <Pencil className="absolute top-2.5 right-2.5 w-3 h-3 text-slate-700" />
                 </motion.div>
               );
             })}
@@ -164,26 +182,35 @@ export default function Trades({ trades, settings }) {
         </div>
       )}
 
-      {/* Empty state (shown when no trades, regardless of view) */}
+      {/* Empty state */}
       {trades.trades.length === 0 && (
         <div className="text-center py-16">
           <div className="text-slate-700 text-4xl mb-3">0</div>
-          <p className="text-sm text-slate-500">No trades yet. Tap "Log Trade" to start.</p>
+          <p className="text-sm text-slate-500">No trades yet. Tap "Log" to start.</p>
         </div>
       )}
 
       {/* Trade List View */}
       {view === 'list' && list.length > 0 && (
-            <div className="space-y-2">
-              <AnimatePresence>
-                {list.map(t => (
-                  <motion.div
-                    key={t.id}
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className={'bg-slate-900/60 rounded-xl p-3.5 border ' +
-                      (t.pnl >= 0 ? 'border-emerald-500/15' : 'border-rose-500/15')}
+        <div className="space-y-2">
+          <AnimatePresence>
+            {list.map(t => {
+              const isExpanded = expandedId === t.id;
+              const isDeleting = deleteConfirm === t.id;
+              return (
+                <motion.div
+                  key={t.id}
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className={'bg-slate-900/60 rounded-xl border overflow-hidden transition-colors ' +
+                    (t.pnl >= 0 ? 'border-emerald-500/15' : 'border-rose-500/15') +
+                    (isExpanded ? ' ring-1 ring-slate-700' : '')}
+                >
+                  {/* Trade row - tap to expand */}
+                  <div
+                    className="p-3.5 cursor-pointer active:bg-slate-800/30 transition-colors"
+                    onClick={() => setExpandedId(isExpanded ? null : t.id)}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
@@ -216,10 +243,57 @@ export default function Trades({ trades, settings }) {
                         </>
                       )}
                     </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
+                  </div>
+
+                  {/* Expanded action bar */}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="border-t border-slate-800/60"
+                      >
+                        {isDeleting ? (
+                          <div className="flex gap-2 p-3">
+                            <button
+                              onClick={() => handleDelete(t.id)}
+                              className="flex-1 py-2.5 bg-rose-500/15 text-rose-400 text-xs font-semibold rounded-lg border border-rose-500/30 active:scale-[0.97] transition-all"
+                            >
+                              Confirm Delete
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirm(null)}
+                              className="flex-1 py-2.5 bg-slate-800 text-slate-400 text-xs font-medium rounded-lg active:scale-[0.97] transition-all"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2 p-3">
+                            <button
+                              onClick={() => openEdit(t)}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-slate-800 text-slate-300 text-xs font-semibold rounded-lg hover:bg-slate-700 active:scale-[0.97] transition-all"
+                            >
+                              <Pencil className="w-3.5 h-3.5" /> Edit
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirm(t.id)}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-slate-800 text-rose-400 text-xs font-semibold rounded-lg hover:bg-rose-500/10 active:scale-[0.97] transition-all"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Delete
+                            </button>
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </div>
       )}
 
       {/* Action Buttons */}
@@ -281,8 +355,10 @@ export default function Trades({ trades, settings }) {
       {/* Trade Entry Modal */}
       <TradeEntry
         open={showEntry}
-        onClose={() => setShowEntry(false)}
+        onClose={handleCloseEntry}
         onSave={trades.addTrade}
+        onEdit={trades.editTrade}
+        editData={editData}
         currentEquity={eq}
         nextRisk={trades.nextRisk}
       />

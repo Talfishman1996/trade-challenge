@@ -44,16 +44,34 @@ export const useTrades = (initialEquity = 20000) => {
     return peak;
   }, [data, initialEquity]);
 
+  // Recalculate equity chain from a given index forward
+  const recalcChain = (trades, fromIdx, baseEquity) => {
+    const result = [...trades];
+    for (let i = fromIdx; i < result.length; i++) {
+      const eqBefore = i > 0 ? result[i - 1].equityAfter : baseEquity;
+      result[i] = {
+        ...result[i],
+        equityBefore: eqBefore,
+        equityAfter: Math.max(1, eqBefore + result[i].pnl),
+        riskPct: rN(eqBefore),
+        riskDol: r$N(eqBefore),
+        phase: getPhase(eqBefore),
+      };
+    }
+    return result;
+  };
+
   // Add a new trade
-  const addTrade = useCallback((pnl, notes = '') => {
+  const addTrade = useCallback((pnl, notes = '', date = null) => {
     const eq = data.trades.length > 0
       ? data.trades[data.trades.length - 1].equityAfter
       : (data.initialEquity || initialEquity);
 
     const equityAfter = Math.max(1, eq + pnl);
+    const maxId = data.trades.length > 0 ? Math.max(...data.trades.map(t => t.id)) : 0;
     const trade = {
-      id: data.trades.length + 1,
-      date: new Date().toISOString(),
+      id: maxId + 1,
+      date: date || new Date().toISOString(),
       pnl,
       equityBefore: eq,
       equityAfter,
@@ -72,6 +90,30 @@ export const useTrades = (initialEquity = 20000) => {
     }
 
     return trade;
+  }, [data, initialEquity, persist]);
+
+  // Edit an existing trade
+  const editTrade = useCallback((id, { pnl, notes, date }) => {
+    const idx = data.trades.findIndex(t => t.id === id);
+    if (idx === -1) return;
+    const updated = [...data.trades];
+    updated[idx] = { ...updated[idx] };
+    if (pnl !== undefined) updated[idx].pnl = pnl;
+    if (notes !== undefined) updated[idx].notes = notes;
+    if (date !== undefined) updated[idx].date = date;
+    const baseEq = data.initialEquity || initialEquity;
+    const recalced = recalcChain(updated, idx, baseEq);
+    persist({ ...data, trades: recalced });
+  }, [data, initialEquity, persist]);
+
+  // Delete a specific trade
+  const deleteTrade = useCallback((id) => {
+    const idx = data.trades.findIndex(t => t.id === id);
+    if (idx === -1) return;
+    const remaining = data.trades.filter(t => t.id !== id);
+    const baseEq = data.initialEquity || initialEquity;
+    const recalced = remaining.length > 0 ? recalcChain(remaining, Math.max(0, idx), baseEq) : [];
+    persist({ ...data, trades: recalced });
   }, [data, initialEquity, persist]);
 
   // Delete last trade (undo)
@@ -228,6 +270,8 @@ export const useTrades = (initialEquity = 20000) => {
     celebration,
     clearCelebration,
     addTrade,
+    editTrade,
+    deleteTrade,
     undoLastTrade,
     clearTrades,
     setInitialEquity,

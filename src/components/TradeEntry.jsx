@@ -1,28 +1,48 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, TrendingUp, TrendingDown } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 import { fmt } from '../math/format.js';
 
-export default function TradeEntry({ open, onClose, onSave, currentEquity, nextRisk }) {
+export default function TradeEntry({ open, onClose, onSave, onEdit, editData, currentEquity, nextRisk }) {
+  const isEditMode = !!editData;
   const [isWin, setIsWin] = useState(true);
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
+  const [tradeDate, setTradeDate] = useState('');
   const inputRef = useRef(null);
 
   useEffect(() => {
     if (open) {
-      setAmount('');
-      setNotes('');
-      setIsWin(true);
+      if (editData) {
+        // Edit mode: pre-populate from existing trade
+        setIsWin(editData.pnl >= 0);
+        setAmount(String(Math.abs(editData.pnl)));
+        setNotes(editData.notes || '');
+        setTradeDate(editData.date ? editData.date.slice(0, 10) : new Date().toISOString().slice(0, 10));
+      } else {
+        // New trade mode
+        setAmount('');
+        setNotes('');
+        setIsWin(true);
+        setTradeDate(new Date().toISOString().slice(0, 10));
+      }
       setTimeout(() => inputRef.current?.focus(), 300);
     }
-  }, [open]);
+  }, [open, editData]);
 
   const handleSave = () => {
     const num = parseFloat(amount.replace(/,/g, ''));
     if (isNaN(num) || num <= 0) return;
     const pnl = isWin ? num : -num;
-    onSave(pnl, notes);
+
+    if (isEditMode && onEdit) {
+      // Build ISO date from the date input
+      const dateISO = tradeDate ? new Date(tradeDate + 'T12:00:00').toISOString() : undefined;
+      onEdit(editData.id, { pnl, notes, date: dateISO });
+    } else {
+      const dateISO = tradeDate ? new Date(tradeDate + 'T12:00:00').toISOString() : null;
+      onSave(pnl, notes, dateISO);
+    }
     onClose();
   };
 
@@ -44,7 +64,7 @@ export default function TradeEntry({ open, onClose, onSave, currentEquity, nextR
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
             onClick={onClose}
           />
 
@@ -54,7 +74,7 @@ export default function TradeEntry({ open, onClose, onSave, currentEquity, nextR
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-            className="fixed bottom-0 inset-x-0 z-50 bg-slate-900 border-t border-slate-700 rounded-t-3xl max-h-[85vh] overflow-y-auto"
+            className="fixed bottom-0 inset-x-0 z-[60] bg-slate-900 border-t border-slate-700 rounded-t-3xl max-h-[85vh] overflow-y-auto"
           >
             <div className="p-5 pb-8 max-w-lg mx-auto">
               {/* Handle bar */}
@@ -64,7 +84,10 @@ export default function TradeEntry({ open, onClose, onSave, currentEquity, nextR
 
               {/* Header */}
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-bold text-white">Log Trade</h2>
+                <h2 className="text-lg font-bold text-white">
+                  {isEditMode ? 'Edit Trade' : 'Log Trade'}
+                  {isEditMode && <span className="text-sm font-normal text-slate-500 ml-2">#{editData.id}</span>}
+                </h2>
                 <button onClick={onClose} className="p-2 text-slate-500 hover:text-white rounded-lg transition-colors">
                   <X className="w-5 h-5" />
                 </button>
@@ -111,8 +134,8 @@ export default function TradeEntry({ open, onClose, onSave, currentEquity, nextR
                 </div>
               </div>
 
-              {/* Preview */}
-              {amount && parseFloat(amount) > 0 && (
+              {/* Preview (new trades only) */}
+              {!isEditMode && amount && parseFloat(amount) > 0 && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
@@ -128,7 +151,7 @@ export default function TradeEntry({ open, onClose, onSave, currentEquity, nextR
               )}
 
               {/* Notes */}
-              <div className="mb-6">
+              <div className="mb-5">
                 <label className="text-xs text-slate-500 font-medium mb-2 block">Notes (optional)</label>
                 <input
                   type="text"
@@ -139,21 +162,38 @@ export default function TradeEntry({ open, onClose, onSave, currentEquity, nextR
                 />
               </div>
 
-              {/* Current context */}
-              <div className="flex gap-3 mb-6 text-xs font-mono">
-                <div className="flex-1 bg-slate-950 rounded-lg p-3 border border-slate-800 text-center">
-                  <div className="text-slate-500 mb-1">Current</div>
-                  <div className="text-white font-bold">${fmt(currentEquity)}</div>
-                </div>
-                <div className="flex-1 bg-slate-950 rounded-lg p-3 border border-slate-800 text-center">
-                  <div className="text-slate-500 mb-1">Risk Allowed</div>
-                  <div className="text-emerald-400 font-bold">${fmt(nextRisk.dol)}</div>
-                </div>
-                <div className="flex-1 bg-slate-950 rounded-lg p-3 border border-slate-800 text-center">
-                  <div className="text-slate-500 mb-1">Risk %</div>
-                  <div className="text-emerald-400 font-bold">{(nextRisk.pct * 100).toFixed(1)}%</div>
+              {/* Date picker */}
+              <div className="mb-6">
+                <label className="text-xs text-slate-500 font-medium mb-2 block">Trade Date</label>
+                <div className="relative">
+                  <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 pointer-events-none" />
+                  <input
+                    type="date"
+                    value={tradeDate}
+                    onChange={e => setTradeDate(e.target.value)}
+                    max={new Date().toISOString().slice(0, 10)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl text-sm text-white py-3 pl-10 pr-4 outline-none focus:border-slate-700 transition-all [color-scheme:dark]"
+                  />
                 </div>
               </div>
+
+              {/* Current context (new trades only) */}
+              {!isEditMode && (
+                <div className="flex gap-3 mb-6 text-xs font-mono">
+                  <div className="flex-1 bg-slate-950 rounded-lg p-3 border border-slate-800 text-center">
+                    <div className="text-slate-500 mb-1">Current</div>
+                    <div className="text-white font-bold">${fmt(currentEquity)}</div>
+                  </div>
+                  <div className="flex-1 bg-slate-950 rounded-lg p-3 border border-slate-800 text-center">
+                    <div className="text-slate-500 mb-1">Risk Allowed</div>
+                    <div className="text-emerald-400 font-bold">${fmt(nextRisk.dol)}</div>
+                  </div>
+                  <div className="flex-1 bg-slate-950 rounded-lg p-3 border border-slate-800 text-center">
+                    <div className="text-slate-500 mb-1">Risk %</div>
+                    <div className="text-emerald-400 font-bold">{(nextRisk.pct * 100).toFixed(1)}%</div>
+                  </div>
+                </div>
+              )}
 
               {/* Save button */}
               <button
@@ -164,7 +204,7 @@ export default function TradeEntry({ open, onClose, onSave, currentEquity, nextR
                     ? 'bg-emerald-500 text-white active:scale-[0.98] hover:bg-emerald-400'
                     : 'bg-slate-800 text-slate-600 cursor-not-allowed')}
               >
-                Save Trade
+                {isEditMode ? 'Save Changes' : 'Save Trade'}
               </button>
             </div>
           </motion.div>
