@@ -81,9 +81,10 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-            className="fixed bottom-0 inset-x-0 z-[60] bg-surface border-t border-line rounded-t-3xl max-h-[85vh] overflow-y-auto"
+            className="fixed bottom-0 inset-x-0 z-[60] bg-surface border-t border-line rounded-t-3xl max-h-[85vh] flex flex-col"
           >
-            <div className="p-5 pb-8 max-w-lg mx-auto">
+            <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="p-5 pb-3 max-w-lg mx-auto">
               {/* Handle bar */}
               <div className="flex justify-center mb-4">
                 <div className="w-10 h-1 bg-line rounded-full" />
@@ -222,7 +223,10 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                 </div>
               )}
 
-              {/* Save button */}
+            </div>
+            </div>
+            {/* Fixed save button */}
+            <div className="shrink-0 px-5 pb-8 pt-3 max-w-lg mx-auto w-full border-t border-line/50">
               <button
                 onClick={handleSave}
                 disabled={!amount || parseFloat(amount) <= 0}

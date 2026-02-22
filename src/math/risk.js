@@ -55,4 +55,8 @@ export const getPhase = e => {
 };
 
 export const getPhaseName = phase =>
-  phase === 'pre' ? 'Pre-Model' : phase === 'anchor' ? 'Anchor' : 'Formula Decay';
+  phase === 'pre' ? 'Growth' : phase === 'anchor' ? 'Anchor' : 'Decay';
+
+// Semantic risk severity: safe (at/below Kelly), elevated, danger
+export const riskSeverity = pct =>
+  pct <= 34 ? 'safe' : pct <= 55 ? 'elevated' : 'danger';
