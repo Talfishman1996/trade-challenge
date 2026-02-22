@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { TrendingUp, TrendingDown, Download, Upload, Trash2, Undo2, Plus, List, CalendarDays, Pencil, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fmt } from '../math/format.js';
-import { getPhaseName } from '../math/risk.js';
+import { getPhaseName, rN } from '../math/risk.js';
 export default function Trades({ trades, settings, onOpenTradeEntry }) {
   const [showConfirm, setShowConfirm] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -179,9 +179,32 @@ export default function Trades({ trades, settings, onOpenTradeEntry }) {
 
       {/* Empty state */}
       {trades.trades.length === 0 && (
-        <div className="text-center py-16">
-          <div className="text-slate-700 text-4xl mb-3">0</div>
-          <p className="text-sm text-slate-500">No trades yet. Tap "Log" to start.</p>
+        <div className="flex flex-col items-center py-12 px-4">
+          {/* Ghost equity curve */}
+          <svg className="w-48 h-20 mb-4" viewBox="0 0 200 80" fill="none">
+            <defs>
+              <linearGradient id="ghostFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#10b981" stopOpacity=".08" />
+                <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <path d="M0,70 Q30,65 60,55 T120,35 T180,18 L200,12" stroke="#10b981" strokeWidth="2"
+              strokeDasharray="6 4" strokeLinecap="round" opacity=".4" />
+            <path d="M0,70 Q30,65 60,55 T120,35 T180,18 L200,12 V80 H0 Z" fill="url(#ghostFill)" />
+            <circle cx="200" cy="12" r="3" fill="#10b981" opacity=".3">
+              <animate attributeName="opacity" values=".3;.7;.3" dur="2s" repeatCount="indefinite" />
+            </circle>
+          </svg>
+          <p className="text-sm font-semibold text-slate-400 mb-1">Your trading journal starts here</p>
+          <p className="text-xs text-slate-600 text-center max-w-[240px]">
+            Log your first trade to begin tracking equity, risk, and performance.
+          </p>
+          <button
+            onClick={() => onOpenTradeEntry()}
+            className="mt-5 flex items-center gap-1.5 px-5 py-2.5 bg-emerald-500 text-white text-sm font-semibold rounded-xl active:scale-[0.97] hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
+          >
+            <Plus className="w-4 h-4" /> Log First Trade
+          </button>
         </div>
       )}
 

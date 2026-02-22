@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Shield, Target, Flame, Zap, TrendingUp, Trophy, X, Info, Navigation2, ChevronDown, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fmt } from '../math/format.js';
-import { rN, getPhaseName, getPhase } from '../math/risk.js';
+import { rN, r$N, getPhaseName, getPhase } from '../math/risk.js';
 import { E0, GPS_Z } from '../math/constants.js';
 import EquityCurve from './EquityCurve.jsx';
 import GPSJourney from './GPSJourney.jsx';
@@ -60,6 +60,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
   const [showPhaseInfo, setShowPhaseInfo] = useState(false);
   const [showJourney, setShowJourney] = useState(false);
   const [dismissAlert, setDismissAlert] = useState(false);
+  const [exploreEq, setExploreEq] = useState(20000);
 
   const eq = trades.currentEquity;
   const phase = getPhase(eq);
@@ -161,6 +162,47 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
       )}
 
       {/* 2. DESKTOP GRID: Risk card + right panel */}
+      {trades.stats.totalTrades === 0 ? (
+        /* EMPTY STATE: Risk Explorer + CTA */
+        <div className="bg-surface rounded-2xl p-5 border border-line space-y-4">
+          <div>
+            <div className="text-sm font-semibold text-white">Explore the Risk Model</div>
+            <p className="text-xs text-slate-500 mt-1">Drag to see how risk scales as equity grows.</p>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="text-2xl font-bold font-mono tabular-nums text-white">${fmt(exploreEq)}</div>
+            <span className={'text-xs font-semibold px-2 py-1 rounded-lg border ' +
+              (getPhase(exploreEq) === 'pre' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
+               getPhase(exploreEq) === 'anchor' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
+               'bg-cyan-500/10 border-cyan-500/20 text-cyan-400')}>
+              {getPhaseName(getPhase(exploreEq))}
+            </span>
+          </div>
+          <input type="range" min={20000} max={110000} step={500} value={exploreEq}
+            onChange={e => setExploreEq(+e.target.value)}
+            className="w-full h-1.5 rounded-full appearance-none bg-elevated cursor-pointer accent-emerald-500" />
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="bg-deep rounded-xl p-2.5 border border-line/50">
+              <div className="text-sm font-bold font-mono tabular-nums text-emerald-400">{(rN(exploreEq) * 100).toFixed(1)}%</div>
+              <div className="text-[10px] text-slate-600 mt-0.5">Risk</div>
+            </div>
+            <div className="bg-deep rounded-xl p-2.5 border border-line/50">
+              <div className="text-sm font-bold font-mono tabular-nums text-rose-400">${fmt(r$N(exploreEq))}</div>
+              <div className="text-[10px] text-slate-600 mt-0.5">At Risk</div>
+            </div>
+            <div className="bg-deep rounded-xl p-2.5 border border-line/50">
+              <div className="text-sm font-bold font-mono tabular-nums text-amber-400">${fmt(r$N(exploreEq) * 2)}</div>
+              <div className="text-[10px] text-slate-600 mt-0.5">2R Gain</div>
+            </div>
+          </div>
+          <button
+            onClick={() => onOpenTradeEntry()}
+            className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-bold text-sm rounded-xl active:scale-[0.98] hover:from-emerald-500 hover:to-emerald-400 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
+          >
+            <TrendingUp className="w-5 h-5" /> Log Your First Trade
+          </button>
+        </div>
+      ) : (
       <div className="md:grid md:grid-cols-2 md:gap-4 space-y-4 md:space-y-0">
 
       {/* HERO RISK CARD */}
@@ -264,8 +306,9 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
           </div>
         </div>
       )}
-      </div>{/* end right column */}
-      </div>{/* end desktop grid */}
+      </div>
+      </div>
+      )}
 
       {/* 7. GPS JOURNEY (collapsible) */}
       <div className="bg-surface rounded-xl border border-line/50 overflow-hidden">
