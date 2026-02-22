@@ -117,19 +117,25 @@ export default function Home({ trades, settings }) {
 
   return (
     <div className="px-4 pt-4 md:pt-6 pb-6 max-w-lg md:max-w-3xl mx-auto space-y-4">
-      {/* 1. COMPACT HEADER (hidden on desktop - sidebar has logo) */}
-      <div className="flex items-center justify-between md:hidden">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-            <Shield className="w-4 h-4 text-emerald-400" />
-          </div>
-          <h1 className="text-base font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-white to-emerald-400">APEX</h1>
+      {/* 1. EQUITY HERO */}
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-3xl font-bold font-mono tabular-nums tracking-tight text-white">${fmt(eq)}</div>
+          {trades.stats.totalTrades > 0 ? (
+            <div className="flex items-center gap-2 mt-1">
+              <span className={'text-sm font-semibold font-mono tabular-nums ' + (trades.stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                {trades.stats.totalPnl >= 0 ? '+$' : '-$'}{fmt(Math.abs(trades.stats.totalPnl))}
+              </span>
+              <span className={'text-xs font-mono tabular-nums px-1.5 py-0.5 rounded ' + (trades.stats.totalPnl >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400')}>
+                {trades.stats.totalPnl >= 0 ? '+' : ''}{((eq - trades.initialEquity) / trades.initialEquity * 100).toFixed(1)}%
+              </span>
+            </div>
+          ) : (
+            <div className="text-xs text-slate-500 mt-1">Starting equity</div>
+          )}
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-lg font-bold font-mono tabular-nums text-white">${fmt(eq)}</span>
-          <div className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg border ${phaseBg} ${phaseColor}`}>
-            <ZIcon className="w-3 h-3" /> {getPhaseName(phase)}
-          </div>
+        <div className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg border ${phaseBg} ${phaseColor}`}>
+          <ZIcon className="w-3 h-3" /> {getPhaseName(phase)}
         </div>
       </div>
 
