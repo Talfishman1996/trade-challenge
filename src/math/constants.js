@@ -61,13 +61,13 @@ export const TT = {
   fontSize: 12,
   padding: '10px 14px',
   color: '#f1f5f9',
-  fontFamily: 'ui-monospace, monospace',
+  fontFamily: "'JetBrains Mono', ui-monospace, monospace",
 };
 
 export const AX = {
   fontSize: 10,
   fill: '#64748b',
-  fontFamily: 'ui-monospace, monospace',
+  fontFamily: "'JetBrains Mono', ui-monospace, monospace",
 };
 
 export const CHART_MARGIN = { top: 10, right: 10, left: -20, bottom: 0 };

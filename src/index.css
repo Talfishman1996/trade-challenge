@@ -6,4 +6,5 @@
   --color-elevated: #1C2333;
   --color-line: #2D3748;
   --color-line-dim: #1E2736;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }

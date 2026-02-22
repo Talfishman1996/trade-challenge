@@ -41,13 +41,13 @@ function RiskGauge({ riskPct, riskDol, phase }) {
         {/* Center dollar amount */}
         <text x={cx} y={cy - 24} textAnchor="middle"
           className="text-3xl font-bold font-mono" fill="white" fontSize="32" fontWeight="700"
-          fontFamily="ui-monospace, monospace">
+          fontFamily="'JetBrains Mono', ui-monospace, monospace">
           ${fmt(riskDol)}
         </text>
         {/* Percentage below */}
         <text x={cx} y={cy - 2} textAnchor="middle"
           fill={strokeColor} fontSize="16" fontWeight="600"
-          fontFamily="ui-monospace, monospace">
+          fontFamily="'JetBrains Mono', ui-monospace, monospace">
           {riskPct.toFixed(1)}%
         </text>
       </svg>
