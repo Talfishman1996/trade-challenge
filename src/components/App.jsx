@@ -7,6 +7,7 @@ import Home from './Home.jsx';
 import Trades from './Trades.jsx';
 import Analysis from './Analysis.jsx';
 import Settings from './Settings.jsx';
+import Celebration from './Celebration.jsx';
 
 const TABS = [
   { id: 'home', label: 'Home', icon: HomeIcon },
@@ -29,6 +30,7 @@ export default function App() {
         '@keyframes riseFloat{0%{transform:translateY(0) scale(1);opacity:.6}100%{transform:translateY(-40px) scale(.3);opacity:0}}.particle{position:absolute;width:3px;height:3px;border-radius:50%;animation:riseFloat 3s ease-out infinite}',
         '@keyframes trailPulse{0%,100%{stroke-opacity:.4}50%{stroke-opacity:.8}}.trail-pulse{animation:trailPulse 2s ease-in-out infinite}',
         '@keyframes ringPulse{0%{r:14;opacity:.5}100%{r:28;opacity:0}}.ring-pulse{animation:ringPulse 2s ease-out infinite}',
+        '@keyframes confettiFall{0%{transform:translateY(-10vh) rotate(0deg) scale(1);opacity:1}100%{transform:translateY(110vh) rotate(720deg) scale(.5);opacity:0}}',
       ].join('') }} />
 
       {/* Main content area */}
@@ -76,6 +78,13 @@ export default function App() {
           })}
         </div>
       </nav>
+
+      {/* Milestone Celebration Overlay */}
+      <AnimatePresence>
+        {trades.celebration && (
+          <Celebration milestone={trades.celebration} onDismiss={trades.clearCelebration} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

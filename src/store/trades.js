@@ -21,6 +21,8 @@ const saveData = data => {
 
 export const useTrades = (initialEquity = 20000) => {
   const [data, setData] = useState(() => loadData(initialEquity));
+  const [celebration, setCelebration] = useState(null);
+  const clearCelebration = useCallback(() => setCelebration(null), []);
 
   const persist = useCallback(newData => {
     setData(newData);
@@ -62,6 +64,13 @@ export const useTrades = (initialEquity = 20000) => {
     };
 
     persist({ ...data, trades: [...data.trades, trade] });
+
+    // Celebration: detect newly crossed milestones
+    const newlyReached = MILES.filter(m => eq < m.v && equityAfter >= m.v);
+    if (newlyReached.length > 0) {
+      setCelebration(newlyReached[newlyReached.length - 1]);
+    }
+
     return trade;
   }, [data, initialEquity, persist]);
 
@@ -110,6 +119,9 @@ export const useTrades = (initialEquity = 20000) => {
         maxDrawdown: 0, maxDrawdownPct: 0,
         currentStreak: 0, streakType: null,
         todayTrades: 0, todayPnl: 0,
+        expectancy: 0, avgR: 0, rMultiples: [],
+        bestTrade: 0, worstTrade: 0,
+        maxWinStreak: 0, maxLossStreak: 0,
       };
     }
 
@@ -142,6 +154,28 @@ export const useTrades = (initialEquity = 20000) => {
     const today = new Date().toISOString().slice(0, 10);
     const todayTrades = trades.filter(t => t.date.slice(0, 10) === today);
 
+    // R-multiples
+    const rMultiples = trades.map(t => t.riskDol > 0 ? t.pnl / t.riskDol : 0);
+    const avgR = rMultiples.length > 0 ? rMultiples.reduce((a, b) => a + b, 0) / rMultiples.length : 0;
+
+    // Expectancy (in dollars)
+    const winR = wins.length / trades.length;
+    const lossR = losses.length / trades.length;
+    const aW = wins.length > 0 ? grossWins / wins.length : 0;
+    const aL = losses.length > 0 ? grossLosses / losses.length : 0;
+    const expectancy = winR * aW - lossR * aL;
+
+    // Best/worst trade
+    const bestTrade = Math.max(...trades.map(t => t.pnl));
+    const worstTrade = Math.min(...trades.map(t => t.pnl));
+
+    // Max consecutive streaks
+    let maxWS = 0, maxLS = 0, curW = 0, curL = 0;
+    for (const t of trades) {
+      if (t.pnl > 0) { curW++; curL = 0; if (curW > maxWS) maxWS = curW; }
+      else { curL++; curW = 0; if (curL > maxLS) maxLS = curL; }
+    }
+
     return {
       totalTrades: trades.length,
       wins: wins.length,
@@ -157,6 +191,13 @@ export const useTrades = (initialEquity = 20000) => {
       streakType,
       todayTrades: todayTrades.length,
       todayPnl: todayTrades.reduce((s, t) => s + t.pnl, 0),
+      expectancy,
+      avgR,
+      rMultiples,
+      bestTrade,
+      worstTrade,
+      maxWinStreak: maxWS,
+      maxLossStreak: maxLS,
     };
   }, [data, initialEquity]);
 
@@ -184,6 +225,8 @@ export const useTrades = (initialEquity = 20000) => {
     stats,
     nextRisk,
     milestones,
+    celebration,
+    clearCelebration,
     addTrade,
     undoLastTrade,
     clearTrades,
