@@ -107,7 +107,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
   const stats = [
     { l: 'Trades', v: trades.stats.totalTrades, c: 'text-white' },
     { l: 'Win Rate', v: trades.stats.totalTrades > 0 ? trades.stats.winRate.toFixed(0) + '%' : '--',
-      c: trades.stats.winRate >= 60 ? 'text-amber-300' : trades.stats.totalTrades > 0 ? 'text-rose-400' : 'text-white',
+      c: trades.stats.winRate >= 60 ? 'text-amber-300' : trades.stats.totalTrades > 0 ? 'text-rose-500' : 'text-white',
       glow: trades.stats.winRate >= 60 },
     {
       l: 'Streak',
