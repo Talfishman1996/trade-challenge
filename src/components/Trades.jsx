@@ -70,24 +70,29 @@ export default function Trades({ trades, settings }) {
         </button>
       </div>
 
-      {/* Summary Stats (only in list view) */}
+      {/* Summary Stats (compact 3-stat row) */}
       {trades.stats.totalTrades > 0 && view === 'list' && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {[
-            { l: 'Total P&L', v: (trades.stats.totalPnl >= 0 ? '+$' : '-$') + fmt(Math.abs(trades.stats.totalPnl)), c: trades.stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400' },
-            { l: 'Win Rate', v: trades.stats.winRate.toFixed(0) + '%', c: trades.stats.winRate >= 50 ? 'text-emerald-400' : 'text-rose-400' },
-            { l: 'Expectancy', v: trades.stats.expectancy !== 0 ? (trades.stats.expectancy >= 0 ? '+$' : '-$') + fmt(Math.abs(trades.stats.expectancy)) : '--', c: trades.stats.expectancy > 0 ? 'text-emerald-400' : trades.stats.expectancy < 0 ? 'text-rose-400' : 'text-slate-500' },
-            { l: 'Avg R', v: trades.stats.avgR !== 0 ? (trades.stats.avgR >= 0 ? '+' : '') + trades.stats.avgR.toFixed(2) + 'R' : '--', c: trades.stats.avgR > 0 ? 'text-emerald-400' : trades.stats.avgR < 0 ? 'text-rose-400' : 'text-slate-500' },
-            { l: 'Avg Win', v: trades.stats.wins > 0 ? '$' + fmt(trades.stats.avgWin) : '--', c: trades.stats.wins > 0 ? 'text-emerald-400' : 'text-slate-500' },
-            { l: 'Avg Loss', v: trades.stats.losses > 0 ? '$' + fmt(trades.stats.avgLoss) : '--', c: trades.stats.losses > 0 ? 'text-rose-400' : 'text-slate-500' },
-            { l: 'Profit Factor', v: trades.stats.profitFactor === Infinity ? '\u221E' : trades.stats.profitFactor.toFixed(2), c: trades.stats.profitFactor >= 1 ? 'text-emerald-400' : 'text-rose-400' },
-            { l: 'Max Drawdown', v: trades.stats.maxDrawdownPct.toFixed(1) + '%', c: 'text-amber-400' },
-          ].map((s, i) => (
-            <div key={i} className="bg-surface rounded-xl p-3 border border-line">
-              <div className="text-xs text-slate-500 mb-1">{s.l}</div>
-              <div className={'text-base font-bold font-mono tabular-nums ' + s.c}>{s.v}</div>
+        <div className="flex items-center justify-between px-1">
+          <div className="text-center">
+            <div className={'text-base font-bold font-mono tabular-nums ' + (trades.stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+              {(trades.stats.totalPnl >= 0 ? '+$' : '-$') + fmt(Math.abs(trades.stats.totalPnl))}
             </div>
-          ))}
+            <div className="text-[10px] text-slate-500 mt-0.5">Total P&L</div>
+          </div>
+          <div className="w-px h-8 bg-line/50" />
+          <div className="text-center">
+            <div className={'text-base font-bold font-mono tabular-nums ' + (trades.stats.winRate >= 50 ? 'text-emerald-400' : 'text-rose-400')}>
+              {trades.stats.winRate.toFixed(0)}%
+            </div>
+            <div className="text-[10px] text-slate-500 mt-0.5">Win Rate</div>
+          </div>
+          <div className="w-px h-8 bg-line/50" />
+          <div className="text-center">
+            <div className={'text-base font-bold font-mono tabular-nums ' + (trades.stats.profitFactor >= 1 ? 'text-emerald-400' : 'text-rose-400')}>
+              {trades.stats.profitFactor === Infinity ? '\u221E' : trades.stats.profitFactor.toFixed(2)}
+            </div>
+            <div className="text-[10px] text-slate-500 mt-0.5">Profit Factor</div>
+          </div>
         </div>
       )}
 
@@ -207,41 +212,25 @@ export default function Trades({ trades, settings }) {
                     (t.pnl >= 0 ? 'border-emerald-500/15' : 'border-rose-500/15') +
                     (isExpanded ? ' ring-1 ring-slate-700' : '')}
                 >
-                  {/* Trade row - tap to expand */}
+                  {/* Trade row - compact, tap to expand */}
                   <div
-                    className="p-3.5 cursor-pointer active:bg-elevated/30 transition-colors"
+                    className="px-3 py-2.5 cursor-pointer active:bg-elevated/30 transition-colors"
                     onClick={() => setExpandedId(isExpanded ? null : t.id)}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        {t.pnl >= 0
-                          ? <TrendingUp className="w-4 h-4 text-emerald-400" />
-                          : <TrendingDown className="w-4 h-4 text-rose-400" />}
-                        <span className="text-xs text-slate-500 font-medium">Trade #{t.id}</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-xs text-slate-500 font-mono w-7">#{t.id}</span>
+                        <span className="text-xs text-slate-600 font-mono">
+                          {new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </span>
                       </div>
-                      <span className="text-xs text-slate-600 font-mono">
-                        {new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </span>
-                    </div>
-                    <div className="flex items-baseline justify-between">
-                      <span className={'text-xl font-bold font-mono tabular-nums ' +
-                        (t.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
-                        {(t.pnl >= 0 ? '+$' : '-$') + fmt(Math.abs(t.pnl))}
-                      </span>
-                      <span className="text-sm text-slate-400 font-mono tabular-nums">
-                        ${fmt(t.equityAfter)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 mt-2 text-xs text-slate-500 font-mono">
-                      <span>Risk: {(t.riskPct * 100).toFixed(1)}%</span>
-                      <span className="text-slate-700">|</span>
-                      <span>{getPhaseName(t.phase)}</span>
-                      {t.notes && (
-                        <>
-                          <span className="text-slate-700">|</span>
-                          <span className="text-slate-400 truncate">{t.notes}</span>
-                        </>
-                      )}
+                      <div className="text-right">
+                        <span className={'text-sm font-bold font-mono tabular-nums ' +
+                          (t.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                          {(t.pnl >= 0 ? '+$' : '-$') + fmt(Math.abs(t.pnl))}
+                        </span>
+                        <div className="text-[10px] text-slate-500 font-mono tabular-nums">${fmt(t.equityAfter)}</div>
+                      </div>
                     </div>
                   </div>
 
@@ -255,32 +244,53 @@ export default function Trades({ trades, settings }) {
                         transition={{ duration: 0.15 }}
                         className="border-t border-line/60"
                       >
+                        {/* Trade details */}
+                        <div className="px-3 pt-2.5 pb-1">
+                          <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                            <div>
+                              <div className="text-slate-500">Risk</div>
+                              <div className="font-bold font-mono text-slate-300">{(t.riskPct * 100).toFixed(1)}%</div>
+                            </div>
+                            <div>
+                              <div className="text-slate-500">Phase</div>
+                              <div className="font-bold text-slate-300">{getPhaseName(t.phase)}</div>
+                            </div>
+                            <div>
+                              <div className="text-slate-500">R-Mult</div>
+                              <div className={'font-bold font-mono ' + (t.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                                {t.riskDol > 0 ? (t.pnl >= 0 ? '+' : '') + (t.pnl / t.riskDol).toFixed(1) + 'R' : '--'}
+                              </div>
+                            </div>
+                          </div>
+                          {t.notes && <p className="text-xs text-slate-400 mt-2 italic">{t.notes}</p>}
+                        </div>
+                        {/* Actions */}
                         {isDeleting ? (
-                          <div className="flex gap-2 p-3">
+                          <div className="flex gap-2 p-3 pt-2">
                             <button
                               onClick={() => handleDelete(t.id)}
-                              className="flex-1 py-2.5 bg-rose-500/15 text-rose-400 text-xs font-semibold rounded-lg border border-rose-500/30 active:scale-[0.97] transition-all"
+                              className="flex-1 py-2 bg-rose-500/15 text-rose-400 text-xs font-semibold rounded-lg border border-rose-500/30 active:scale-[0.97] transition-all"
                             >
                               Confirm Delete
                             </button>
                             <button
                               onClick={() => setDeleteConfirm(null)}
-                              className="flex-1 py-2.5 bg-elevated text-slate-400 text-xs font-medium rounded-lg active:scale-[0.97] transition-all"
+                              className="flex-1 py-2 bg-elevated text-slate-400 text-xs font-medium rounded-lg active:scale-[0.97] transition-all"
                             >
                               Cancel
                             </button>
                           </div>
                         ) : (
-                          <div className="flex gap-2 p-3">
+                          <div className="flex gap-2 p-3 pt-2">
                             <button
                               onClick={() => openEdit(t)}
-                              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-elevated text-slate-300 text-xs font-semibold rounded-lg hover:bg-line active:scale-[0.97] transition-all"
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-elevated text-slate-300 text-xs font-semibold rounded-lg hover:bg-line active:scale-[0.97] transition-all"
                             >
                               <Pencil className="w-3.5 h-3.5" /> Edit
                             </button>
                             <button
                               onClick={() => setDeleteConfirm(t.id)}
-                              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-elevated text-rose-400 text-xs font-semibold rounded-lg hover:bg-rose-500/10 active:scale-[0.97] transition-all"
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-elevated text-rose-400 text-xs font-semibold rounded-lg hover:bg-rose-500/10 active:scale-[0.97] transition-all"
                             >
                               <Trash2 className="w-3.5 h-3.5" /> Delete
                             </button>
