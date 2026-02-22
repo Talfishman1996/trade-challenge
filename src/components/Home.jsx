@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Shield, Target, Flame, Zap, TrendingUp, Trophy, X, Info, Navigation2, ChevronDown, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fmt } from '../math/format.js';
-import { rN, r$N, getPhaseName, getPhase } from '../math/risk.js';
+import { rN, r$N, getPhaseName, getPhase, riskSeverity } from '../math/risk.js';
 import { E0, GPS_Z } from '../math/constants.js';
 import EquityCurve from './EquityCurve.jsx';
 import GPSJourney from './GPSJourney.jsx';
@@ -13,44 +13,23 @@ const PHASE_INFO = {
   model: 'Decay active. Risk shrinks as portfolio grows, protecting gains.',
 };
 
-function RiskGauge({ riskPct, riskDol, phase }) {
-  // Semicircular arc gauge
-  const r = 76, cx = 100, cy = 96;
-  const circumference = Math.PI * r; // half-circle arc length
-  const fillLen = (riskPct / 100) * circumference;
-  const isAggressive = riskPct > 50;
-  const strokeColor = isAggressive ? '#f59e0b' : '#10b981';
-  const glowColor = isAggressive ? 'rgba(245,158,11,0.15)' : 'rgba(16,185,129,0.15)';
+function RiskGauge({ riskPct, riskDol }) {
+  const sev = riskSeverity(riskPct);
+  const textCls = sev === 'safe' ? 'text-emerald-400' : sev === 'elevated' ? 'text-amber-400' : 'text-rose-400';
+  const barCls = sev === 'safe' ? 'bg-emerald-500' : sev === 'elevated' ? 'bg-amber-500' : 'bg-rose-500';
+  const glowCls = sev === 'safe' ? 'shadow-emerald-500/30' : sev === 'elevated' ? 'shadow-amber-500/30' : 'shadow-rose-500/30';
 
   return (
-    <div className="relative flex flex-col items-center">
-      <svg viewBox="0 0 200 110" className="w-56 h-auto">
-        {/* Background arc */}
-        <path
-          d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
-          fill="none" stroke="#1e293b" strokeWidth="10" strokeLinecap="round"
-        />
-        {/* Filled arc */}
-        <path
-          d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
-          fill="none" stroke={strokeColor} strokeWidth="10" strokeLinecap="round"
-          strokeDasharray={`${fillLen} ${circumference}`}
-          style={{ filter: `drop-shadow(0 0 8px ${glowColor})` }}
-        />
-        {/* Center dollar amount */}
-        <text x={cx} y={cy - 24} textAnchor="middle"
-          className="text-3xl font-bold font-mono" fill="white" fontSize="32" fontWeight="700"
-          fontFamily="'JetBrains Mono', ui-monospace, monospace">
-          ${fmt(riskDol)}
-        </text>
-        {/* Percentage below */}
-        <text x={cx} y={cy - 2} textAnchor="middle"
-          fill={strokeColor} fontSize="16" fontWeight="600"
-          fontFamily="'JetBrains Mono', ui-monospace, monospace">
-          {riskPct.toFixed(1)}%
-        </text>
-      </svg>
-      <span className="text-xs text-slate-500 -mt-2">risk on next trade</span>
+    <div className="space-y-2.5 w-full">
+      <div className="flex items-baseline justify-between">
+        <span className={`text-2xl font-bold font-mono tabular-nums ${textCls}`}>${fmt(riskDol)}</span>
+        <span className={`text-lg font-bold font-mono tabular-nums ${textCls}`}>{riskPct.toFixed(1)}%</span>
+      </div>
+      <div className="h-2 bg-elevated rounded-full overflow-hidden">
+        <div className={`h-full rounded-full ${barCls} shadow-lg ${glowCls} transition-all duration-500`}
+          style={{ width: Math.min(100, riskPct) + '%' }} />
+      </div>
+      <div className="text-xs text-slate-500">risk on next trade</div>
     </div>
   );
 }
@@ -65,6 +44,8 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
   const eq = trades.currentEquity;
   const phase = getPhase(eq);
   const rPct = trades.nextRisk.pct * 100;
+  const rSev = riskSeverity(rPct);
+  const rColor = rSev === 'safe' ? 'text-emerald-400' : rSev === 'elevated' ? 'text-amber-400' : 'text-rose-400';
   const ZIcon = phase === 'pre' ? Flame : phase === 'anchor' ? Target : Shield;
   const phaseColor = phase === 'pre' ? 'text-amber-400' : phase === 'anchor' ? 'text-emerald-400' : 'text-cyan-400';
   const phaseBg = phase === 'pre' ? 'bg-amber-500/10 border-amber-500/20' : phase === 'anchor' ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-cyan-500/10 border-cyan-500/20';
@@ -180,10 +161,10 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
           </div>
           <input type="range" min={20000} max={110000} step={500} value={exploreEq}
             onChange={e => setExploreEq(+e.target.value)}
-            className="w-full h-1.5 rounded-full appearance-none bg-elevated cursor-pointer accent-emerald-500" />
+            className="w-full" />
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="bg-deep rounded-xl p-2.5 border border-line/50">
-              <div className="text-sm font-bold font-mono tabular-nums text-emerald-400">{(rN(exploreEq) * 100).toFixed(1)}%</div>
+              <div className={'text-sm font-bold font-mono tabular-nums ' + (riskSeverity(rN(exploreEq) * 100) === 'safe' ? 'text-emerald-400' : riskSeverity(rN(exploreEq) * 100) === 'elevated' ? 'text-amber-400' : 'text-rose-400')}>{(rN(exploreEq) * 100).toFixed(1)}%</div>
               <div className="text-[10px] text-slate-600 mt-0.5">Risk</div>
             </div>
             <div className="bg-deep rounded-xl p-2.5 border border-line/50">
@@ -206,23 +187,22 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
       <div className="md:grid md:grid-cols-2 md:gap-4 space-y-4 md:space-y-0">
 
       {/* HERO RISK CARD */}
-      <div className="bg-surface rounded-2xl p-6 pt-4 border border-line flex flex-col items-center">
-        <div className="flex items-center gap-2 mb-1 self-start">
-          <Zap className={`w-3.5 h-3.5 ${rPct > 50 ? 'text-amber-400' : 'text-emerald-400'}`} />
-          <span className={`text-xs font-semibold uppercase tracking-wider ${rPct > 50 ? 'text-amber-400' : 'text-emerald-400'}`}>
+      <div className="bg-surface rounded-2xl p-4 border border-line">
+        <div className="flex items-center gap-2 mb-3">
+          <Zap className={`w-3.5 h-3.5 ${rColor}`} />
+          <span className={`text-xs font-semibold uppercase tracking-wider ${rColor}`}>
             Next Trade Risk
           </span>
         </div>
 
-        <RiskGauge riskPct={rPct} riskDol={trades.nextRisk.dol} phase={phase} />
+        <RiskGauge riskPct={rPct} riskDol={trades.nextRisk.dol} />
 
-        {/* Phase explanation */}
         <button
           onClick={() => setShowPhaseInfo(!showPhaseInfo)}
-          className={`mt-2 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${rPct > 50 ? 'text-amber-400/70 hover:text-amber-400 hover:bg-amber-500/5' : 'text-slate-500 hover:text-slate-300 hover:bg-elevated/50'}`}
+          className="mt-3 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors text-slate-500 hover:text-slate-300 hover:bg-elevated/50"
         >
           <Info className="w-3 h-3" />
-          {rPct > 50 ? 'Why so high?' : 'About this phase'}
+          {rSev === 'danger' ? 'Why so high?' : 'About this phase'}
         </button>
         <AnimatePresence>
           {showPhaseInfo && (
@@ -230,7 +210,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="text-xs text-slate-400 leading-relaxed text-center mt-2 px-2"
+              className="text-xs text-slate-400 leading-relaxed mt-2 px-1"
             >
               {PHASE_INFO[phase]}
             </motion.p>
