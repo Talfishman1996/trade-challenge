@@ -67,3 +67,23 @@ input[type="range"]::-moz-range-progress {
   border-radius: 9999px;
   height: 6px;
 }
+
+/* Portfolio Value — animated border flow */
+@keyframes border-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Portfolio Value — text shimmer sweep */
+@keyframes text-shimmer {
+  0% { background-position: 200% center; }
+  20% { background-position: -200% center; }
+  100% { background-position: -200% center; }
+}
+
+/* Portfolio Value — breathing inner glow */
+@keyframes glow-breathe {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}

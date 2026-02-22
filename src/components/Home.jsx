@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Shield, Target, Flame, Zap, TrendingUp, Trophy, X, Info, AlertTriangle } from 'lucide-react';
+import { Zap, TrendingUp, Trophy, X, Info, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fmt } from '../math/format.js';
 import { rN, r$N, getPhaseName, getPhase, riskSeverity } from '../math/risk.js';
@@ -14,9 +14,9 @@ const PHASE_INFO = {
 
 function RiskGauge({ riskPct, riskDol }) {
   const sev = riskSeverity(riskPct);
-  const textCls = sev === 'safe' ? 'text-amber-400' : sev === 'elevated' ? 'text-orange-400' : 'text-rose-400';
-  const barCls = sev === 'safe' ? 'bg-amber-500' : sev === 'elevated' ? 'bg-orange-500' : 'bg-rose-500';
-  const glowCls = sev === 'safe' ? 'shadow-amber-500/30' : sev === 'elevated' ? 'shadow-orange-500/30' : 'shadow-rose-500/30';
+  const textCls = sev === 'safe' ? 'text-amber-400' : sev === 'elevated' ? 'text-orange-400' : 'text-red-500';
+  const barCls = sev === 'safe' ? 'bg-amber-500' : sev === 'elevated' ? 'bg-orange-500' : 'bg-red-500';
+  const glowCls = sev === 'safe' ? 'shadow-amber-500/30' : sev === 'elevated' ? 'shadow-orange-500/30' : 'shadow-red-500/30';
 
   return (
     <div className="space-y-2.5 w-full">
@@ -43,10 +43,15 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
   const phase = getPhase(eq);
   const rPct = trades.nextRisk.pct * 100;
   const rSev = riskSeverity(rPct);
-  const rColor = rSev === 'safe' ? 'text-amber-400' : rSev === 'elevated' ? 'text-orange-400' : 'text-rose-400';
-  const ZIcon = phase === 'pre' ? Flame : phase === 'anchor' ? Target : Shield;
-  const phaseColor = phase === 'pre' ? 'text-amber-400' : phase === 'anchor' ? 'text-emerald-400' : 'text-cyan-400';
-  const phaseBg = phase === 'pre' ? 'bg-amber-500/10 border-amber-500/20' : phase === 'anchor' ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-cyan-500/10 border-cyan-500/20';
+  const rColor = rSev === 'safe' ? 'text-amber-400' : rSev === 'elevated' ? 'text-orange-400' : 'text-red-500';
+  const hasTrades = trades.stats.totalTrades > 0;
+  const inProfit = trades.stats.totalPnl >= 0;
+  const heroGradient = !hasTrades
+    ? '#475569, #0ea5e9, #475569'
+    : inProfit ? '#10b981, #0ea5e9, #f59e0b, #10b981' : '#ef4444, #f97316, #ef4444';
+  const heroInnerGlow = !hasTrades ? 'transparent'
+    : inProfit ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)';
+  const shimmerHighlight = inProfit ? '#a5f3fc' : '#fca5a5';
 
   const nextMilestone = trades.milestones.find(m => !m.achieved);
 
@@ -91,7 +96,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
     return MILES.map(m => {
       const t = (Math.log10(m.v) - logS) / logR;
       const prev = MILES.filter(p => p.v < m.v);
-      return { ...m, t, x: 10 + t * 280, y: 62 - t * 54, achieved: eq >= m.v,
+      return { ...m, t, x: 10 + t * 280, y: 110 - t * 98, achieved: eq >= m.v,
         isNext: eq < m.v && prev.every(p => eq >= p.v || p.v >= m.v) };
     });
   }, [eq]);
@@ -101,53 +106,87 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
     return Math.max(0, Math.min(1, (Math.log10(Math.max(eq, 20000)) - logS) / logR));
   }, [eq]);
   const summitX = 10 + summitT * 280;
-  const summitY = 62 - summitT * 54;
+  const summitY = 110 - summitT * 98;
 
   // Stats data
   const stats = [
     { l: 'Trades', v: trades.stats.totalTrades, c: 'text-white' },
     { l: 'Win Rate', v: trades.stats.totalTrades > 0 ? trades.stats.winRate.toFixed(0) + '%' : '--',
-      c: trades.stats.winRate >= 60 ? 'text-amber-300' : trades.stats.totalTrades > 0 ? 'text-rose-500' : 'text-white',
+      c: trades.stats.winRate >= 60 ? 'text-amber-300' : trades.stats.totalTrades > 0 ? 'text-red-500' : 'text-white',
       glow: trades.stats.winRate >= 60 },
     {
       l: 'Streak',
       v: trades.stats.currentStreak > 0
         ? (trades.stats.streakType === 'win' ? '+' : '-') + trades.stats.currentStreak
         : '--',
-      c: trades.stats.streakType === 'win' ? 'text-emerald-400' : trades.stats.streakType === 'loss' ? 'text-rose-400' : 'text-white'
+      c: trades.stats.streakType === 'win' ? 'text-emerald-400' : trades.stats.streakType === 'loss' ? 'text-red-500' : 'text-white'
     },
     {
       l: '30 Days',
       v: trades.stats.last30Trades > 0
         ? (trades.stats.last30Pnl >= 0 ? '+$' : '-$') + fmt(Math.abs(trades.stats.last30Pnl))
         : '--',
-      c: trades.stats.last30Pnl > 0 ? 'text-emerald-400' : trades.stats.last30Pnl < 0 ? 'text-rose-400' : 'text-white'
+      c: trades.stats.last30Pnl > 0 ? 'text-emerald-400' : trades.stats.last30Pnl < 0 ? 'text-red-500' : 'text-white'
     },
   ];
 
   return (
     <div className="px-4 pt-4 md:pt-6 pb-6 max-w-lg md:max-w-3xl mx-auto space-y-4">
-      {/* 1. EQUITY HERO */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-3xl font-bold font-mono tabular-nums tracking-tight text-white">${fmt(eq)}</div>
-          {trades.stats.totalTrades > 0 ? (
-            <div className="flex items-center gap-2 mt-1">
-              <span className={'text-sm font-semibold font-mono tabular-nums ' + (trades.stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
-                {trades.stats.totalPnl >= 0 ? '+$' : '-$'}{fmt(Math.abs(trades.stats.totalPnl))}
-              </span>
-              <span className={'text-xs font-mono tabular-nums px-1.5 py-0.5 rounded ' + (trades.stats.totalPnl >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400')}>
-                {trades.stats.totalPnl >= 0 ? '+' : ''}{((eq - trades.initialEquity) / trades.initialEquity * 100).toFixed(1)}%
-              </span>
+      {/* 1. EQUITY HERO — Premium Glass Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+        className="relative p-[1px] rounded-2xl"
+      >
+        {/* Animated gradient border */}
+        <div className="absolute inset-0 rounded-2xl"
+          style={{
+            background: `linear-gradient(270deg, ${heroGradient})`,
+            backgroundSize: '300% 300%',
+            animation: 'border-flow 6s ease infinite',
+          }} />
+
+        {/* Card body */}
+        <div className="relative rounded-2xl p-6 overflow-hidden" style={{ background: '#0D1117' }}>
+          {/* Breathing inner glow */}
+          <div className="absolute inset-0 pointer-events-none rounded-2xl"
+            style={{
+              background: `radial-gradient(ellipse at 50% 0%, ${heroInnerGlow} 0%, transparent 65%)`,
+              animation: 'glow-breathe 4s ease-in-out infinite',
+            }} />
+
+          <div className="relative text-center">
+            <div className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-medium mb-2">Portfolio Value</div>
+
+            {/* The number — with shimmer sweep */}
+            <div className="text-5xl font-bold font-mono tabular-nums tracking-tight"
+              style={{
+                background: `linear-gradient(110deg, #ffffff 35%, ${shimmerHighlight} 50%, #ffffff 65%)`,
+                backgroundSize: '200% 100%',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                animation: 'text-shimmer 5s ease-in-out infinite',
+              }}>
+              ${fmt(eq)}
             </div>
-          ) : (
-            <div className="text-xs text-slate-500 mt-1">Starting equity</div>
-          )}
+
+            {hasTrades ? (
+              <div className="flex items-center justify-center gap-2 mt-2.5">
+                <span className={'text-sm font-semibold font-mono tabular-nums ' + (inProfit ? 'text-emerald-400' : 'text-red-500')}>
+                  {inProfit ? '+$' : '-$'}{fmt(Math.abs(trades.stats.totalPnl))}
+                </span>
+                <span className={'text-xs font-mono tabular-nums px-1.5 py-0.5 rounded ' + (inProfit ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-500')}>
+                  {inProfit ? '+' : ''}{((eq - trades.initialEquity) / trades.initialEquity * 100).toFixed(1)}%
+                </span>
+              </div>
+            ) : (
+              <div className="text-xs text-slate-500 mt-2">Starting equity</div>
+            )}
+          </div>
         </div>
-        <div className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg border ${phaseBg} ${phaseColor}`}>
-          <ZIcon className="w-3 h-3" /> {getPhaseName(phase)}
-        </div>
-      </div>
+      </motion.div>
 
       {/* DRAWDOWN ALERT */}
       {!dismissAlert && trades.currentDrawdownPct > 0 && trades.stats.maxDrawdownPct > 0 &&
@@ -193,11 +232,11 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
             className="w-full" />
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="bg-deep rounded-xl p-2.5 border border-line/50">
-              <div className={'text-sm font-bold font-mono tabular-nums ' + (riskSeverity(rN(exploreEq) * 100) === 'safe' ? 'text-amber-400' : riskSeverity(rN(exploreEq) * 100) === 'elevated' ? 'text-orange-400' : 'text-rose-400')}>{(rN(exploreEq) * 100).toFixed(1)}%</div>
+              <div className={'text-sm font-bold font-mono tabular-nums ' + (riskSeverity(rN(exploreEq) * 100) === 'safe' ? 'text-amber-400' : riskSeverity(rN(exploreEq) * 100) === 'elevated' ? 'text-orange-400' : 'text-red-500')}>{(rN(exploreEq) * 100).toFixed(1)}%</div>
               <div className="text-[10px] text-slate-600 mt-0.5">Risk</div>
             </div>
             <div className="bg-deep rounded-xl p-2.5 border border-line/50">
-              <div className="text-sm font-bold font-mono tabular-nums text-rose-400">${fmt(r$N(exploreEq))}</div>
+              <div className="text-sm font-bold font-mono tabular-nums text-red-500">${fmt(r$N(exploreEq))}</div>
               <div className="text-[10px] text-slate-600 mt-0.5">At Risk</div>
             </div>
             <div className="bg-deep rounded-xl p-2.5 border border-line/50">
@@ -311,40 +350,43 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
           </span>
         </div>
 
-        <svg viewBox="0 0 300 78" className="w-full" style={{ height: 78 }} aria-label="Journey to $10M">
-          <polygon points="0,78 25,58 55,65 90,42 130,52 170,32 210,40 250,18 280,10 300,6 300,78"
-            fill="#1C2333" opacity="0.35" />
+        <svg viewBox="0 0 300 130" className="w-full" style={{ height: 130 }} aria-label="Journey to $10M">
+          <polygon points="0,130 20,95 50,105 85,70 120,82 160,52 200,65 240,30 270,18 295,10 300,8 300,130"
+            fill="#1C2333" opacity="0.3" />
 
-          <line x1={10} y1={62} x2={summitX} y2={summitY}
-            stroke="#10b981" strokeWidth="2" strokeLinecap="round" opacity="0.7" />
-          <line x1={summitX} y1={summitY} x2={290} y2={8}
-            stroke="#2D3748" strokeWidth="1" strokeDasharray="3,3" />
+          <line x1={10} y1={110} x2={summitX} y2={summitY}
+            stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" opacity="0.7" />
+          <line x1={summitX} y1={summitY} x2={290} y2={12}
+            stroke="#2D3748" strokeWidth="1.5" strokeDasharray="4,4" />
+
+          <text x="8" y="122" fontSize="8" fontFamily="'JetBrains Mono', monospace" fill="#475569">$20K</text>
 
           {summitMiles.map((m, i) => (
             <g key={i}>
-              {m.achieved && <circle cx={m.x} cy={m.y} r="6" fill="#10b981" opacity="0.12" />}
-              <circle cx={m.x} cy={m.y} r={m.achieved ? 3.5 : 2.5}
+              {m.achieved && <circle cx={m.x} cy={m.y} r="8" fill="#10b981" opacity="0.1" />}
+              <circle cx={m.x} cy={m.y} r={m.achieved ? 5 : 3.5}
                 fill={m.achieved ? '#10b981' : m.isNext ? '#0D1117' : '#2D3748'}
-                stroke={m.isNext ? '#f59e0b' : 'none'} strokeWidth={m.isNext ? 1.5 : 0} />
-              <text x={m.x} y={m.y + 11} textAnchor="middle"
-                fontSize="7" fontFamily="'JetBrains Mono', monospace"
+                stroke={m.isNext ? '#f59e0b' : 'none'} strokeWidth={m.isNext ? 2 : 0} />
+              <text x={m.x} y={m.y + 15} textAnchor="middle"
+                fontSize="9" fontFamily="'JetBrains Mono', monospace"
                 fill={m.achieved ? '#94a3b8' : m.isNext ? '#f59e0b' : '#475569'}>
                 {m.l}
               </text>
             </g>
           ))}
 
-          <circle cx={summitX} cy={summitY} r="5" fill="#10b981" opacity="0.25" />
-          <circle cx={summitX} cy={summitY} r="2.5" fill="#10b981" />
+          <circle cx={summitX} cy={summitY} r="7" fill="#10b981" opacity="0.2" />
+          <circle cx={summitX} cy={summitY} r="3.5" fill="#10b981" />
 
-          <polygon points="287,5 290,0 293,5" fill="#f59e0b" opacity="0.8" />
+          <polygon points="286,8 290,0 294,8" fill="#f59e0b" opacity="0.8" />
+          <text x="290" y="20" textAnchor="middle" fontSize="7" fill="#f59e0b" fontFamily="'JetBrains Mono', monospace" opacity="0.6">$10M</text>
         </svg>
 
         {nextMilestone && (
-          <div className="mt-1">
+          <div className="mt-2">
             <div className="flex justify-between items-center mb-1">
-              <span className="text-[10px] text-slate-500">Next: <span className="text-amber-400/80 font-mono">{nextMilestone.l}</span></span>
-              <span className="text-[10px] text-slate-500 font-mono tabular-nums">{nextMilestone.progress.toFixed(1)}%</span>
+              <span className="text-xs text-slate-500">Next: <span className="text-amber-400 font-mono font-semibold">{nextMilestone.l}</span></span>
+              <span className="text-xs text-slate-500 font-mono tabular-nums">{nextMilestone.progress.toFixed(1)}%</span>
             </div>
             <div className="h-1 bg-elevated rounded-full overflow-hidden">
               <motion.div className="h-full bg-emerald-500/60 rounded-full"
@@ -375,7 +417,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
               <EquityCurve trades={trades} height={320} />
               <div className="mt-4 grid grid-cols-3 gap-2">
                 <div className="bg-surface rounded-xl p-3 text-center border border-line">
-                  <div className={'text-base font-bold font-mono tabular-nums ' + (trades.stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                  <div className={'text-base font-bold font-mono tabular-nums ' + (trades.stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-red-500')}>
                     {trades.stats.totalPnl >= 0 ? '+$' : '-$'}{fmt(Math.abs(trades.stats.totalPnl))}
                   </div>
                   <div className="text-xs text-slate-600">Total P&L</div>
