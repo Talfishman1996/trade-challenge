@@ -9,20 +9,20 @@ function EqTooltip({ active, payload }) {
   if (!active || !payload?.[0]) return null;
   const d = payload[0].payload;
   return (
-    <div style={TT}>
-      <div style={{ color: '#f1f5f9', fontWeight: 700, fontFamily: 'ui-monospace, monospace' }}>
+    <div style={{ ...TT, minWidth: 120, padding: '10px 14px' }}>
+      <div style={{ color: '#f1f5f9', fontWeight: 700, fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontSize: 15 }}>
         ${fmt(d.equity)}
       </div>
       {d.pnl !== undefined && (
         <div style={{
           color: d.pnl >= 0 ? '#10b981' : '#f43f5e',
-          fontFamily: 'ui-monospace, monospace',
-          fontSize: 11
+          fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+          fontSize: 12, fontWeight: 600, marginTop: 2
         }}>
           {d.pnl >= 0 ? '+$' : '-$'}{fmt(Math.abs(d.pnl))}
         </div>
       )}
-      <div style={{ color: '#64748b', fontSize: 10 }}>
+      <div style={{ color: '#64748b', fontSize: 10, marginTop: 3 }}>
         Trade #{d.trade}
         {d.date && (' \u00B7 ' + new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))}
       </div>
@@ -59,7 +59,7 @@ export default function EquityCurve({ trades, height = 256 }) {
   const len = chartData.length;
 
   return (
-    <div style={{ height }}>
+    <div style={{ height }} className="select-none">
       <ResponsiveContainer width="100%" height="100%" minWidth={0}>
         <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
           <defs>
@@ -78,7 +78,7 @@ export default function EquityCurve({ trades, height = 256 }) {
             domain={[minEq - yPad, maxEq + yPad]}
             axisLine={false} tickLine={false}
           />
-          <Tooltip content={<EqTooltip />} />
+          <Tooltip content={<EqTooltip />} cursor={{ stroke: '#94a3b8', strokeDasharray: '4 4', strokeWidth: 1 }} isAnimationActive={false} />
           {/* Peak equity */}
           {trades.peakEquity > trades.initialEquity && (
             <ReferenceLine
@@ -105,11 +105,14 @@ export default function EquityCurve({ trades, height = 256 }) {
                 />
               );
             }}
-            activeDot={{ r: 5, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }}
+            activeDot={{ r: 6, fill: '#10b981', stroke: '#fff', strokeWidth: 2.5 }}
             isAnimationActive={false}
           />
         </AreaChart>
       </ResponsiveContainer>
+      {chartData.length > 2 && (
+        <div className="text-center text-[10px] text-slate-700 mt-1">Tap & drag to inspect</div>
+      )}
     </div>
   );
 }
