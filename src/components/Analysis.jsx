@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fmt, lg, unlg, s2e, e2s } from '../math/format.js';
-import { rN, rO, rF, r$N, geoGrowth, lossesToWipe, calcStreak, fmtGeo, getPhase, getPhaseName } from '../math/risk.js';
+import { rN, rO, rF, r$N, geoGrowth, lossesToWipe, calcStreak, fmtGeo, getPhase, getPhaseName, riskSeverity } from '../math/risk.js';
 import { computeHeavyMetrics, computeMilestones } from '../math/monte-carlo.js';
 import {
   E0, K0, SMIN, SMAX, LOG_MIN, LOG_MAX, LXT, QK, FM, MILES,
@@ -155,7 +155,7 @@ export default function Analysis({ trades, settings }) {
               <input type="text" value={eqInput} onChange={handleEqChange} onFocus={() => setIsEqFocused(true)} onBlur={() => setIsEqFocused(false)} className="w-full bg-transparent text-center text-xl font-bold font-mono tabular-nums tracking-tight text-white py-2 outline-none" />
               <button onClick={() => stepEq(1)} className="p-2.5 text-slate-500 hover:text-white transition-colors active:scale-95" tabIndex={-1}><Plus className="w-4 h-4" /></button>
             </div>
-            <input type="range" min={0} max={1000} step="any" value={e2s(simEq)} onChange={e => { const v = s2e(+e.target.value); setSimEq(v); setEqInput(fmt(v)); }} className="w-full h-1.5 rounded-full appearance-none bg-elevated accent-emerald-500 cursor-pointer" />
+            <input type="range" min={0} max={1000} step="any" value={e2s(simEq)} onChange={e => { const v = s2e(+e.target.value); setSimEq(v); setEqInput(fmt(v)); }} className="w-full" />
             <div className="flex flex-wrap gap-1.5 justify-center">
               {QK.map(q => (
                 <button key={q.v} onClick={() => { setSimEq(q.v); setEqInput(fmt(q.v)); }} className={'text-xs px-2 py-1 rounded-md font-mono font-medium transition-all ' + (Math.abs(simEq - q.v) < q.v * 0.05 ? 'bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30' : 'text-slate-500 hover:text-slate-300 hover:bg-elevated')}>{q.l}</button>
@@ -167,13 +167,13 @@ export default function Analysis({ trades, settings }) {
 
       {/* Metric Cards */}
       <div className="grid grid-cols-2 gap-2">
-        <MetricCard label="Active Risk %" barColor={rp > 33.1 ? 'bg-amber-500' : 'bg-emerald-500'}>
-          <div className={'text-xl font-bold font-mono tracking-tight tabular-nums ' + (rp > 33.1 ? 'text-amber-400' : 'text-emerald-400')}>{rp.toFixed(1)}%</div>
+        <MetricCard label="Active Risk %" tip="Position size as % of equity. Green means at or below Kelly optimal (33%)." barColor={riskSeverity(rp) === 'safe' ? 'bg-emerald-500' : riskSeverity(rp) === 'elevated' ? 'bg-amber-500' : 'bg-rose-500'}>
+          <div className={'text-xl font-bold font-mono tracking-tight tabular-nums ' + (riskSeverity(rp) === 'safe' ? 'text-emerald-400' : riskSeverity(rp) === 'elevated' ? 'text-amber-400' : 'text-rose-400')}>{rp.toFixed(1)}%</div>
           <div className={'text-xs mt-1 font-medium ' + (kellyMult > 1.05 ? 'text-amber-500/80' : 'text-emerald-400/80')}>
             {kellyPct > 0 ? (kellyMult > 1.05 ? '\u26A0 ' + kellyMult.toFixed(2) + '\u00D7 Kelly' : '\u2713 ' + kellyMult.toFixed(2) + '\u00D7 Kelly') : '\u2620 No edge'}
           </div>
         </MetricCard>
-        <MetricCard label="Capital at Risk" barColor="bg-rose-500" sub="max single-trade loss" value={{ text: fmt(rd), className: 'text-rose-400' }} />
+        <MetricCard label="Capital at Risk" tip="Maximum dollar loss on a single trade at current risk level." barColor="bg-rose-500" sub="max single-trade loss" value={{ text: fmt(rd), className: 'text-rose-400' }} />
       </div>
 
       {/* 3 Analysis Tabs */}
@@ -196,50 +196,42 @@ export default function Analysis({ trades, settings }) {
           <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}>
 
             {/* ═══════════════ PERFORMANCE TAB ═══════════════ */}
-            {tab === 'performance' && (
+            {tab === 'performance' && trades.trades.length === 0 && (
+              <div className="flex flex-col items-center py-10 px-4">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-4">
+                  <TrendingUp className="w-7 h-7 text-emerald-400/50" />
+                </div>
+                <p className="text-sm font-semibold text-slate-400 mb-1">No performance data yet</p>
+                <p className="text-xs text-slate-600 text-center max-w-[260px] leading-relaxed">
+                  Log trades to see your equity curve, win rate, drawdowns, and R-multiple distribution.
+                </p>
+              </div>
+            )}
+            {tab === 'performance' && trades.trades.length > 0 && (
               <div className="space-y-4">
                 <div>
                   <h3 className="text-base font-bold text-white">Equity Curve</h3>
                   <p className="text-xs text-slate-500 mt-1">Portfolio value across all trades.</p>
                 </div>
                 <EquityCurve trades={trades} height={280} />
-                {trades.trades.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-deep rounded-xl p-3 text-center border border-line">
-                      <div className={'text-lg font-bold font-mono tabular-nums ' + (trades.stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
-                        {trades.stats.totalPnl >= 0 ? '+$' : '-$'}{fmt(Math.abs(trades.stats.totalPnl))}
-                      </div>
-                      <div className="text-xs text-slate-600 mt-0.5">Total P&L</div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-deep rounded-xl p-3 text-center border border-line">
+                    <div className={'text-lg font-bold font-mono tabular-nums ' + (trades.stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                      {trades.stats.totalPnl >= 0 ? '+$' : '-$'}{fmt(Math.abs(trades.stats.totalPnl))}
                     </div>
-                    <div className="bg-deep rounded-xl p-3 text-center border border-line">
-                      <div className="text-lg font-bold font-mono tabular-nums text-amber-400">
-                        ${fmt(trades.peakEquity)}
-                      </div>
-                      <div className="text-xs text-slate-600 mt-0.5">Peak</div>
+                    <div className="text-xs text-slate-600 mt-0.5">Total P&L</div>
+                  </div>
+                  <div className="bg-deep rounded-xl p-3 text-center border border-line">
+                    <div className="text-lg font-bold font-mono tabular-nums text-amber-400">
+                      ${fmt(trades.peakEquity)}
                     </div>
-                    <div className="bg-deep rounded-xl p-3 text-center border border-line">
-                      <div className="text-lg font-bold font-mono tabular-nums text-rose-400">
-                        {trades.stats.maxDrawdownPct > 0 ? '-' + trades.stats.maxDrawdownPct.toFixed(1) + '%' : '--'}
-                      </div>
-                      <div className="text-xs text-slate-600 mt-0.5">Max DD</div>
+                    <div className="text-xs text-slate-600 mt-0.5">Peak</div>
+                  </div>
+                  <div className="bg-deep rounded-xl p-3 text-center border border-line">
+                    <div className="text-lg font-bold font-mono tabular-nums text-rose-400">
+                      {trades.stats.maxDrawdownPct > 0 ? '-' + trades.stats.maxDrawdownPct.toFixed(1) + '%' : '--'}
                     </div>
-                  </div>
-                )}
-                {/* Drawdown & Ruin inline */}
-                <div className="flex items-center justify-between text-xs font-mono bg-deep rounded-xl px-3 py-2.5 border border-line">
-                  <div className="text-center">
-                    <div className="font-bold text-amber-400 tabular-nums">{'\u2212'}{d3.toFixed(0)}%</div>
-                    <div className="text-[10px] text-slate-600 mt-0.5">3 losses</div>
-                  </div>
-                  <div className="w-px h-6 bg-line/50" />
-                  <div className="text-center">
-                    <div className="font-bold text-rose-400 tabular-nums">{'\u2212'}{d5.toFixed(0)}%</div>
-                    <div className="text-[10px] text-slate-600 mt-0.5">5 losses</div>
-                  </div>
-                  <div className="w-px h-6 bg-line/50" />
-                  <div className="text-center">
-                    <div className={'font-bold tabular-nums ' + (ltw <= 3 ? 'text-rose-500' : ltw <= 10 ? 'text-amber-400' : 'text-emerald-400')}>{ltw >= 200 ? '200+' : ltw}</div>
-                    <div className="text-[10px] text-slate-600 mt-0.5">ruin horizon</div>
+                    <div className="text-xs text-slate-600 mt-0.5">Max DD</div>
                   </div>
                 </div>
 
@@ -265,7 +257,7 @@ export default function Analysis({ trades, settings }) {
                   const data = buckets.filter(b => b.count > 0);
                   return (
                     <div className="pt-2">
-                      <h3 className="text-sm font-bold text-white mb-1">R-Multiple Distribution</h3>
+                      <h3 className="text-sm font-bold text-white mb-1">R-Multiple Distribution<Tip text="Each trade measured in risk units (R). +2R = won 2x what you risked. -1R = lost exactly your risk amount." /></h3>
                       <p className="text-xs text-slate-500 mb-3">Outcome distribution in risk units.</p>
                       <div className="h-40">
                         <ResponsiveContainer width="100%" height="100%" minWidth={0}>
@@ -302,14 +294,14 @@ export default function Analysis({ trades, settings }) {
                       <span className={'text-xs font-semibold px-2 py-1 rounded-lg border ' + (expPhase === 'pre' ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' : expPhase === 'anchor' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20')}>{getPhaseName(expPhase)}</span>
                     </div>
                     <div>
-                      <input type="range" min={20000} max={110000} step={500} value={explorerEq} onChange={e => setExplorerEq(+e.target.value)} className="w-full h-1.5 rounded-full appearance-none bg-elevated accent-emerald-500 cursor-pointer" />
+                      <input type="range" min={20000} max={110000} step={500} value={explorerEq} onChange={e => setExplorerEq(+e.target.value)} className="w-full" />
                       <div className="flex justify-between text-[10px] text-slate-600 font-mono mt-1">
                         <span>$20K</span><span>$87.5K anchor</span><span>$110K</span>
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center">
                       <div className="bg-surface rounded-lg p-3 border border-line">
-                        <div className={'text-xl font-bold font-mono tabular-nums ' + (expR > 33.1 ? 'text-amber-400' : 'text-emerald-400')}>{expR.toFixed(1)}%</div>
+                        <div className={'text-xl font-bold font-mono tabular-nums ' + (riskSeverity(expR) === 'safe' ? 'text-emerald-400' : riskSeverity(expR) === 'elevated' ? 'text-amber-400' : 'text-rose-400')}>{expR.toFixed(1)}%</div>
                         <div className="text-[10px] text-slate-600 mt-0.5">Risk %</div>
                       </div>
                       <div className="bg-surface rounded-lg p-3 border border-line">
@@ -334,6 +326,25 @@ export default function Analysis({ trades, settings }) {
                       <span className="text-xs text-slate-500">Ruin horizon</span>
                       <span className={'text-sm font-bold font-mono tabular-nums ' + (expLtw <= 3 ? 'text-rose-500' : expLtw <= 10 ? 'text-amber-400' : 'text-emerald-400')}>{expLtw >= 200 ? '200+' : expLtw} losses</span>
                     </div>
+                  </div>
+                </div>
+
+                {/* Drawdown & Ruin (theoretical, at current equity) */}
+                <SectionDivider title="Loss Scenarios" subtitle={'Consecutive losses from $' + fmt(dEq) + ' at current risk.'} />
+                <div className="flex items-center justify-between text-xs font-mono bg-deep rounded-xl px-3 py-2.5 border border-line">
+                  <div className="text-center">
+                    <div className="font-bold text-amber-400 tabular-nums">{'\u2212'}{d3.toFixed(0)}%</div>
+                    <div className="text-[10px] text-slate-600 mt-0.5">3 losses</div>
+                  </div>
+                  <div className="w-px h-6 bg-line/50" />
+                  <div className="text-center">
+                    <div className="font-bold text-rose-400 tabular-nums">{'\u2212'}{d5.toFixed(0)}%</div>
+                    <div className="text-[10px] text-slate-600 mt-0.5">5 losses</div>
+                  </div>
+                  <div className="w-px h-6 bg-line/50" />
+                  <div className="text-center">
+                    <div className={'font-bold tabular-nums ' + (ltw <= 3 ? 'text-rose-500' : ltw <= 10 ? 'text-amber-400' : 'text-emerald-400')}>{ltw >= 200 ? '200+' : ltw}</div>
+                    <div className="text-[10px] text-slate-600 mt-0.5">ruin horizon<Tip text="Consecutive losing trades before your account reaches ~$0. Higher is safer." /></div>
                   </div>
                 </div>
 
