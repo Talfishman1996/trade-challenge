@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Download, Upload, Trash2, FileSpreadsheet, Cloud, CloudOff, RefreshCw, Copy, Check, Link2, Loader2 } from 'lucide-react';
 import { getPhaseName } from '../math/risk.js';
-import { getSyncConfig, clearSyncConfig, saveSyncConfig, extractBlobId, pullFromBlobId } from '../sync.js';
+import { getSyncConfig, clearSyncConfig, saveSyncConfig, extractBlobId, pullFromBlobId, createBlob } from '../sync.js';
 
 export default function Settings({ settings, trades }) {
   const [showConfirm, setShowConfirm] = useState(null);
@@ -14,6 +14,9 @@ export default function Settings({ settings, trades }) {
   const [showSwitchSync, setShowSwitchSync] = useState(false);
   const [switchInput, setSwitchInput] = useState('');
   const [switchStatus, setSwitchStatus] = useState(''); // '', 'connecting', 'error'
+  const [showOfflineConnect, setShowOfflineConnect] = useState(false);
+  const [offlineInput, setOfflineInput] = useState('');
+  const [offlineStatus, setOfflineStatus] = useState(''); // '', 'creating', 'connecting', 'error'
 
   const handleEqChange = e => {
     const val = e.target.value.replace(/[^0-9]/g, '');
@@ -57,6 +60,54 @@ export default function Settings({ settings, trades }) {
       setSyncConfig(getSyncConfig());
     } catch { setSyncMsg('Sync failed'); }
     setSyncing(false);
+  };
+
+  const handleCreateSync = async () => {
+    setOfflineStatus('creating');
+    setSyncMsg('');
+    try {
+      const data = { version: 1, initialEquity: trades.initialEquity || 20000, trades: trades.trades, _lastModified: Date.now() };
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000));
+      const blobId = await Promise.race([createBlob(data), timeout]);
+      if (blobId) {
+        saveSyncConfig({ blobId, lastSync: Date.now() });
+        window.location.hash = `sync=${blobId}`;
+        setSyncConfig({ blobId, lastSync: Date.now() });
+        setOfflineStatus('');
+        setSyncMsg('Sync created successfully');
+      } else {
+        setOfflineStatus('error');
+        setSyncMsg('Could not reach sync server. Try again later.');
+      }
+    } catch {
+      setOfflineStatus('error');
+      setSyncMsg('Connection timed out. Check your internet and try again.');
+    }
+  };
+
+  const handleOfflineConnect = async () => {
+    const blobId = extractBlobId(offlineInput);
+    if (!blobId) { setOfflineStatus('error'); setSyncMsg('Invalid sync link'); return; }
+    setOfflineStatus('connecting');
+    setSyncMsg('');
+    try {
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000));
+      const cloud = await Promise.race([pullFromBlobId(blobId), timeout]);
+      if (!cloud || !Array.isArray(cloud.trades)) {
+        setOfflineStatus('error');
+        setSyncMsg('Sync not found. Check the link and try again.');
+        return;
+      }
+      saveSyncConfig({ blobId, lastSync: Date.now() });
+      window.location.hash = `sync=${blobId}`;
+      const { lastModified, ...rest } = cloud;
+      const merged = { ...rest, _lastModified: lastModified || Date.now() };
+      localStorage.setItem('risk-engine-data', JSON.stringify(merged));
+      window.location.reload();
+    } catch {
+      setOfflineStatus('error');
+      setSyncMsg('Connection timed out. Check your internet and try again.');
+    }
   };
 
   const handleSwitchSync = async () => {
@@ -271,9 +322,56 @@ export default function Settings({ settings, trades }) {
           </>
         ) : (
           <>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              {syncMsg || 'Sync is offline. Reload the page to auto-connect.'}
-            </p>
+            {syncMsg && <p className={'text-xs leading-relaxed ' + (offlineStatus === 'error' ? 'text-red-400' : 'text-emerald-400/70')}>{syncMsg}</p>}
+
+            <button
+              onClick={handleCreateSync}
+              disabled={offlineStatus === 'creating'}
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-500/15 text-emerald-400 text-xs font-medium rounded-xl border border-emerald-500/30 active:scale-[0.98] transition-all disabled:opacity-50"
+            >
+              {offlineStatus === 'creating' ? (
+                <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Creating sync...</>
+              ) : (
+                <><Cloud className="w-3.5 h-3.5" /> Create Cloud Sync</>
+              )}
+            </button>
+
+            {showOfflineConnect ? (
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={offlineInput}
+                  onChange={e => { setOfflineInput(e.target.value); setOfflineStatus(''); setSyncMsg(''); }}
+                  placeholder="Paste sync link from other device"
+                  className="w-full bg-deep border border-line rounded-xl text-xs text-white py-2.5 px-3 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all placeholder:text-slate-700"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleOfflineConnect}
+                    disabled={!offlineInput.trim() || offlineStatus === 'connecting'}
+                    className={'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-xl transition-all ' +
+                      (offlineInput.trim() && offlineStatus !== 'connecting'
+                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 active:scale-[0.98]'
+                        : 'bg-elevated text-slate-600 border border-line cursor-not-allowed')}
+                  >
+                    {offlineStatus === 'connecting' ? <><Loader2 className="w-3 h-3 animate-spin" /> Connecting...</> : 'Connect'}
+                  </button>
+                  <button
+                    onClick={() => { setShowOfflineConnect(false); setOfflineInput(''); setOfflineStatus(''); setSyncMsg(''); }}
+                    className="flex-1 py-2 text-xs font-medium text-slate-500 bg-deep rounded-xl border border-line active:scale-[0.98] transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowOfflineConnect(true)}
+                className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] text-slate-500 hover:text-emerald-400 transition-colors"
+              >
+                <Link2 className="w-3 h-3" /> Connect to Existing Sync
+              </button>
+            )}
           </>
         )}
       </div>
