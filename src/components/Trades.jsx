@@ -5,6 +5,25 @@ import { fmt } from '../math/format.js';
 import { getPhaseName, rN } from '../math/risk.js';
 const fmtDate = d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
+const DirBadge = ({ dir }) => {
+  if (!dir) return null;
+  const isLong = dir === 'long';
+  return (
+    <span className={'inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wide leading-none ' +
+      (isLong ? 'bg-blue-500/15 text-blue-400' : 'bg-violet-500/15 text-violet-400')}>
+      {isLong ? 'L' : 'S'}
+    </span>
+  );
+};
+
+const calcDuration = (open, close) => {
+  if (!open || !close) return null;
+  const ms = new Date(close) - new Date(open);
+  const days = Math.round(ms / 86400000);
+  if (days === 0) return null;
+  return `${days}d`;
+};
+
 export default function Trades({ trades, settings, onOpenTradeEntry }) {
   const [showConfirm, setShowConfirm] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -158,10 +177,13 @@ export default function Trades({ trades, settings, onOpenTradeEntry }) {
                       : 'bg-rose-500/5 border-l-rose-500 border border-rose-500/10')}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-slate-500 font-semibold">#{t.id}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-slate-500 font-semibold">#{t.id}</span>
+                      <DirBadge dir={t.direction} />
+                    </div>
                     <span className="text-[10px] text-slate-600 font-mono leading-tight text-right">
                       {t.openDate
-                        ? <>{fmtDate(t.openDate)}<span className="text-slate-700"> {'\u2192'} </span>{fmtDate(t.date)}</>
+                        ? <>{fmtDate(t.openDate)}<span className="text-slate-700"> {'\u2192'} </span>{fmtDate(t.date)}{calcDuration(t.openDate, t.date) && <span className="text-slate-700 ml-0.5">({calcDuration(t.openDate, t.date)})</span>}</>
                         : fmtDate(t.date)}
                     </span>
                   </div>
@@ -235,11 +257,12 @@ export default function Trades({ trades, settings, onOpenTradeEntry }) {
                     onClick={() => setExpandedId(isExpanded ? null : t.id)}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-2">
                         <span className="text-xs text-slate-500 font-mono w-7">#{t.id}</span>
+                        <DirBadge dir={t.direction} />
                         <span className="text-[11px] text-slate-600 font-mono">
                           {t.openDate
-                            ? <>{fmtDate(t.openDate)}<span className="text-slate-700"> {'\u2192'} </span>{fmtDate(t.date)}</>
+                            ? <>{fmtDate(t.openDate)}<span className="text-slate-700"> {'\u2192'} </span>{fmtDate(t.date)}{calcDuration(t.openDate, t.date) && <span className="text-slate-700"> ({calcDuration(t.openDate, t.date)})</span>}</>
                             : fmtDate(t.date)}
                         </span>
                       </div>
@@ -265,7 +288,13 @@ export default function Trades({ trades, settings, onOpenTradeEntry }) {
                       >
                         {/* Trade details */}
                         <div className="px-3 pt-2.5 pb-1">
-                          <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                          <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                            <div>
+                              <div className="text-slate-500">Side</div>
+                              <div className={'font-bold ' + (t.direction === 'short' ? 'text-violet-400' : 'text-blue-400')}>
+                                {t.direction === 'short' ? 'Short' : t.direction === 'long' ? 'Long' : '--'}
+                              </div>
+                            </div>
                             <div>
                               <div className="text-slate-500">Risk</div>
                               <div className="font-bold font-mono text-slate-300">{(t.riskPct * 100).toFixed(1)}%</div>

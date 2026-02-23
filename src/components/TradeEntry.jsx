@@ -1,34 +1,50 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, Calendar, ArrowUpRight, ArrowDownRight, Clock } from 'lucide-react';
 import { fmt } from '../math/format.js';
 import { rN, r$N, getPhase, getPhaseName } from '../math/risk.js';
 
+const calcDuration = (open, close) => {
+  if (!open || !close) return null;
+  const ms = new Date(close) - new Date(open);
+  const days = Math.round(ms / 86400000);
+  if (days === 0) return 'Same day';
+  if (days === 1) return '1 day';
+  if (days >= 7 && days < 14) return '1 week';
+  if (days >= 14 && days % 7 === 0) return `${Math.round(days / 7)} weeks`;
+  return `${days} days`;
+};
+
 export default function TradeEntry({ open, onClose, onSave, onEdit, editData, currentEquity, nextRisk }) {
   const isEditMode = !!editData;
+  const [direction, setDirection] = useState('long');
   const [isWin, setIsWin] = useState(true);
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
   const [tradeDate, setTradeDate] = useState('');
   const [openDate, setOpenDate] = useState('');
+  const [showOpenDate, setShowOpenDate] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => {
     if (open) {
       if (editData) {
-        // Edit mode: pre-populate from existing trade
+        setDirection(editData.direction || 'long');
         setIsWin(editData.pnl >= 0);
         setAmount(String(Math.abs(editData.pnl)));
         setNotes(editData.notes || '');
         setTradeDate(editData.date ? editData.date.slice(0, 10) : new Date().toISOString().slice(0, 10));
-        setOpenDate(editData.openDate ? editData.openDate.slice(0, 10) : '');
+        const hasOpen = editData.openDate ? editData.openDate.slice(0, 10) : '';
+        setOpenDate(hasOpen);
+        setShowOpenDate(!!hasOpen);
       } else {
-        // New trade mode
+        setDirection('long');
         setAmount('');
         setNotes('');
         setIsWin(true);
         setTradeDate(new Date().toISOString().slice(0, 10));
         setOpenDate('');
+        setShowOpenDate(false);
       }
       setTimeout(() => inputRef.current?.focus(), 300);
     }
@@ -38,14 +54,14 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
     const num = parseFloat(amount.replace(/,/g, ''));
     if (isNaN(num) || num <= 0) return;
     const pnl = isWin ? num : -num;
-    const openDateISO = openDate ? new Date(openDate + 'T12:00:00').toISOString() : null;
+    const openDateISO = showOpenDate && openDate ? new Date(openDate + 'T12:00:00').toISOString() : null;
 
     if (isEditMode && onEdit) {
       const dateISO = tradeDate ? new Date(tradeDate + 'T12:00:00').toISOString() : undefined;
-      onEdit(editData.id, { pnl, notes, date: dateISO, openDate: openDateISO });
+      onEdit(editData.id, { pnl, notes, date: dateISO, openDate: openDateISO, direction });
     } else {
       const dateISO = tradeDate ? new Date(tradeDate + 'T12:00:00').toISOString() : null;
-      onSave(pnl, notes, dateISO, openDateISO);
+      onSave(pnl, notes, dateISO, openDateISO, direction);
     }
     onClose();
   };
@@ -55,7 +71,12 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
     setAmount(val);
   };
 
-  const amountSize = 'text-xl';
+  const handleRemoveOpenDate = () => {
+    setOpenDate('');
+    setShowOpenDate(false);
+  };
+
+  const duration = calcDuration(openDate, tradeDate);
 
   const previewEquity = amount
     ? Math.max(1, currentEquity + (isWin ? 1 : -1) * parseFloat(amount.replace(/,/g, '') || '0'))
@@ -94,7 +115,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
               </div>
 
               {/* Header */}
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex justify-between items-center mb-5">
                 <h2 className="text-lg font-bold text-white">
                   {isEditMode ? 'Edit Trade' : 'Log Trade'}
                   {isEditMode && <span className="text-sm font-normal text-slate-500 ml-2">#{editData.id}</span>}
@@ -104,11 +125,33 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                 </button>
               </div>
 
+              {/* Direction toggle (Long/Short) */}
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <button
+                  onClick={() => setDirection('long')}
+                  className={'flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all ' +
+                    (direction === 'long'
+                      ? 'bg-blue-500/15 text-blue-400 ring-2 ring-blue-500/40'
+                      : 'bg-elevated text-slate-500 hover:text-slate-300')}
+                >
+                  <ArrowUpRight className="w-4 h-4" /> LONG
+                </button>
+                <button
+                  onClick={() => setDirection('short')}
+                  className={'flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all ' +
+                    (direction === 'short'
+                      ? 'bg-violet-500/15 text-violet-400 ring-2 ring-violet-500/40'
+                      : 'bg-elevated text-slate-500 hover:text-slate-300')}
+                >
+                  <ArrowDownRight className="w-4 h-4" /> SHORT
+                </button>
+              </div>
+
               {/* Win/Loss toggle */}
               <div className="grid grid-cols-2 gap-2 mb-5">
                 <button
                   onClick={() => setIsWin(true)}
-                  className={'flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-sm transition-all ' +
+                  className={'flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all ' +
                     (isWin
                       ? 'bg-emerald-500/15 text-emerald-400 ring-2 ring-emerald-500/40'
                       : 'bg-elevated text-slate-500 hover:text-slate-300')}
@@ -117,9 +160,9 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                 </button>
                 <button
                   onClick={() => setIsWin(false)}
-                  className={'flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-sm transition-all ' +
+                  className={'flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all ' +
                     (!isWin
-                      ? 'bg-rose-500/15 text-rose-400 ring-2 ring-rose-500/40'
+                      ? 'bg-red-500/15 text-red-400 ring-2 ring-red-500/40'
                       : 'bg-elevated text-slate-500 hover:text-slate-300')}
                 >
                   <TrendingDown className="w-4 h-4" /> LOSS
@@ -140,7 +183,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                     value={amount}
                     onChange={handleAmountChange}
                     placeholder="0"
-                    className={`w-full bg-deep border border-line rounded-xl ${amountSize} font-bold font-mono text-white py-4 pl-14 pr-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all duration-150 tabular-nums placeholder:text-slate-700`}
+                    className="w-full bg-deep border border-line rounded-xl text-xl font-bold font-mono text-white py-4 pl-14 pr-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all duration-150 tabular-nums placeholder:text-slate-700"
                   />
                 </div>
               </div>
@@ -154,7 +197,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                 >
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-slate-500">New Equity</span>
-                    <span className={'text-lg font-bold font-mono tabular-nums ' + (isWin ? 'text-emerald-400' : 'text-rose-400')}>
+                    <span className={'text-lg font-bold font-mono tabular-nums ' + (isWin ? 'text-emerald-400' : 'text-red-400')}>
                       ${fmt(previewEquity)}
                     </span>
                   </div>
@@ -164,7 +207,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                       <div className="text-[10px] text-slate-600">Next Risk</div>
                     </div>
                     <div>
-                      <div className="text-sm font-bold font-mono tabular-nums text-rose-400">${fmt(previewRiskDol)}</div>
+                      <div className="text-sm font-bold font-mono tabular-nums text-red-400">${fmt(previewRiskDol)}</div>
                       <div className="text-[10px] text-slate-600">At Risk</div>
                     </div>
                     <div>
@@ -193,34 +236,67 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                 />
               </div>
 
-              {/* Date pickers: Open + Close */}
-              <div className="mb-6 grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-slate-500 font-medium mb-2 block">Open Date</label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600 pointer-events-none" />
-                    <input
-                      type="date"
-                      value={openDate}
-                      onChange={e => setOpenDate(e.target.value)}
-                      max={tradeDate || new Date().toISOString().slice(0, 10)}
-                      className="w-full bg-deep border border-line rounded-xl text-xs text-white py-3 pl-9 pr-2 outline-none focus:border-line transition-all [color-scheme:dark]"
-                    />
+              {/* Date section */}
+              <div className="mb-6">
+                {/* Close date (always visible) */}
+                <div className={showOpenDate ? 'grid grid-cols-2 gap-3' : ''}>
+                  {/* Open date (expandable) */}
+                  <AnimatePresence>
+                    {showOpenDate && (
+                      <motion.div
+                        initial={{ opacity: 0, width: 0 }}
+                        animate={{ opacity: 1, width: 'auto' }}
+                        exit={{ opacity: 0, width: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <label className="text-xs text-slate-500 font-medium mb-2 block">Opened</label>
+                        <div className="relative">
+                          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600 pointer-events-none" />
+                          <input
+                            type="date"
+                            value={openDate}
+                            onChange={e => setOpenDate(e.target.value)}
+                            max={tradeDate || new Date().toISOString().slice(0, 10)}
+                            className="w-full bg-deep border border-line rounded-xl text-xs text-white py-3 pl-9 pr-2 outline-none focus:border-line transition-all [color-scheme:dark]"
+                          />
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <div>
+                    <label className="text-xs text-slate-500 font-medium mb-2 block">
+                      {showOpenDate ? 'Closed' : 'Date'}
+                    </label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600 pointer-events-none" />
+                      <input
+                        type="date"
+                        value={tradeDate}
+                        onChange={e => setTradeDate(e.target.value)}
+                        min={showOpenDate && openDate ? openDate : undefined}
+                        max={new Date().toISOString().slice(0, 10)}
+                        className="w-full bg-deep border border-line rounded-xl text-xs text-white py-3 pl-9 pr-2 outline-none focus:border-line transition-all [color-scheme:dark]"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <label className="text-xs text-slate-500 font-medium mb-2 block">Close Date</label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600 pointer-events-none" />
-                    <input
-                      type="date"
-                      value={tradeDate}
-                      onChange={e => setTradeDate(e.target.value)}
-                      min={openDate || undefined}
-                      max={new Date().toISOString().slice(0, 10)}
-                      className="w-full bg-deep border border-line rounded-xl text-xs text-white py-3 pl-9 pr-2 outline-none focus:border-line transition-all [color-scheme:dark]"
-                    />
-                  </div>
+
+                {/* Duration + toggle */}
+                <div className="flex items-center justify-between mt-2">
+                  {showOpenDate && duration ? (
+                    <span className="flex items-center gap-1 text-[11px] text-slate-500 font-mono">
+                      <Clock className="w-3 h-3" /> {duration}
+                    </span>
+                  ) : <span />}
+
+                  <button
+                    type="button"
+                    onClick={showOpenDate ? handleRemoveOpenDate : () => setShowOpenDate(true)}
+                    className="text-[11px] text-slate-600 hover:text-slate-400 transition-colors"
+                  >
+                    {showOpenDate ? '- Remove open date' : '+ Multi-day trade'}
+                  </button>
                 </div>
               </div>
 
