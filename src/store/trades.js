@@ -23,7 +23,7 @@ const saveData = data => {
 export const useTrades = (initialEquity = 20000) => {
   const [data, setData] = useState(() => loadData(initialEquity));
   const [celebration, setCelebration] = useState(null);
-  const [lastUndone, setLastUndone] = useState(null);
+  const [undoStack, setUndoStack] = useState([]);
   const clearCelebration = useCallback(() => setCelebration(null), []);
 
   const persist = useCallback(newData => {
@@ -67,7 +67,7 @@ export const useTrades = (initialEquity = 20000) => {
 
   // Add a new trade
   const addTrade = useCallback((pnl, notes = '', date = null, openDate = null, direction = 'long') => {
-    setLastUndone(null);
+    setUndoStack([]);
     const eq = data.trades.length > 0
       ? data.trades[data.trades.length - 1].equityAfter
       : (data.initialEquity || initialEquity);
@@ -101,7 +101,7 @@ export const useTrades = (initialEquity = 20000) => {
 
   // Edit an existing trade
   const editTrade = useCallback((id, { pnl, notes, date, openDate, direction }) => {
-    setLastUndone(null);
+    setUndoStack([]);
     const idx = data.trades.findIndex(t => t.id === id);
     if (idx === -1) return;
     const updated = [...data.trades];
@@ -118,7 +118,7 @@ export const useTrades = (initialEquity = 20000) => {
 
   // Delete a specific trade
   const deleteTrade = useCallback((id) => {
-    setLastUndone(null);
+    setUndoStack([]);
     const idx = data.trades.findIndex(t => t.id === id);
     if (idx === -1) return;
     const remaining = data.trades.filter(t => t.id !== id);
@@ -127,23 +127,25 @@ export const useTrades = (initialEquity = 20000) => {
     persist({ ...data, trades: recalced });
   }, [data, initialEquity, persist]);
 
-  // Delete last trade (undo) — saves removed trade for redo
+  // Delete last trade (undo) — pushes removed trade onto redo stack
   const undoLastTrade = useCallback(() => {
     if (data.trades.length === 0) return;
-    setLastUndone(data.trades[data.trades.length - 1]);
+    const removed = data.trades[data.trades.length - 1];
+    setUndoStack(prev => [...prev, removed]);
     persist({ ...data, trades: data.trades.slice(0, -1) });
   }, [data, persist]);
 
-  // Redo last undone trade
+  // Redo last undone trade — pops from redo stack
   const redoLastTrade = useCallback(() => {
-    if (!lastUndone) return;
-    persist({ ...data, trades: [...data.trades, lastUndone] });
-    setLastUndone(null);
-  }, [data, lastUndone, persist]);
+    if (undoStack.length === 0) return;
+    const trade = undoStack[undoStack.length - 1];
+    setUndoStack(prev => prev.slice(0, -1));
+    persist({ ...data, trades: [...data.trades, trade] });
+  }, [data, undoStack, persist]);
 
   // Clear all trades
   const clearTrades = useCallback(() => {
-    setLastUndone(null);
+    setUndoStack([]);
     persist({ ...data, trades: [] });
   }, [data, persist]);
 
@@ -162,7 +164,7 @@ export const useTrades = (initialEquity = 20000) => {
     try {
       const parsed = JSON.parse(json);
       if (parsed && Array.isArray(parsed.trades)) {
-        setLastUndone(null);
+        setUndoStack([]);
         persist(parsed);
         return true;
       }
@@ -334,7 +336,7 @@ export const useTrades = (initialEquity = 20000) => {
     deleteTrade,
     undoLastTrade,
     redoLastTrade,
-    lastUndone,
+    canRedo: undoStack.length > 0,
     clearTrades,
     setInitialEquity,
     exportJSON,

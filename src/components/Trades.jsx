@@ -355,7 +355,7 @@ export default function Trades({ trades, settings, onOpenTradeEntry }) {
       )}
 
       {/* Actions — Undo/Redo + secondary tools */}
-      {(trades.trades.length > 0 || trades.lastUndone) && (
+      {(trades.trades.length > 0 || trades.canRedo) && (
         <div className="pt-3 space-y-3">
           {/* Primary: Undo / Redo */}
           <div className="flex gap-2">
@@ -371,9 +371,9 @@ export default function Trades({ trades, settings, onOpenTradeEntry }) {
             </button>
             <button
               onClick={() => trades.redoLastTrade()}
-              disabled={!trades.lastUndone}
+              disabled={!trades.canRedo}
               className={'flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium rounded-xl border active:scale-[0.98] transition-all ' +
-                (trades.lastUndone
+                (trades.canRedo
                   ? 'bg-surface text-slate-400 border-line hover:bg-elevated'
                   : 'bg-surface/50 text-slate-600 border-line/50 cursor-not-allowed')}
             >
