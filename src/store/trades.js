@@ -23,6 +23,7 @@ const saveData = data => {
 export const useTrades = (initialEquity = 20000) => {
   const [data, setData] = useState(() => loadData(initialEquity));
   const [celebration, setCelebration] = useState(null);
+  const [lastUndone, setLastUndone] = useState(null);
   const clearCelebration = useCallback(() => setCelebration(null), []);
 
   const persist = useCallback(newData => {
@@ -66,6 +67,7 @@ export const useTrades = (initialEquity = 20000) => {
 
   // Add a new trade
   const addTrade = useCallback((pnl, notes = '', date = null, openDate = null, direction = 'long') => {
+    setLastUndone(null);
     const eq = data.trades.length > 0
       ? data.trades[data.trades.length - 1].equityAfter
       : (data.initialEquity || initialEquity);
@@ -99,6 +101,7 @@ export const useTrades = (initialEquity = 20000) => {
 
   // Edit an existing trade
   const editTrade = useCallback((id, { pnl, notes, date, openDate, direction }) => {
+    setLastUndone(null);
     const idx = data.trades.findIndex(t => t.id === id);
     if (idx === -1) return;
     const updated = [...data.trades];
@@ -115,6 +118,7 @@ export const useTrades = (initialEquity = 20000) => {
 
   // Delete a specific trade
   const deleteTrade = useCallback((id) => {
+    setLastUndone(null);
     const idx = data.trades.findIndex(t => t.id === id);
     if (idx === -1) return;
     const remaining = data.trades.filter(t => t.id !== id);
@@ -123,14 +127,23 @@ export const useTrades = (initialEquity = 20000) => {
     persist({ ...data, trades: recalced });
   }, [data, initialEquity, persist]);
 
-  // Delete last trade (undo)
+  // Delete last trade (undo) — saves removed trade for redo
   const undoLastTrade = useCallback(() => {
     if (data.trades.length === 0) return;
+    setLastUndone(data.trades[data.trades.length - 1]);
     persist({ ...data, trades: data.trades.slice(0, -1) });
   }, [data, persist]);
 
+  // Redo last undone trade
+  const redoLastTrade = useCallback(() => {
+    if (!lastUndone) return;
+    persist({ ...data, trades: [...data.trades, lastUndone] });
+    setLastUndone(null);
+  }, [data, lastUndone, persist]);
+
   // Clear all trades
   const clearTrades = useCallback(() => {
+    setLastUndone(null);
     persist({ ...data, trades: [] });
   }, [data, persist]);
 
@@ -149,6 +162,7 @@ export const useTrades = (initialEquity = 20000) => {
     try {
       const parsed = JSON.parse(json);
       if (parsed && Array.isArray(parsed.trades)) {
+        setLastUndone(null);
         persist(parsed);
         return true;
       }
@@ -319,6 +333,8 @@ export const useTrades = (initialEquity = 20000) => {
     editTrade,
     deleteTrade,
     undoLastTrade,
+    redoLastTrade,
+    lastUndone,
     clearTrades,
     setInitialEquity,
     exportJSON,

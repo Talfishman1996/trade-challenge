@@ -182,39 +182,37 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                 />
               </div>
 
-              {/* Dates — always show both */}
-              <div className="mb-6">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-slate-500 font-medium mb-2 block">Opened</label>
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600 pointer-events-none" />
-                      <input
-                        type="date"
-                        value={openDate}
-                        onChange={e => setOpenDate(e.target.value)}
-                        max={tradeDate || new Date().toISOString().slice(0, 10)}
-                        className="w-full bg-deep border border-line rounded-xl text-xs text-white py-3 pl-9 pr-2 outline-none focus:border-line transition-all [color-scheme:dark]"
-                      />
-                    </div>
+              {/* Dates — clean horizontal rows */}
+              <div className="mb-6 space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5 w-16 shrink-0">
+                    <Calendar className="w-3.5 h-3.5 text-slate-600" />
+                    <span className="text-xs text-slate-500 font-medium">Opened</span>
                   </div>
-                  <div>
-                    <label className="text-xs text-slate-500 font-medium mb-2 block">Closed</label>
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600 pointer-events-none" />
-                      <input
-                        type="date"
-                        value={tradeDate}
-                        onChange={e => setTradeDate(e.target.value)}
-                        min={openDate || undefined}
-                        max={new Date().toISOString().slice(0, 10)}
-                        className="w-full bg-deep border border-line rounded-xl text-xs text-white py-3 pl-9 pr-2 outline-none focus:border-line transition-all [color-scheme:dark]"
-                      />
-                    </div>
+                  <input
+                    type="date"
+                    value={openDate}
+                    onChange={e => setOpenDate(e.target.value)}
+                    max={tradeDate || new Date().toISOString().slice(0, 10)}
+                    className="flex-1 bg-deep border border-line rounded-lg text-xs text-white py-2.5 px-3 outline-none focus:border-line transition-all [color-scheme:dark]"
+                  />
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5 w-16 shrink-0">
+                    <Calendar className="w-3.5 h-3.5 text-slate-600" />
+                    <span className="text-xs text-slate-500 font-medium">Closed</span>
                   </div>
+                  <input
+                    type="date"
+                    value={tradeDate}
+                    onChange={e => setTradeDate(e.target.value)}
+                    min={openDate || undefined}
+                    max={new Date().toISOString().slice(0, 10)}
+                    className="flex-1 bg-deep border border-line rounded-lg text-xs text-white py-2.5 px-3 outline-none focus:border-line transition-all [color-scheme:dark]"
+                  />
                 </div>
                 {duration && (
-                  <div className="flex items-center gap-1 mt-2 text-[11px] text-slate-500 font-mono">
+                  <div className="flex items-center justify-end gap-1 text-[11px] text-slate-500 font-mono">
                     <Clock className="w-3 h-3" /> Held {duration}
                   </div>
                 )}

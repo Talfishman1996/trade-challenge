@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { TrendingUp, TrendingDown, Download, Upload, Trash2, Undo2, Plus, List, CalendarDays, Pencil, X } from 'lucide-react';
+import { TrendingUp, TrendingDown, Download, Upload, Trash2, Undo2, Redo2, Plus, List, CalendarDays, Pencil, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fmt } from '../math/format.js';
 import { getPhaseName, rN } from '../math/risk.js';
@@ -354,16 +354,35 @@ export default function Trades({ trades, settings, onOpenTradeEntry }) {
         </div>
       )}
 
-      {/* Action Buttons (only when trades exist) */}
-      {trades.trades.length > 0 && (
-        <div className="space-y-2 pt-2">
+      {/* Undo/Redo — visible when trades exist or redo is available */}
+      {(trades.trades.length > 0 || trades.lastUndone) && (
+        <div className="flex gap-2 pt-2">
           <button
             onClick={() => trades.undoLastTrade()}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-surface text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
+            disabled={trades.trades.length === 0}
+            className={'flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium rounded-xl border active:scale-[0.98] transition-all ' +
+              (trades.trades.length > 0
+                ? 'bg-surface text-slate-400 border-line hover:bg-elevated'
+                : 'bg-surface/50 text-slate-600 border-line/50 cursor-not-allowed')}
           >
-            <Undo2 className="w-4 h-4" /> Undo Last Trade
+            <Undo2 className="w-4 h-4" /> Undo
           </button>
+          <button
+            onClick={() => trades.redoLastTrade()}
+            disabled={!trades.lastUndone}
+            className={'flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium rounded-xl border active:scale-[0.98] transition-all ' +
+              (trades.lastUndone
+                ? 'bg-surface text-slate-400 border-line hover:bg-elevated'
+                : 'bg-surface/50 text-slate-600 border-line/50 cursor-not-allowed')}
+          >
+            <Redo2 className="w-4 h-4" /> Redo
+          </button>
+        </div>
+      )}
 
+      {/* Export/Import/Clear (only when trades exist) */}
+      {trades.trades.length > 0 && (
+        <div className="space-y-2 pt-2">
           <div className="flex gap-2">
             <button
               onClick={handleExport}
