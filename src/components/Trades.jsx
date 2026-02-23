@@ -10,7 +10,7 @@ const DirBadge = ({ dir }) => {
   const isLong = dir === 'long';
   return (
     <span className={'inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wide leading-none ' +
-      (isLong ? 'bg-blue-500/15 text-blue-400' : 'bg-purple-500/15 text-purple-400')}>
+      (isLong ? 'bg-blue-500/15 text-blue-400' : 'bg-fuchsia-500/15 text-fuchsia-400')}>
       {isLong ? 'Long' : 'Short'}
     </span>
   );
@@ -291,7 +291,7 @@ export default function Trades({ trades, settings, onOpenTradeEntry }) {
                           <div className="grid grid-cols-4 gap-2 text-center text-xs">
                             <div>
                               <div className="text-slate-500">Side</div>
-                              <div className={'font-bold ' + (t.direction === 'short' ? 'text-purple-400' : 'text-blue-400')}>
+                              <div className={'font-bold ' + (t.direction === 'short' ? 'text-fuchsia-400' : 'text-blue-400')}>
                                 {t.direction === 'short' ? 'Short' : t.direction === 'long' ? 'Long' : '--'}
                               </div>
                             </div>
