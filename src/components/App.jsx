@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Component } from 'react';
+import React, { useState, useEffect, useRef, Component } from 'react';
 import { Home as HomeIcon, List, BarChart3, Settings as SettingsIcon, AlertTriangle, Shield, Plus } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSettings } from '../store/settings.js';
@@ -45,6 +45,9 @@ export default function App() {
   const [showTradeEntry, setShowTradeEntry] = useState(false);
   const [editTradeData, setEditTradeData] = useState(null);
 
+  // Stable ref to latest syncFromCloud — survives across re-renders
+  const syncRef = trades.syncRef;
+
   // Auto-sync: URL hash is the sync key, no manual setup needed
   useEffect(() => {
     const initSync = async () => {
@@ -62,7 +65,7 @@ export default function App() {
         }
       } else if (!config) {
         // First visit: auto-create cloud backup
-        const data = { version: 1, initialEquity: trades.initialEquity, trades: trades.trades };
+        const data = { version: 1, initialEquity: trades.initialEquity, trades: trades.trades, _lastModified: Date.now() };
         const blobId = await createBlob(data);
         if (blobId) {
           saveSyncConfig({ blobId, lastSync: Date.now() });
@@ -74,15 +77,18 @@ export default function App() {
         window.location.hash = `sync=${config.blobId}`;
       }
 
-      trades.syncFromCloud().catch(() => {});
+      // Use ref to get latest syncFromCloud (avoids stale closure)
+      if (syncRef.current) syncRef.current().catch(() => {});
     };
     initSync();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Periodic sync every 60 seconds
+  // Periodic sync every 60 seconds — uses ref to avoid stale closures
   useEffect(() => {
     const id = setInterval(() => {
-      if (getSyncConfig()) trades.syncFromCloud().catch(() => {});
+      if (getSyncConfig() && syncRef.current) {
+        syncRef.current().catch(() => {});
+      }
     }, 60000);
     return () => clearInterval(id);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

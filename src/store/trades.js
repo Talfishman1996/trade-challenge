@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { rN, r$N, getPhase } from '../math/risk.js';
 import { MILES } from '../math/constants.js';
 import { pushToCloud, pullFromCloud, getSyncConfig } from '../sync.js';
@@ -26,9 +26,10 @@ export const useTrades = (initialEquity = 20000) => {
   const clearCelebration = useCallback(() => setCelebration(null), []);
 
   const persist = useCallback(newData => {
-    setData(newData);
-    saveData(newData);
-    if (getSyncConfig()) pushToCloud(newData).catch(() => {});
+    const stamped = { ...newData, _lastModified: Date.now() };
+    setData(stamped);
+    saveData(stamped);
+    if (getSyncConfig()) pushToCloud(stamped).catch(() => {});
   }, []);
 
   // Current equity from trade log
@@ -299,6 +300,10 @@ export const useTrades = (initialEquity = 20000) => {
     return 'pushed';
   }, [data]);
 
+  // Ref that always points to latest syncFromCloud (avoids stale closures in intervals)
+  const syncRef = useRef(syncFromCloud);
+  syncRef.current = syncFromCloud;
+
   return {
     trades: data.trades,
     currentEquity,
@@ -319,5 +324,6 @@ export const useTrades = (initialEquity = 20000) => {
     exportJSON,
     importJSON,
     syncFromCloud,
+    syncRef,
   };
 };
