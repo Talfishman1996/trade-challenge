@@ -54,31 +54,39 @@ export default function App() {
   // Connect to an existing sync (used by gate and settings)
   const connectToSync = async (input) => {
     const blobId = extractBlobId(input);
-    if (!blobId) return 'invalid';
+    if (!blobId) { setSyncGateStatus('error'); return 'invalid'; }
     setSyncGateStatus('connecting');
-    const cloud = await pullFromBlobId(blobId);
-    if (!cloud || !Array.isArray(cloud.trades)) {
+    try {
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000));
+      const cloud = await Promise.race([pullFromBlobId(blobId), timeout]);
+      if (!cloud || !Array.isArray(cloud.trades)) {
+        setSyncGateStatus('error');
+        return 'not_found';
+      }
+      saveSyncConfig({ blobId, lastSync: Date.now() });
+      window.location.hash = `sync=${blobId}`;
+      const { lastModified, ...rest } = cloud;
+      const merged = { ...rest, _lastModified: lastModified || Date.now() };
+      localStorage.setItem('risk-engine-data', JSON.stringify(merged));
+      window.location.reload();
+      return 'ok';
+    } catch {
       setSyncGateStatus('error');
-      return 'not_found';
+      return 'timeout';
     }
-    saveSyncConfig({ blobId, lastSync: Date.now() });
-    window.location.hash = `sync=${blobId}`;
-    // Apply cloud data
-    const { lastModified, ...rest } = cloud;
-    const merged = { ...rest, _lastModified: lastModified || Date.now() };
-    localStorage.setItem('risk-engine-data', JSON.stringify(merged));
-    window.location.reload();
-    return 'ok';
   };
 
   const startFresh = async () => {
     setSyncGateStatus('creating');
-    const data = { version: 1, initialEquity: trades.initialEquity, trades: [], _lastModified: Date.now() };
-    const blobId = await createBlob(data);
-    if (blobId) {
-      saveSyncConfig({ blobId, lastSync: Date.now() });
-      window.location.hash = `sync=${blobId}`;
-    }
+    try {
+      const data = { version: 1, initialEquity: trades.initialEquity, trades: [], _lastModified: Date.now() };
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000));
+      const blobId = await Promise.race([createBlob(data), timeout]);
+      if (blobId) {
+        saveSyncConfig({ blobId, lastSync: Date.now() });
+        window.location.hash = `sync=${blobId}`;
+      }
+    } catch {}
     setSyncGate('ready');
     setSyncGateStatus('');
   };
@@ -107,11 +115,14 @@ export default function App() {
           if (existing && existing.trades && existing.trades.length > 0) {
             // Has local trades — auto-create blob for them
             const data = { ...existing, _lastModified: Date.now() };
-            const blobId = await createBlob(data);
-            if (blobId) {
-              saveSyncConfig({ blobId, lastSync: Date.now() });
-              window.location.hash = `sync=${blobId}`;
-            }
+            try {
+              const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000));
+              const blobId = await Promise.race([createBlob(data), timeout]);
+              if (blobId) {
+                saveSyncConfig({ blobId, lastSync: Date.now() });
+                window.location.hash = `sync=${blobId}`;
+              }
+            } catch {}
             setSyncGate('ready');
             return; // just created — no need to pull
           }
