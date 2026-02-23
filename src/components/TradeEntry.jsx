@@ -10,6 +10,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
   const [tradeDate, setTradeDate] = useState('');
+  const [openDate, setOpenDate] = useState('');
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -20,12 +21,14 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
         setAmount(String(Math.abs(editData.pnl)));
         setNotes(editData.notes || '');
         setTradeDate(editData.date ? editData.date.slice(0, 10) : new Date().toISOString().slice(0, 10));
+        setOpenDate(editData.openDate ? editData.openDate.slice(0, 10) : '');
       } else {
         // New trade mode
         setAmount('');
         setNotes('');
         setIsWin(true);
         setTradeDate(new Date().toISOString().slice(0, 10));
+        setOpenDate('');
       }
       setTimeout(() => inputRef.current?.focus(), 300);
     }
@@ -35,14 +38,14 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
     const num = parseFloat(amount.replace(/,/g, ''));
     if (isNaN(num) || num <= 0) return;
     const pnl = isWin ? num : -num;
+    const openDateISO = openDate ? new Date(openDate + 'T12:00:00').toISOString() : null;
 
     if (isEditMode && onEdit) {
-      // Build ISO date from the date input
       const dateISO = tradeDate ? new Date(tradeDate + 'T12:00:00').toISOString() : undefined;
-      onEdit(editData.id, { pnl, notes, date: dateISO });
+      onEdit(editData.id, { pnl, notes, date: dateISO, openDate: openDateISO });
     } else {
       const dateISO = tradeDate ? new Date(tradeDate + 'T12:00:00').toISOString() : null;
-      onSave(pnl, notes, dateISO);
+      onSave(pnl, notes, dateISO, openDateISO);
     }
     onClose();
   };
@@ -52,7 +55,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
     setAmount(val);
   };
 
-  const amountSize = amount.length <= 2 ? 'text-2xl' : amount.length <= 4 ? 'text-3xl' : 'text-4xl';
+  const amountSize = 'text-xl';
 
   const previewEquity = amount
     ? Math.max(1, currentEquity + (isWin ? 1 : -1) * parseFloat(amount.replace(/,/g, '') || '0'))
@@ -190,18 +193,34 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                 />
               </div>
 
-              {/* Date picker */}
-              <div className="mb-6">
-                <label className="text-xs text-slate-500 font-medium mb-2 block">Trade Date</label>
-                <div className="relative">
-                  <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 pointer-events-none" />
-                  <input
-                    type="date"
-                    value={tradeDate}
-                    onChange={e => setTradeDate(e.target.value)}
-                    max={new Date().toISOString().slice(0, 10)}
-                    className="w-full bg-deep border border-line rounded-xl text-sm text-white py-3 pl-10 pr-4 outline-none focus:border-line transition-all [color-scheme:dark]"
-                  />
+              {/* Date pickers: Open + Close */}
+              <div className="mb-6 grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-slate-500 font-medium mb-2 block">Open Date</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600 pointer-events-none" />
+                    <input
+                      type="date"
+                      value={openDate}
+                      onChange={e => setOpenDate(e.target.value)}
+                      max={tradeDate || new Date().toISOString().slice(0, 10)}
+                      className="w-full bg-deep border border-line rounded-xl text-xs text-white py-3 pl-9 pr-2 outline-none focus:border-line transition-all [color-scheme:dark]"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-slate-500 font-medium mb-2 block">Close Date</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600 pointer-events-none" />
+                    <input
+                      type="date"
+                      value={tradeDate}
+                      onChange={e => setTradeDate(e.target.value)}
+                      min={openDate || undefined}
+                      max={new Date().toISOString().slice(0, 10)}
+                      className="w-full bg-deep border border-line rounded-xl text-xs text-white py-3 pl-9 pr-2 outline-none focus:border-line transition-all [color-scheme:dark]"
+                    />
+                  </div>
                 </div>
               </div>
 

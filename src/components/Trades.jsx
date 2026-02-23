@@ -3,6 +3,8 @@ import { TrendingUp, TrendingDown, Download, Upload, Trash2, Undo2, Plus, List, 
 import { motion, AnimatePresence } from 'framer-motion';
 import { fmt } from '../math/format.js';
 import { getPhaseName, rN } from '../math/risk.js';
+const fmtDate = d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
 export default function Trades({ trades, settings, onOpenTradeEntry }) {
   const [showConfirm, setShowConfirm] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -157,8 +159,10 @@ export default function Trades({ trades, settings, onOpenTradeEntry }) {
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-slate-500 font-semibold">#{t.id}</span>
-                    <span className="text-xs text-slate-600 font-mono">
-                      {new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    <span className="text-[10px] text-slate-600 font-mono leading-tight text-right">
+                      {t.openDate
+                        ? <>{fmtDate(t.openDate)}<span className="text-slate-700"> {'\u2192'} </span>{fmtDate(t.date)}</>
+                        : fmtDate(t.date)}
                     </span>
                   </div>
                   <div className={'text-lg font-bold font-mono tabular-nums tracking-tight ' +
@@ -233,8 +237,10 @@ export default function Trades({ trades, settings, onOpenTradeEntry }) {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
                         <span className="text-xs text-slate-500 font-mono w-7">#{t.id}</span>
-                        <span className="text-xs text-slate-600 font-mono">
-                          {new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        <span className="text-[11px] text-slate-600 font-mono">
+                          {t.openDate
+                            ? <>{fmtDate(t.openDate)}<span className="text-slate-700"> {'\u2192'} </span>{fmtDate(t.date)}</>
+                            : fmtDate(t.date)}
                         </span>
                       </div>
                       <div className="text-right">

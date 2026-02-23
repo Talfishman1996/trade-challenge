@@ -3,7 +3,7 @@ import { Home as HomeIcon, List, BarChart3, Settings as SettingsIcon, AlertTrian
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSettings } from '../store/settings.js';
 import { useTrades } from '../store/trades.js';
-import { createBlob, getSyncConfig, saveSyncConfig } from '../sync.js';
+import { createBlob, getSyncConfig, saveSyncConfig, clearSyncConfig } from '../sync.js';
 import Home from './Home.jsx';
 import Trades from './Trades.jsx';
 import Analysis from './Analysis.jsx';
@@ -50,7 +50,9 @@ export default function App() {
     const initSync = async () => {
       const hash = window.location.hash;
       const match = hash.match(/sync=([a-zA-Z0-9-]+)/);
-      const config = getSyncConfig();
+      let config = getSyncConfig();
+      // Clean up stale config from previous sync versions (Firebase)
+      if (config && !config.blobId) { clearSyncConfig(); config = null; }
 
       if (match) {
         // URL has sync ID — use it
