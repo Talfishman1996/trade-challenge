@@ -76,19 +76,21 @@ export default function App() {
     }
   };
 
-  const startFresh = async () => {
-    setSyncGateStatus('creating');
-    try {
-      const data = { version: 1, initialEquity: trades.initialEquity, trades: [], _lastModified: Date.now() };
-      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000));
-      const blobId = await Promise.race([createBlob(data), timeout]);
-      if (blobId) {
-        saveSyncConfig({ blobId, lastSync: Date.now() });
-        window.location.hash = `sync=${blobId}`;
-      }
-    } catch {}
+  const startFresh = () => {
+    // Dismiss gate IMMEDIATELY — never block the user
     setSyncGate('ready');
-    setSyncGateStatus('');
+    // Create blob in the background — if it fails, next page load retries via initSync
+    (async () => {
+      try {
+        const data = { version: 1, initialEquity: trades.initialEquity, trades: [], _lastModified: Date.now() };
+        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000));
+        const blobId = await Promise.race([createBlob(data), timeout]);
+        if (blobId) {
+          saveSyncConfig({ blobId, lastSync: Date.now() });
+          window.location.hash = `sync=${blobId}`;
+        }
+      } catch {}
+    })();
   };
 
   // Auto-sync: URL hash is the sync key
@@ -230,14 +232,9 @@ export default function App() {
             {/* Start fresh option */}
             <button
               onClick={startFresh}
-              disabled={syncGateStatus === 'creating'}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-surface text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-3 bg-surface text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
             >
-              {syncGateStatus === 'creating' ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</>
-              ) : (
-                <><Zap className="w-4 h-4" /> Start Fresh</>
-              )}
+              <Zap className="w-4 h-4" /> Start Fresh
             </button>
           </div>
         </div>
