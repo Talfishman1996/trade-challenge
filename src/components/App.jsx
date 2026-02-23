@@ -1,4 +1,4 @@
-import React, { useState, Component } from 'react';
+import React, { useState, useEffect, Component } from 'react';
 import { Home as HomeIcon, List, BarChart3, Settings as SettingsIcon, AlertTriangle, Shield, Plus } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSettings } from '../store/settings.js';
@@ -43,6 +43,9 @@ export default function App() {
   const trades = useTrades(settings.initialEquity);
   const [showTradeEntry, setShowTradeEntry] = useState(false);
   const [editTradeData, setEditTradeData] = useState(null);
+
+  // Auto-sync from cloud on mount
+  useEffect(() => { trades.syncFromCloud().catch(() => {}); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openTradeEntry = (trade = null) => {
     setEditTradeData(trade);

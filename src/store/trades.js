@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { rN, r$N, getPhase } from '../math/risk.js';
 import { MILES } from '../math/constants.js';
+import { pushToCloud, pullFromCloud, getSyncConfig } from '../sync.js';
 
 const STORAGE_KEY = 'risk-engine-data';
 
@@ -27,6 +28,7 @@ export const useTrades = (initialEquity = 20000) => {
   const persist = useCallback(newData => {
     setData(newData);
     saveData(newData);
+    if (getSyncConfig()) pushToCloud(newData).catch(() => {});
   }, []);
 
   // Current equity from trade log
@@ -272,6 +274,27 @@ export const useTrades = (initialEquity = 20000) => {
     })),
   [currentEquity]);
 
+  // Cloud sync: pull from cloud and merge
+  const syncFromCloud = useCallback(async () => {
+    const cloud = await pullFromCloud();
+    if (!cloud || !Array.isArray(cloud.trades)) {
+      // No cloud data — push local up
+      if (data.trades.length > 0) pushToCloud(data).catch(() => {});
+      return 'pushed';
+    }
+    const cloudMod = cloud.lastModified || 0;
+    const localMod = data._lastModified || 0;
+    if (cloudMod > localMod) {
+      const { lastModified, ...rest } = cloud;
+      const merged = { ...rest, _lastModified: cloudMod };
+      setData(merged);
+      saveData(merged);
+      return 'pulled';
+    }
+    pushToCloud(data).catch(() => {});
+    return 'pushed';
+  }, [data]);
+
   return {
     trades: data.trades,
     currentEquity,
@@ -291,5 +314,6 @@ export const useTrades = (initialEquity = 20000) => {
     setInitialEquity,
     exportJSON,
     importJSON,
+    syncFromCloud,
   };
 };
