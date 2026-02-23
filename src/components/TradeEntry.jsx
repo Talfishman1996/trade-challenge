@@ -144,7 +144,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                   onClick={() => setDirection('short')}
                   className={'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-xs font-semibold transition-all ' +
                     (direction === 'short'
-                      ? 'bg-violet-500/15 text-violet-400'
+                      ? 'bg-purple-500/15 text-purple-400'
                       : 'text-slate-500 hover:text-slate-400')}
                 >
                   <ArrowDownRight className="w-3 h-3" /> Short
