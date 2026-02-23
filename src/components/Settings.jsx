@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Download, Upload, Trash2, FileSpreadsheet, Cloud, CloudOff, RefreshCw, Copy, Check } from 'lucide-react';
+import { Download, Upload, Trash2, FileSpreadsheet, Cloud, CloudOff, RefreshCw, Copy, Check, Link2, Loader2 } from 'lucide-react';
 import { getPhaseName } from '../math/risk.js';
-import { getSyncConfig, clearSyncConfig } from '../sync.js';
+import { getSyncConfig, clearSyncConfig, saveSyncConfig, extractBlobId, pullFromBlobId } from '../sync.js';
 
 export default function Settings({ settings, trades }) {
   const [showConfirm, setShowConfirm] = useState(null);
@@ -11,6 +11,9 @@ export default function Settings({ settings, trades }) {
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState('');
   const [copied, setCopied] = useState(false);
+  const [showSwitchSync, setShowSwitchSync] = useState(false);
+  const [switchInput, setSwitchInput] = useState('');
+  const [switchStatus, setSwitchStatus] = useState(''); // '', 'connecting', 'error'
 
   const handleEqChange = e => {
     const val = e.target.value.replace(/[^0-9]/g, '');
@@ -54,6 +57,23 @@ export default function Settings({ settings, trades }) {
       setSyncConfig(getSyncConfig());
     } catch { setSyncMsg('Sync failed'); }
     setSyncing(false);
+  };
+
+  const handleSwitchSync = async () => {
+    const blobId = extractBlobId(switchInput);
+    if (!blobId) { setSwitchStatus('error'); return; }
+    setSwitchStatus('connecting');
+    const cloud = await pullFromBlobId(blobId);
+    if (!cloud || !Array.isArray(cloud.trades)) {
+      setSwitchStatus('error');
+      return;
+    }
+    saveSyncConfig({ blobId, lastSync: Date.now() });
+    window.location.hash = `sync=${blobId}`;
+    const { lastModified, ...rest } = cloud;
+    const merged = { ...rest, _lastModified: lastModified || Date.now() };
+    localStorage.setItem('risk-engine-data', JSON.stringify(merged));
+    window.location.reload();
   };
 
   const handleSyncDisconnect = () => {
@@ -200,6 +220,47 @@ export default function Settings({ settings, trades }) {
             </button>
 
             {syncMsg && <div className="text-[10px] text-emerald-400/70 text-center">{syncMsg}</div>}
+
+            {/* Switch to different sync */}
+            {showSwitchSync ? (
+              <div className="space-y-2 pt-1">
+                <input
+                  type="text"
+                  value={switchInput}
+                  onChange={e => { setSwitchInput(e.target.value); setSwitchStatus(''); }}
+                  placeholder="Paste sync link from other device"
+                  className="w-full bg-deep border border-line rounded-xl text-xs text-white py-2.5 px-3 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all placeholder:text-slate-700"
+                />
+                {switchStatus === 'error' && (
+                  <p className="text-[10px] text-red-400">Invalid link or sync not found. Check and try again.</p>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSwitchSync}
+                    disabled={!switchInput.trim() || switchStatus === 'connecting'}
+                    className={'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-xl transition-all ' +
+                      (switchInput.trim() && switchStatus !== 'connecting'
+                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 active:scale-[0.98]'
+                        : 'bg-elevated text-slate-600 border border-line cursor-not-allowed')}
+                  >
+                    {switchStatus === 'connecting' ? <><Loader2 className="w-3 h-3 animate-spin" /> Connecting...</> : 'Connect'}
+                  </button>
+                  <button
+                    onClick={() => { setShowSwitchSync(false); setSwitchInput(''); setSwitchStatus(''); }}
+                    className="flex-1 py-2 text-xs font-medium text-slate-500 bg-deep rounded-xl border border-line active:scale-[0.98] transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowSwitchSync(true)}
+                className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] text-slate-500 hover:text-emerald-400 transition-colors"
+              >
+                <Link2 className="w-3 h-3" /> Connect to Different Sync
+              </button>
+            )}
 
             <button
               onClick={handleSyncDisconnect}

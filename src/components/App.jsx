@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, Component } from 'react';
-import { Home as HomeIcon, List, BarChart3, Settings as SettingsIcon, AlertTriangle, Shield, Plus } from 'lucide-react';
+import { Home as HomeIcon, List, BarChart3, Settings as SettingsIcon, AlertTriangle, Shield, Plus, Link2, Zap, Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSettings } from '../store/settings.js';
 import { useTrades } from '../store/trades.js';
-import { createBlob, getSyncConfig, saveSyncConfig, clearSyncConfig } from '../sync.js';
+import { createBlob, getSyncConfig, saveSyncConfig, clearSyncConfig, pullFromBlobId, extractBlobId } from '../sync.js';
 import Home from './Home.jsx';
 import Trades from './Trades.jsx';
 import Analysis from './Analysis.jsx';
@@ -44,11 +44,46 @@ export default function App() {
   const trades = useTrades(settings.initialEquity);
   const [showTradeEntry, setShowTradeEntry] = useState(false);
   const [editTradeData, setEditTradeData] = useState(null);
+  const [syncGate, setSyncGate] = useState(null); // null = checking, 'ready' = proceed, 'setup' = show gate
+  const [syncGateInput, setSyncGateInput] = useState('');
+  const [syncGateStatus, setSyncGateStatus] = useState(''); // '', 'connecting', 'error', 'creating'
 
   // Stable ref to latest syncFromCloud — survives across re-renders
   const syncRef = trades.syncRef;
 
-  // Auto-sync: URL hash is the sync key, no manual setup needed
+  // Connect to an existing sync (used by gate and settings)
+  const connectToSync = async (input) => {
+    const blobId = extractBlobId(input);
+    if (!blobId) return 'invalid';
+    setSyncGateStatus('connecting');
+    const cloud = await pullFromBlobId(blobId);
+    if (!cloud || !Array.isArray(cloud.trades)) {
+      setSyncGateStatus('error');
+      return 'not_found';
+    }
+    saveSyncConfig({ blobId, lastSync: Date.now() });
+    window.location.hash = `sync=${blobId}`;
+    // Apply cloud data
+    const { lastModified, ...rest } = cloud;
+    const merged = { ...rest, _lastModified: lastModified || Date.now() };
+    localStorage.setItem('risk-engine-data', JSON.stringify(merged));
+    window.location.reload();
+    return 'ok';
+  };
+
+  const startFresh = async () => {
+    setSyncGateStatus('creating');
+    const data = { version: 1, initialEquity: trades.initialEquity, trades: [], _lastModified: Date.now() };
+    const blobId = await createBlob(data);
+    if (blobId) {
+      saveSyncConfig({ blobId, lastSync: Date.now() });
+      window.location.hash = `sync=${blobId}`;
+    }
+    setSyncGate('ready');
+    setSyncGateStatus('');
+  };
+
+  // Auto-sync: URL hash is the sync key
   useEffect(() => {
     const initSync = async () => {
       const hash = window.location.hash;
@@ -63,18 +98,31 @@ export default function App() {
         if (!config || config.blobId !== blobId) {
           saveSyncConfig({ blobId, lastSync: null });
         }
+        setSyncGate('ready');
       } else if (!config) {
-        // First visit: auto-create cloud backup
-        const data = { version: 1, initialEquity: trades.initialEquity, trades: trades.trades, _lastModified: Date.now() };
-        const blobId = await createBlob(data);
-        if (blobId) {
-          saveSyncConfig({ blobId, lastSync: Date.now() });
-          window.location.hash = `sync=${blobId}`;
-        }
-        return; // just created — no need to pull
+        // No hash, no config — check if user has existing trades
+        try {
+          const raw = localStorage.getItem('risk-engine-data');
+          const existing = raw ? JSON.parse(raw) : null;
+          if (existing && existing.trades && existing.trades.length > 0) {
+            // Has local trades — auto-create blob for them
+            const data = { ...existing, _lastModified: Date.now() };
+            const blobId = await createBlob(data);
+            if (blobId) {
+              saveSyncConfig({ blobId, lastSync: Date.now() });
+              window.location.hash = `sync=${blobId}`;
+            }
+            setSyncGate('ready');
+            return; // just created — no need to pull
+          }
+        } catch {}
+        // Truly fresh device — show sync gate
+        setSyncGate('setup');
+        return;
       } else {
         // Has config but URL missing hash — restore it
         window.location.hash = `sync=${config.blobId}`;
+        setSyncGate('ready');
       }
 
       // Use ref to get latest syncFromCloud (avoids stale closure)
@@ -114,6 +162,82 @@ export default function App() {
         '@keyframes confettiFall{0%{transform:translateY(-10vh) rotate(0deg) scale(1);opacity:1}100%{transform:translateY(110vh) rotate(720deg) scale(.5);opacity:0}}',
         'input[type="date"]::-webkit-calendar-picker-indicator{background:transparent;color:transparent;cursor:pointer;position:absolute;inset:0;width:auto;height:auto}',
       ].join('') }} />
+
+      {/* Sync Gate — shown on fresh device with no data */}
+      {syncGate === 'setup' && (
+        <div className="fixed inset-0 z-[100] bg-deep flex items-center justify-center p-6">
+          <div className="w-full max-w-sm space-y-6">
+            {/* Branding */}
+            <div className="text-center space-y-3">
+              <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mx-auto">
+                <Shield className="w-7 h-7 text-emerald-400" />
+              </div>
+              <h1 className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-white font-bold text-xl tracking-widest">TRADEVAULT</h1>
+              <p className="text-sm text-slate-500">$20K → $10M Challenge</p>
+            </div>
+
+            {/* Connect option */}
+            <div className="bg-surface rounded-2xl p-5 border border-line space-y-3">
+              <div className="flex items-center gap-2">
+                <Link2 className="w-4 h-4 text-emerald-400" />
+                <span className="text-sm font-medium text-white">Connect to Existing Sync</span>
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Already using TradeVault on another device? Paste the sync link from Settings on that device.
+              </p>
+              <input
+                type="text"
+                value={syncGateInput}
+                onChange={e => { setSyncGateInput(e.target.value); setSyncGateStatus(''); }}
+                placeholder="Paste sync link or blob ID"
+                className="w-full bg-deep border border-line rounded-xl text-sm text-white py-3 px-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all placeholder:text-slate-700"
+              />
+              {syncGateStatus === 'error' && (
+                <p className="text-xs text-red-400">Could not find that sync. Check the link and try again.</p>
+              )}
+              <button
+                onClick={() => connectToSync(syncGateInput)}
+                disabled={!syncGateInput.trim() || syncGateStatus === 'connecting'}
+                className={'w-full py-3 rounded-xl font-bold text-sm transition-all ' +
+                  (syncGateInput.trim() && syncGateStatus !== 'connecting'
+                    ? 'bg-emerald-500 text-white active:scale-[0.98] hover:bg-emerald-400'
+                    : 'bg-elevated text-slate-600 cursor-not-allowed')}
+              >
+                {syncGateStatus === 'connecting' ? (
+                  <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Connecting...</span>
+                ) : 'Connect'}
+              </button>
+            </div>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-line" />
+              <span className="text-xs text-slate-600 font-medium">or</span>
+              <div className="flex-1 h-px bg-line" />
+            </div>
+
+            {/* Start fresh option */}
+            <button
+              onClick={startFresh}
+              disabled={syncGateStatus === 'creating'}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-surface text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all disabled:opacity-50"
+            >
+              {syncGateStatus === 'creating' ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</>
+              ) : (
+                <><Zap className="w-4 h-4" /> Start Fresh</>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Loading state while checking sync */}
+      {syncGate === null && (
+        <div className="fixed inset-0 z-[100] bg-deep flex items-center justify-center">
+          <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
+        </div>
+      )}
 
       {/* Desktop Sidebar (md+) */}
       <aside className="hidden md:flex flex-col items-center fixed left-0 top-0 bottom-0 w-16 bg-surface border-r border-line z-50 py-5 gap-1">

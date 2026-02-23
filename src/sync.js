@@ -59,3 +59,23 @@ export const pullFromCloud = async () => {
     return await res.json();
   } catch { return null; }
 };
+
+// Pull from a specific blob ID (for connect/switch flow)
+export const pullFromBlobId = async (blobId) => {
+  try {
+    const res = await fetch(`${API}/${blobId}`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+};
+
+// Extract blob ID from a pasted URL or raw ID
+export const extractBlobId = (input) => {
+  const trimmed = (input || '').trim();
+  if (!trimmed) return null;
+  const hashMatch = trimmed.match(/sync=([a-zA-Z0-9-]+)/);
+  if (hashMatch) return hashMatch[1];
+  const uuidMatch = trimmed.match(/^[a-zA-Z0-9-]{20,}$/);
+  if (uuidMatch) return uuidMatch[0];
+  return null;
+};
