@@ -1,15 +1,13 @@
 import React, { useState, useRef } from 'react';
 import { Download, Upload, Trash2, FileSpreadsheet, Cloud, CloudOff, RefreshCw, Copy, Check } from 'lucide-react';
 import { getPhaseName } from '../math/risk.js';
-import { getSyncConfig, saveSyncConfig, clearSyncConfig, createBlob } from '../sync.js';
+import { getSyncConfig, clearSyncConfig } from '../sync.js';
 
 export default function Settings({ settings, trades }) {
   const [showConfirm, setShowConfirm] = useState(null);
   const [eqInput, setEqInput] = useState(String(settings.initialEquity));
   const fileRef = useRef(null);
   const [syncConfig, setSyncConfig] = useState(() => getSyncConfig());
-  const [showSyncSetup, setShowSyncSetup] = useState(false);
-  const [syncCodeInput, setSyncCodeInput] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState('');
   const [copied, setCopied] = useState(false);
@@ -47,42 +45,6 @@ export default function Settings({ settings, trades }) {
     e.target.value = '';
   };
 
-  const handleNewSync = async () => {
-    setSyncing(true);
-    setSyncMsg('');
-    try {
-      const tradeData = { version: 1, initialEquity: trades.initialEquity, trades: trades.trades };
-      const blobId = await createBlob(tradeData);
-      if (!blobId) { setSyncMsg('Failed to create sync'); setSyncing(false); return; }
-      const config = { blobId, lastSync: Date.now() };
-      saveSyncConfig(config);
-      setSyncConfig(config);
-      setSyncMsg('Sync created! Copy the ID to your other devices.');
-    } catch { setSyncMsg('Failed to create sync'); }
-    setSyncing(false);
-  };
-
-  const handleJoinSync = async () => {
-    const id = syncCodeInput.trim();
-    if (!id) { setSyncMsg('Enter a Sync ID'); return; }
-    setSyncing(true);
-    setSyncMsg('');
-    try {
-      const config = { blobId: id, lastSync: null };
-      saveSyncConfig(config);
-      setSyncConfig(config);
-      const result = await trades.syncFromCloud();
-      setSyncMsg(result === 'pulled' ? 'Synced from cloud!' : 'Connected!');
-      setShowSyncSetup(false);
-      setSyncCodeInput('');
-    } catch {
-      setSyncMsg('Failed to connect. Check the Sync ID.');
-      clearSyncConfig();
-      setSyncConfig(null);
-    }
-    setSyncing(false);
-  };
-
   const handleSyncNow = async () => {
     setSyncing(true);
     setSyncMsg('');
@@ -97,13 +59,14 @@ export default function Settings({ settings, trades }) {
   const handleSyncDisconnect = () => {
     clearSyncConfig();
     setSyncConfig(null);
-    setShowSyncSetup(false);
-    setSyncMsg('');
+    window.location.hash = '';
+    setSyncMsg('Sync disconnected. Reload to create a new sync.');
   };
 
-  const handleCopyCode = () => {
+  const handleCopyLink = () => {
     if (syncConfig?.blobId) {
-      navigator.clipboard.writeText(syncConfig.blobId).catch(() => {});
+      const link = `${window.location.origin}${window.location.pathname}#sync=${syncConfig.blobId}`;
+      navigator.clipboard.writeText(link).catch(() => {});
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -202,26 +165,27 @@ export default function Settings({ settings, trades }) {
             {syncConfig ? <Cloud className="w-4 h-4 text-emerald-400" /> : <CloudOff className="w-4 h-4 text-slate-600" />}
             <div className="text-xs text-slate-500 font-medium">Cloud Sync</div>
           </div>
-          {syncConfig && (
-            <span className="text-[10px] text-emerald-400/70 font-mono">Connected</span>
-          )}
+          <span className={'text-[10px] font-mono ' + (syncConfig ? 'text-emerald-400/70' : 'text-slate-600')}>
+            {syncConfig ? 'Auto-synced' : 'Offline'}
+          </span>
         </div>
 
-        {syncConfig && !showSyncSetup ? (
+        {syncConfig ? (
           <>
-            <div className="bg-deep rounded-xl p-3 border border-line/50 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] text-slate-600 uppercase tracking-wider">Sync ID</span>
-                <button onClick={handleCopyCode} className="text-slate-500 hover:text-slate-300 transition-colors">
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                </button>
-              </div>
-              <div className="text-xs font-bold font-mono text-white break-all">{syncConfig.blobId}</div>
-              <p className="text-[10px] text-slate-600">Enter this ID on your other devices to sync.</p>
-            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Syncs automatically every 60s and on each trade. Open this link on another device to sync there too.
+            </p>
+
+            <button
+              onClick={handleCopyLink}
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-deep text-slate-400 text-xs font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? 'Link Copied!' : 'Copy Sync Link'}
+            </button>
 
             {syncConfig.lastSync && (
-              <div className="text-[10px] text-slate-600">
+              <div className="text-[10px] text-slate-600 text-center">
                 Last synced: {new Date(syncConfig.lastSync).toLocaleString()}
               </div>
             )}
@@ -241,58 +205,15 @@ export default function Settings({ settings, trades }) {
               onClick={handleSyncDisconnect}
               className="w-full text-[10px] text-slate-600 hover:text-red-400 transition-colors py-1"
             >
-              Disconnect Cloud Sync
+              Disconnect
             </button>
           </>
-        ) : !showSyncSetup ? (
-          <div className="space-y-3">
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Sync trades across browsers and devices. No account needed.
-            </p>
-            {syncMsg && <div className="text-[10px] text-emerald-400/70 text-center">{syncMsg}</div>}
-            <button
-              onClick={handleNewSync}
-              disabled={syncing}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-600 text-white text-sm font-semibold rounded-xl active:scale-[0.98] hover:bg-emerald-500 transition-all disabled:opacity-50"
-            >
-              <Cloud className="w-4 h-4" /> {syncing ? 'Creating...' : 'New Sync'}
-            </button>
-            <button
-              onClick={() => { setShowSyncSetup(true); setSyncMsg(''); }}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-deep text-slate-400 text-xs font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
-            >
-              Join Existing Device
-            </button>
-          </div>
         ) : (
-          <div className="space-y-3">
+          <>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Enter the Sync ID from your other device.
+              {syncMsg || 'Sync is offline. Reload the page to auto-connect.'}
             </p>
-            <input
-              type="text"
-              value={syncCodeInput}
-              onChange={e => setSyncCodeInput(e.target.value.trim())}
-              placeholder="Paste Sync ID here"
-              className="w-full bg-deep border border-line rounded-xl text-xs font-mono text-white py-2.5 px-3 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all placeholder:text-slate-700"
-            />
-            {syncMsg && <div className="text-[10px] text-red-400 text-center">{syncMsg}</div>}
-            <div className="flex gap-2">
-              <button
-                onClick={handleJoinSync}
-                disabled={syncing}
-                className="flex-1 py-2.5 bg-emerald-600 text-white text-xs font-semibold rounded-xl active:scale-[0.98] hover:bg-emerald-500 transition-all disabled:opacity-50"
-              >
-                {syncing ? 'Connecting...' : 'Connect'}
-              </button>
-              <button
-                onClick={() => { setShowSyncSetup(false); setSyncMsg(''); setSyncCodeInput(''); }}
-                className="flex-1 py-2.5 bg-deep text-slate-400 text-xs font-medium rounded-xl border border-line active:scale-[0.98] transition-all"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
+          </>
         )}
       </div>
 

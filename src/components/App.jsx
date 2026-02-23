@@ -3,6 +3,7 @@ import { Home as HomeIcon, List, BarChart3, Settings as SettingsIcon, AlertTrian
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSettings } from '../store/settings.js';
 import { useTrades } from '../store/trades.js';
+import { createBlob, getSyncConfig, saveSyncConfig } from '../sync.js';
 import Home from './Home.jsx';
 import Trades from './Trades.jsx';
 import Analysis from './Analysis.jsx';
@@ -44,8 +45,45 @@ export default function App() {
   const [showTradeEntry, setShowTradeEntry] = useState(false);
   const [editTradeData, setEditTradeData] = useState(null);
 
-  // Auto-sync from cloud on mount
-  useEffect(() => { trades.syncFromCloud().catch(() => {}); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Auto-sync: URL hash is the sync key, no manual setup needed
+  useEffect(() => {
+    const initSync = async () => {
+      const hash = window.location.hash;
+      const match = hash.match(/sync=([a-zA-Z0-9-]+)/);
+      const config = getSyncConfig();
+
+      if (match) {
+        // URL has sync ID — use it
+        const blobId = match[1];
+        if (!config || config.blobId !== blobId) {
+          saveSyncConfig({ blobId, lastSync: null });
+        }
+      } else if (!config) {
+        // First visit: auto-create cloud backup
+        const data = { version: 1, initialEquity: trades.initialEquity, trades: trades.trades };
+        const blobId = await createBlob(data);
+        if (blobId) {
+          saveSyncConfig({ blobId, lastSync: Date.now() });
+          window.location.hash = `sync=${blobId}`;
+        }
+        return; // just created — no need to pull
+      } else {
+        // Has config but URL missing hash — restore it
+        window.location.hash = `sync=${config.blobId}`;
+      }
+
+      trades.syncFromCloud().catch(() => {});
+    };
+    initSync();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Periodic sync every 60 seconds
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (getSyncConfig()) trades.syncFromCloud().catch(() => {});
+    }, 60000);
+    return () => clearInterval(id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openTradeEntry = (trade = null) => {
     setEditTradeData(trade);
