@@ -116,57 +116,48 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                 </button>
               </div>
 
-              {/* Direction + Outcome row */}
-              <div className="flex gap-3 mb-5">
-                {/* Direction — compact segmented pill */}
-                <div className="shrink-0">
-                  <label className="text-[10px] text-slate-600 font-medium mb-1.5 block uppercase tracking-wider">Side</label>
-                  <div className="flex bg-deep rounded-xl border border-line overflow-hidden">
-                    <button
-                      onClick={() => setDirection('long')}
-                      className={'flex items-center justify-center gap-1 px-4 py-2.5 text-xs font-bold transition-all border-r border-line ' +
-                        (direction === 'long'
-                          ? 'bg-blue-500/15 text-blue-400'
-                          : 'text-slate-500 hover:text-slate-400')}
-                    >
-                      <ArrowUpRight className="w-3.5 h-3.5" /> Long
-                    </button>
-                    <button
-                      onClick={() => setDirection('short')}
-                      className={'flex items-center justify-center gap-1 px-4 py-2.5 text-xs font-bold transition-all ' +
-                        (direction === 'short'
-                          ? 'bg-violet-500/15 text-violet-400'
-                          : 'text-slate-500 hover:text-slate-400')}
-                    >
-                      <ArrowDownRight className="w-3.5 h-3.5" /> Short
-                    </button>
-                  </div>
-                </div>
+              {/* Win/Loss — primary toggle */}
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <button
+                  onClick={() => setIsWin(true)}
+                  className={'flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all ' +
+                    (isWin
+                      ? 'bg-emerald-500/20 text-emerald-400 ring-2 ring-emerald-500/40'
+                      : 'bg-elevated text-slate-500 hover:text-slate-300')}
+                >
+                  <TrendingUp className="w-4 h-4" /> WIN
+                </button>
+                <button
+                  onClick={() => setIsWin(false)}
+                  className={'flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all ' +
+                    (!isWin
+                      ? 'bg-red-500/20 text-red-400 ring-2 ring-red-500/40'
+                      : 'bg-elevated text-slate-500 hover:text-slate-300')}
+                >
+                  <TrendingDown className="w-4 h-4" /> LOSS
+                </button>
+              </div>
 
-                {/* Outcome — prominent toggle */}
-                <div className="flex-1">
-                  <label className="text-[10px] text-slate-600 font-medium mb-1.5 block uppercase tracking-wider">Result</label>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <button
-                      onClick={() => setIsWin(true)}
-                      className={'flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-bold text-sm transition-all ' +
-                        (isWin
-                          ? 'bg-emerald-500/20 text-emerald-400 ring-2 ring-emerald-500/40'
-                          : 'bg-elevated text-slate-500 hover:text-slate-300')}
-                    >
-                      <TrendingUp className="w-3.5 h-3.5" /> Win
-                    </button>
-                    <button
-                      onClick={() => setIsWin(false)}
-                      className={'flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-bold text-sm transition-all ' +
-                        (!isWin
-                          ? 'bg-red-500/20 text-red-400 ring-2 ring-red-500/40'
-                          : 'bg-elevated text-slate-500 hover:text-slate-300')}
-                    >
-                      <TrendingDown className="w-3.5 h-3.5" /> Loss
-                    </button>
-                  </div>
-                </div>
+              {/* Long/Short — toggle pill */}
+              <div className="flex bg-deep rounded-xl border border-line p-0.5 mb-5">
+                <button
+                  onClick={() => setDirection('long')}
+                  className={'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-xs font-semibold transition-all ' +
+                    (direction === 'long'
+                      ? 'bg-blue-500/15 text-blue-400'
+                      : 'text-slate-500 hover:text-slate-400')}
+                >
+                  <ArrowUpRight className="w-3 h-3" /> Long
+                </button>
+                <button
+                  onClick={() => setDirection('short')}
+                  className={'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-xs font-semibold transition-all ' +
+                    (direction === 'short'
+                      ? 'bg-violet-500/15 text-violet-400'
+                      : 'text-slate-500 hover:text-slate-400')}
+                >
+                  <ArrowDownRight className="w-3 h-3" /> Short
+                </button>
               </div>
 
               {/* Amount input */}
