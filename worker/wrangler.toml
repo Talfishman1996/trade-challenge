@@ -1,0 +1,7 @@
+name = "tradevault-sync"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "SYNC_KV"
+id = "1dc9f874b74c4a4db6cd6b2a4bff008d"

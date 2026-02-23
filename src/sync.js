@@ -1,5 +1,5 @@
 const SYNC_KEY = 'tradevault-sync';
-const API = 'https://jsonblob.com/api/jsonBlob';
+const API = 'https://tradevault-sync.talfishmanbusiness.workers.dev';
 
 export const getSyncConfig = () => {
   try {
@@ -16,7 +16,7 @@ export const clearSyncConfig = () => {
   try { localStorage.removeItem(SYNC_KEY); } catch {}
 };
 
-// Create a new cloud blob, returns the blob ID
+// Create a new cloud sync key, returns the key ID
 export const createBlob = async (data) => {
   const payload = { ...data, lastModified: Date.now() };
   const res = await fetch(API, {
@@ -25,8 +25,8 @@ export const createBlob = async (data) => {
     body: JSON.stringify(payload),
   });
   if (!res.ok) return null;
-  const id = res.headers.get('X-jsonblob-id') || res.headers.get('Location')?.split('/').pop();
-  return id || null;
+  const json = await res.json();
+  return json?.id || null;
 };
 
 // Push data to existing blob
