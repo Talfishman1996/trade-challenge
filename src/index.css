@@ -68,13 +68,6 @@ input[type="range"]::-moz-range-progress {
   height: 6px;
 }
 
-/* Portfolio Value — animated border flow */
-@keyframes border-flow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
 /* Portfolio Value — text shimmer sweep */
 @keyframes text-shimmer {
   0% { background-position: 200% center; }

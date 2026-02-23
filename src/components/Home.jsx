@@ -46,9 +46,6 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
   const rColor = rSev === 'safe' ? 'text-amber-400' : rSev === 'elevated' ? 'text-orange-400' : 'text-red-500';
   const hasTrades = trades.stats.totalTrades > 0;
   const inProfit = trades.stats.totalPnl >= 0;
-  const heroGradient = !hasTrades
-    ? '#475569, #0ea5e9, #475569'
-    : inProfit ? '#10b981, #0ea5e9, #f59e0b, #10b981' : '#ef4444, #f97316, #ef4444';
   const heroInnerGlow = !hasTrades ? 'transparent'
     : inProfit ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)';
   const shimmerHighlight = inProfit ? '#a5f3fc' : '#fca5a5';
@@ -139,16 +136,22 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
         transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
         className="relative p-[1px] rounded-2xl"
       >
-        {/* Animated gradient border */}
+        {/* Static metallic border */}
         <div className="absolute inset-0 rounded-2xl"
           style={{
-            background: `linear-gradient(270deg, ${heroGradient})`,
-            backgroundSize: '300% 300%',
-            animation: 'border-flow 6s ease infinite',
+            background: 'linear-gradient(135deg, #1e293b 0%, #334155 30%, #475569 50%, #334155 70%, #1e293b 100%)',
           }} />
 
         {/* Card body */}
         <div className="relative rounded-2xl p-6 overflow-hidden" style={{ background: '#0D1117' }}>
+          {/* Topographic contour pattern */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 300 120" preserveAspectRatio="xMidYMid slice" style={{ opacity: 0.035 }}>
+            <path d="M-10,95 Q40,70 100,82 T200,72 T310,62" fill="none" stroke="white" strokeWidth="0.8" />
+            <path d="M-10,75 Q55,52 115,65 T215,55 T310,46" fill="none" stroke="white" strokeWidth="0.8" />
+            <path d="M-10,55 Q60,37 125,48 T225,38 T310,30" fill="none" stroke="white" strokeWidth="0.8" />
+            <path d="M-10,35 Q48,20 105,28 T205,20 T310,14" fill="none" stroke="white" strokeWidth="0.8" />
+          </svg>
+
           {/* Breathing inner glow */}
           <div className="absolute inset-0 pointer-events-none rounded-2xl"
             style={{
