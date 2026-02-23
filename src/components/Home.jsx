@@ -85,25 +85,24 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
   const peakIdx = sparkData.indexOf(sparkMax);
   const peakPt = sparkPoints[peakIdx];
 
-  // Summit tracker (log-scale $20K to $10M)
-  const summitMiles = useMemo(() => {
-    const logS = Math.log10(20000);
-    const logE = Math.log10(10000000);
-    const logR = logE - logS;
-    return MILES.map(m => {
-      const t = (Math.log10(m.v) - logS) / logR;
-      const prev = MILES.filter(p => p.v < m.v);
-      return { ...m, t, x: 10 + t * 280, y: 110 - t * 98, achieved: eq >= m.v,
-        isNext: eq < m.v && prev.every(p => eq >= p.v || p.v >= m.v) };
-    });
+  // Summit tracker — milestone trail data
+  const summitData = useMemo(() => {
+    const start = 20000;
+    const achievedCount = MILES.filter(m => eq >= m.v).length;
+    const lastAchievedIdx = MILES.reduce((acc, m, i) => eq >= m.v ? i : acc, -1);
+    const nextIdx = lastAchievedIdx + 1;
+    const nextM = nextIdx < MILES.length ? MILES[nextIdx] : null;
+    const prevVal = lastAchievedIdx >= 0 ? MILES[lastAchievedIdx].v : start;
+    const nextVal = nextM ? nextM.v : MILES[MILES.length - 1].v;
+    const segPct = nextM ? Math.min(100, Math.max(0, ((eq - prevVal) / (nextVal - prevVal)) * 100)) : 100;
+    const trailPct = nextM
+      ? ((lastAchievedIdx + 1 + segPct / 100) / MILES.length) * 100
+      : 100;
+    const toGo = nextM ? nextVal - eq : 0;
+    return { achievedCount, lastAchievedIdx, nextM, segPct, trailPct, toGo, miles: MILES.map((m, i) => ({
+      ...m, achieved: eq >= m.v, isNext: i === nextIdx && nextIdx < MILES.length,
+    })) };
   }, [eq]);
-  const summitT = useMemo(() => {
-    const logS = Math.log10(20000);
-    const logR = Math.log10(10000000) - logS;
-    return Math.max(0, Math.min(1, (Math.log10(Math.max(eq, 20000)) - logS) / logR));
-  }, [eq]);
-  const summitX = 10 + summitT * 280;
-  const summitY = 110 - summitT * 98;
 
   // Stats data
   const stats = [
@@ -341,62 +340,78 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
       </div>
       )}
 
-      {/* 7. SUMMIT TRACKER */}
-      <div className="bg-surface rounded-xl p-3 border border-line/50">
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-1.5">
-            <Trophy className="w-3.5 h-3.5 text-amber-400" />
-            <span className="text-xs text-slate-400 font-medium">Summit</span>
+      {/* 7. SUMMIT TRACKER — Milestone Trail */}
+      <div className="bg-surface rounded-xl p-4 border border-line/50">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Trophy className="w-4 h-4 text-amber-400" />
+            <span className="text-xs font-semibold text-white">Summit Tracker</span>
           </div>
           <span className="text-[10px] text-slate-500 font-mono tabular-nums">
-            ${fmt(eq)} of $10M
+            {summitData.achievedCount}/{MILES.length} cleared
           </span>
         </div>
 
-        <svg viewBox="0 0 300 130" className="w-full" style={{ height: 130 }} aria-label="Journey to $10M">
-          <polygon points="0,130 20,95 50,105 85,70 120,82 160,52 200,65 240,30 270,18 295,10 300,8 300,130"
-            fill="#1C2333" opacity="0.3" />
+        {/* Horizontal milestone trail */}
+        <div className="relative px-2 mb-4">
+          {/* Background track */}
+          <div className="absolute top-[9px] left-2 right-2 h-px bg-line" />
+          {/* Progress fill */}
+          <motion.div
+            className="absolute top-[9px] left-2 h-px bg-emerald-500"
+            initial={{ width: 0 }}
+            animate={{ width: `calc(${Math.min(100, summitData.trailPct)}% - 16px)` }}
+            transition={{ duration: 1, ease: 'easeOut' }}
+          />
+          {/* Milestone dots */}
+          <div className="relative flex justify-between">
+            {summitData.miles.map((m, i) => (
+              <div key={i} className="flex flex-col items-center z-10">
+                <div className={'w-[18px] h-[18px] rounded-full flex items-center justify-center text-[8px] font-bold transition-all ' +
+                  (m.achieved
+                    ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40'
+                    : m.isNext
+                      ? 'bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/40'
+                      : 'bg-elevated text-slate-600 ring-1 ring-line')}>
+                  {m.achieved ? '\u2713' : i + 1}
+                </div>
+                <span className={'text-[9px] mt-1.5 font-mono tabular-nums leading-none ' +
+                  (m.achieved ? 'text-slate-400' : m.isNext ? 'text-amber-400 font-semibold' : 'text-slate-600')}>
+                  {m.l}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
 
-          <line x1={10} y1={110} x2={summitX} y2={summitY}
-            stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" opacity="0.7" />
-          <line x1={summitX} y1={summitY} x2={290} y2={12}
-            stroke="#2D3748" strokeWidth="1.5" strokeDasharray="4,4" />
-
-          <text x="8" y="122" fontSize="8" fontFamily="'JetBrains Mono', monospace" fill="#475569">$20K</text>
-
-          {summitMiles.map((m, i) => (
-            <g key={i}>
-              {m.achieved && <circle cx={m.x} cy={m.y} r="8" fill="#10b981" opacity="0.1" />}
-              <circle cx={m.x} cy={m.y} r={m.achieved ? 5 : 3.5}
-                fill={m.achieved ? '#10b981' : m.isNext ? '#0D1117' : '#2D3748'}
-                stroke={m.isNext ? '#f59e0b' : 'none'} strokeWidth={m.isNext ? 2 : 0} />
-              <text x={m.x} y={m.y + 15} textAnchor="middle"
-                fontSize="9" fontFamily="'JetBrains Mono', monospace"
-                fill={m.achieved ? '#94a3b8' : m.isNext ? '#f59e0b' : '#475569'}>
-                {m.l}
-              </text>
-            </g>
-          ))}
-
-          <circle cx={summitX} cy={summitY} r="7" fill="#10b981" opacity="0.2" />
-          <circle cx={summitX} cy={summitY} r="3.5" fill="#10b981" />
-
-          <polygon points="286,8 290,0 294,8" fill="#f59e0b" opacity="0.8" />
-          <text x="290" y="20" textAnchor="middle" fontSize="7" fill="#f59e0b" fontFamily="'JetBrains Mono', monospace" opacity="0.6">$10M</text>
-        </svg>
-
-        {nextMilestone && (
-          <div className="mt-2">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-xs text-slate-500">Next: <span className="text-amber-400 font-mono font-semibold">{nextMilestone.l}</span></span>
-              <span className="text-xs text-slate-500 font-mono tabular-nums">{nextMilestone.progress.toFixed(1)}%</span>
+        {/* Next milestone detail */}
+        {summitData.nextM ? (
+          <div className="bg-deep rounded-lg p-3 border border-line/50">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-slate-500">
+                Next: <span className="text-amber-400 font-semibold font-mono">{summitData.nextM.l}</span>
+              </span>
+              <span className="text-xs text-slate-400 font-mono font-bold tabular-nums">
+                {summitData.segPct.toFixed(1)}%
+              </span>
             </div>
-            <div className="h-1 bg-elevated rounded-full overflow-hidden">
-              <motion.div className="h-full bg-emerald-500/60 rounded-full"
+            <div className="h-1.5 bg-elevated rounded-full overflow-hidden">
+              <motion.div
+                className="h-full rounded-full"
+                style={{ background: 'linear-gradient(90deg, #10b981, #f59e0b)' }}
                 initial={{ width: 0 }}
-                animate={{ width: Math.max(1, nextMilestone.progress) + '%' }}
-                transition={{ duration: 0.8, ease: 'easeOut' }} />
+                animate={{ width: Math.max(1, summitData.segPct) + '%' }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
+              />
             </div>
+            <div className="flex justify-between mt-1.5 text-[10px] text-slate-600 font-mono tabular-nums">
+              <span>${fmt(eq)}</span>
+              <span>${fmt(summitData.toGo)} to go</span>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-emerald-500/10 rounded-lg p-3 border border-emerald-500/20 text-center">
+            <span className="text-sm font-bold text-emerald-400">Summit Reached!</span>
           </div>
         )}
       </div>

@@ -11,7 +11,7 @@ const DirBadge = ({ dir }) => {
   return (
     <span className={'inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wide leading-none ' +
       (isLong ? 'bg-blue-500/15 text-blue-400' : 'bg-violet-500/15 text-violet-400')}>
-      {isLong ? 'L' : 'S'}
+      {isLong ? 'Long' : 'Short'}
     </span>
   );
 };
@@ -354,73 +354,67 @@ export default function Trades({ trades, settings, onOpenTradeEntry }) {
         </div>
       )}
 
-      {/* Undo/Redo — visible when trades exist or redo is available */}
+      {/* Actions — Undo/Redo + secondary tools */}
       {(trades.trades.length > 0 || trades.lastUndone) && (
-        <div className="flex gap-2 pt-2">
-          <button
-            onClick={() => trades.undoLastTrade()}
-            disabled={trades.trades.length === 0}
-            className={'flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium rounded-xl border active:scale-[0.98] transition-all ' +
-              (trades.trades.length > 0
-                ? 'bg-surface text-slate-400 border-line hover:bg-elevated'
-                : 'bg-surface/50 text-slate-600 border-line/50 cursor-not-allowed')}
-          >
-            <Undo2 className="w-4 h-4" /> Undo
-          </button>
-          <button
-            onClick={() => trades.redoLastTrade()}
-            disabled={!trades.lastUndone}
-            className={'flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium rounded-xl border active:scale-[0.98] transition-all ' +
-              (trades.lastUndone
-                ? 'bg-surface text-slate-400 border-line hover:bg-elevated'
-                : 'bg-surface/50 text-slate-600 border-line/50 cursor-not-allowed')}
-          >
-            <Redo2 className="w-4 h-4" /> Redo
-          </button>
-        </div>
-      )}
-
-      {/* Export/Import/Clear (only when trades exist) */}
-      {trades.trades.length > 0 && (
-        <div className="space-y-2 pt-2">
+        <div className="pt-3 space-y-3">
+          {/* Primary: Undo / Redo */}
           <div className="flex gap-2">
             <button
-              onClick={handleExport}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-surface text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
+              onClick={() => trades.undoLastTrade()}
+              disabled={trades.trades.length === 0}
+              className={'flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium rounded-xl border active:scale-[0.98] transition-all ' +
+                (trades.trades.length > 0
+                  ? 'bg-surface text-slate-400 border-line hover:bg-elevated'
+                  : 'bg-surface/50 text-slate-600 border-line/50 cursor-not-allowed')}
             >
-              <Download className="w-4 h-4" /> Export
+              <Undo2 className="w-4 h-4" /> Undo
             </button>
             <button
-              onClick={() => fileRef.current?.click()}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-surface text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
+              onClick={() => trades.redoLastTrade()}
+              disabled={!trades.lastUndone}
+              className={'flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium rounded-xl border active:scale-[0.98] transition-all ' +
+                (trades.lastUndone
+                  ? 'bg-surface text-slate-400 border-line hover:bg-elevated'
+                  : 'bg-surface/50 text-slate-600 border-line/50 cursor-not-allowed')}
             >
-              <Upload className="w-4 h-4" /> Import
+              <Redo2 className="w-4 h-4" /> Redo
             </button>
-            <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
           </div>
 
-          {showConfirm === 'clear' ? (
-            <div className="flex gap-2">
-              <button
-                onClick={() => { trades.clearTrades(); setShowConfirm(null); }}
-                className="flex-1 py-3 bg-rose-500/15 text-rose-400 text-sm font-semibold rounded-xl border border-rose-500/30 active:scale-[0.98] transition-all"
-              >
-                Confirm Clear All
-              </button>
-              <button
-                onClick={() => setShowConfirm(null)}
-                className="flex-1 py-3 bg-surface text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] transition-all"
-              >
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowConfirm('clear')}
-              className="w-full flex items-center justify-center gap-2 py-3 text-rose-500/60 text-sm font-medium rounded-xl border border-rose-500/10 active:scale-[0.98] hover:bg-rose-500/5 transition-all"
-            >
-              <Trash2 className="w-4 h-4" /> Clear All Trades
-            </button>
+          {/* Secondary: Export · Import · Clear — compact text links */}
+          {trades.trades.length > 0 && (
+            <>
+              <div className="flex items-center justify-center gap-4">
+                <button onClick={handleExport}
+                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors">
+                  <Download className="w-3.5 h-3.5" /> Export
+                </button>
+                <span className="text-slate-700">|</span>
+                <button onClick={() => fileRef.current?.click()}
+                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors">
+                  <Upload className="w-3.5 h-3.5" /> Import
+                </button>
+                <span className="text-slate-700">|</span>
+                {showConfirm === 'clear' ? (
+                  <span className="flex items-center gap-2">
+                    <button onClick={() => { trades.clearTrades(); setShowConfirm(null); }}
+                      className="text-xs text-red-400 font-semibold hover:text-red-300 transition-colors">
+                      Confirm
+                    </button>
+                    <button onClick={() => setShowConfirm(null)}
+                      className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+                      Cancel
+                    </button>
+                  </span>
+                ) : (
+                  <button onClick={() => setShowConfirm('clear')}
+                    className="flex items-center gap-1.5 text-xs text-red-500/50 hover:text-red-400 transition-colors">
+                    <Trash2 className="w-3.5 h-3.5" /> Clear
+                  </button>
+                )}
+                <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
+              </div>
+            </>
           )}
         </div>
       )}
