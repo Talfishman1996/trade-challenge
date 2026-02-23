@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Download, Upload, Trash2, RotateCcw, Info, FileSpreadsheet, Cloud, CloudOff, RefreshCw, Copy, Check } from 'lucide-react';
-import { fmt } from '../math/format.js';
+import { Download, Upload, Trash2, FileSpreadsheet, Cloud, CloudOff, RefreshCw, Copy, Check } from 'lucide-react';
 import { getPhaseName } from '../math/risk.js';
-import { getSyncConfig, saveSyncConfig, clearSyncConfig, generateSyncCode } from '../sync.js';
+import { getSyncConfig, saveSyncConfig, clearSyncConfig, createBlob } from '../sync.js';
 
 export default function Settings({ settings, trades }) {
   const [showConfirm, setShowConfirm] = useState(null);
@@ -10,7 +9,6 @@ export default function Settings({ settings, trades }) {
   const fileRef = useRef(null);
   const [syncConfig, setSyncConfig] = useState(() => getSyncConfig());
   const [showSyncSetup, setShowSyncSetup] = useState(false);
-  const [syncUrl, setSyncUrl] = useState('');
   const [syncCodeInput, setSyncCodeInput] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState('');
@@ -49,20 +47,40 @@ export default function Settings({ settings, trades }) {
     e.target.value = '';
   };
 
-  const handleSyncEnable = () => {
-    const url = syncUrl.trim().replace(/\/$/, '');
-    if (!url.includes('firebaseio.com') && !url.includes('firebase')) {
-      setSyncMsg('Enter a valid Firebase Realtime Database URL');
-      return;
-    }
-    const code = syncCodeInput.trim() || generateSyncCode();
-    const config = { dbUrl: url, syncCode: code, lastSync: null };
-    saveSyncConfig(config);
-    setSyncConfig(config);
-    setShowSyncSetup(false);
+  const handleNewSync = async () => {
+    setSyncing(true);
     setSyncMsg('');
-    // Push current data to cloud
-    trades.syncFromCloud().then(r => setSyncMsg(r === 'pulled' ? 'Synced from cloud' : 'Data pushed to cloud')).catch(() => setSyncMsg('Sync failed'));
+    try {
+      const tradeData = { version: 1, initialEquity: trades.initialEquity, trades: trades.trades };
+      const blobId = await createBlob(tradeData);
+      if (!blobId) { setSyncMsg('Failed to create sync'); setSyncing(false); return; }
+      const config = { blobId, lastSync: Date.now() };
+      saveSyncConfig(config);
+      setSyncConfig(config);
+      setSyncMsg('Sync created! Copy the ID to your other devices.');
+    } catch { setSyncMsg('Failed to create sync'); }
+    setSyncing(false);
+  };
+
+  const handleJoinSync = async () => {
+    const id = syncCodeInput.trim();
+    if (!id) { setSyncMsg('Enter a Sync ID'); return; }
+    setSyncing(true);
+    setSyncMsg('');
+    try {
+      const config = { blobId: id, lastSync: null };
+      saveSyncConfig(config);
+      setSyncConfig(config);
+      const result = await trades.syncFromCloud();
+      setSyncMsg(result === 'pulled' ? 'Synced from cloud!' : 'Connected!');
+      setShowSyncSetup(false);
+      setSyncCodeInput('');
+    } catch {
+      setSyncMsg('Failed to connect. Check the Sync ID.');
+      clearSyncConfig();
+      setSyncConfig(null);
+    }
+    setSyncing(false);
   };
 
   const handleSyncNow = async () => {
@@ -84,8 +102,8 @@ export default function Settings({ settings, trades }) {
   };
 
   const handleCopyCode = () => {
-    if (syncConfig?.syncCode) {
-      navigator.clipboard.writeText(syncConfig.syncCode).catch(() => {});
+    if (syncConfig?.blobId) {
+      navigator.clipboard.writeText(syncConfig.blobId).catch(() => {});
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -193,13 +211,13 @@ export default function Settings({ settings, trades }) {
           <>
             <div className="bg-deep rounded-xl p-3 border border-line/50 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-slate-600 uppercase tracking-wider">Sync Code</span>
+                <span className="text-[10px] text-slate-600 uppercase tracking-wider">Sync ID</span>
                 <button onClick={handleCopyCode} className="text-slate-500 hover:text-slate-300 transition-colors">
                   {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
               </div>
-              <div className="text-lg font-bold font-mono tracking-widest text-white">{syncConfig.syncCode}</div>
-              <p className="text-[10px] text-slate-600">Enter this code on your other devices to sync.</p>
+              <div className="text-xs font-bold font-mono text-white break-all">{syncConfig.blobId}</div>
+              <p className="text-[10px] text-slate-600">Enter this ID on your other devices to sync.</p>
             </div>
 
             {syncConfig.lastSync && (
@@ -227,65 +245,48 @@ export default function Settings({ settings, trades }) {
             </button>
           </>
         ) : !showSyncSetup ? (
-          <>
+          <div className="space-y-3">
             <p className="text-xs text-slate-600 leading-relaxed">
-              Sync your trades across devices. Requires a free Firebase Realtime Database.
+              Sync trades across browsers and devices. No account needed.
             </p>
+            {syncMsg && <div className="text-[10px] text-emerald-400/70 text-center">{syncMsg}</div>}
             <button
-              onClick={() => setShowSyncSetup(true)}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-deep text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
+              onClick={handleNewSync}
+              disabled={syncing}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-600 text-white text-sm font-semibold rounded-xl active:scale-[0.98] hover:bg-emerald-500 transition-all disabled:opacity-50"
             >
-              <Cloud className="w-4 h-4" /> Enable Cloud Sync
+              <Cloud className="w-4 h-4" /> {syncing ? 'Creating...' : 'New Sync'}
             </button>
-          </>
+            <button
+              onClick={() => { setShowSyncSetup(true); setSyncMsg(''); }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-deep text-slate-400 text-xs font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
+            >
+              Join Existing Device
+            </button>
+          </div>
         ) : (
           <div className="space-y-3">
-            <div className="bg-deep rounded-xl p-3 border border-line/50 space-y-2">
-              <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Quick Setup (2 min)</div>
-              <ol className="text-[11px] text-slate-500 space-y-1 list-decimal list-inside leading-relaxed">
-                <li>Go to <span className="text-cyan-400">console.firebase.google.com</span></li>
-                <li>Create a project (any name)</li>
-                <li>Build {'>'} Realtime Database {'>'} Create Database</li>
-                <li>Choose location, start in <span className="text-amber-400">test mode</span></li>
-                <li>Copy the database URL (starts with https://)</li>
-              </ol>
-            </div>
-
-            <div>
-              <label className="text-[10px] text-slate-600 uppercase tracking-wider block mb-1">Database URL</label>
-              <input
-                type="url"
-                value={syncUrl}
-                onChange={e => setSyncUrl(e.target.value)}
-                placeholder="https://your-project-default-rtdb.firebaseio.com"
-                className="w-full bg-deep border border-line rounded-xl text-xs font-mono text-white py-2.5 px-3 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all placeholder:text-slate-700"
-              />
-            </div>
-
-            <div>
-              <label className="text-[10px] text-slate-600 uppercase tracking-wider block mb-1">
-                Sync Code <span className="text-slate-700">(leave blank to generate, or enter existing code to join)</span>
-              </label>
-              <input
-                type="text"
-                value={syncCodeInput}
-                onChange={e => setSyncCodeInput(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
-                placeholder="auto-generated"
-                className="w-full bg-deep border border-line rounded-xl text-xs font-mono text-white py-2.5 px-3 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all placeholder:text-slate-700"
-              />
-            </div>
-
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Enter the Sync ID from your other device.
+            </p>
+            <input
+              type="text"
+              value={syncCodeInput}
+              onChange={e => setSyncCodeInput(e.target.value.trim())}
+              placeholder="Paste Sync ID here"
+              className="w-full bg-deep border border-line rounded-xl text-xs font-mono text-white py-2.5 px-3 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all placeholder:text-slate-700"
+            />
             {syncMsg && <div className="text-[10px] text-red-400 text-center">{syncMsg}</div>}
-
             <div className="flex gap-2">
               <button
-                onClick={handleSyncEnable}
-                className="flex-1 py-2.5 bg-emerald-600 text-white text-xs font-semibold rounded-xl active:scale-[0.98] hover:bg-emerald-500 transition-all"
+                onClick={handleJoinSync}
+                disabled={syncing}
+                className="flex-1 py-2.5 bg-emerald-600 text-white text-xs font-semibold rounded-xl active:scale-[0.98] hover:bg-emerald-500 transition-all disabled:opacity-50"
               >
-                Connect
+                {syncing ? 'Connecting...' : 'Connect'}
               </button>
               <button
-                onClick={() => { setShowSyncSetup(false); setSyncMsg(''); }}
+                onClick={() => { setShowSyncSetup(false); setSyncMsg(''); setSyncCodeInput(''); }}
                 className="flex-1 py-2.5 bg-deep text-slate-400 text-xs font-medium rounded-xl border border-line active:scale-[0.98] transition-all"
               >
                 Cancel
