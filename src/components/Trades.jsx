@@ -3,6 +3,7 @@ import { TrendingUp, TrendingDown, Download, Upload, Trash2, Undo2, Redo2, Plus,
 import { motion, AnimatePresence } from 'framer-motion';
 import { fmt } from '../math/format.js';
 import { getPhaseName, rN } from '../math/risk.js';
+import { exportJSON, importJSON } from '../utils/dataIO.js';
 const fmtDate = d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
 const DirBadge = ({ dir }) => {
@@ -10,7 +11,7 @@ const DirBadge = ({ dir }) => {
   const isLong = dir === 'long';
   return (
     <span className={'inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold tracking-wide leading-none ' +
-      (isLong ? 'bg-blue-500/15 text-blue-400' : 'bg-rose-500/15 text-rose-400')}>
+      (isLong ? 'bg-blue-500/15 text-blue-400' : 'bg-violet-500/15 text-violet-400')}>
       {isLong ? 'Long' : 'Short'}
     </span>
   );
@@ -31,26 +32,12 @@ export default function Trades({ trades, settings, onOpenTradeEntry }) {
   const [view, setView] = useState('calendar');
   const fileRef = useRef(null);
 
-  const handleExport = () => {
-    const json = trades.exportJSON();
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `tradevault-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const handleExport = () => exportJSON(trades);
 
   const handleImport = e => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = evt => {
-      const ok = trades.importJSON(evt.target.result);
-      if (!ok) alert('Invalid file format');
-    };
-    reader.readAsText(file);
+    importJSON(file, trades, msg => alert(msg));
     e.target.value = '';
   };
 
@@ -291,7 +278,7 @@ export default function Trades({ trades, settings, onOpenTradeEntry }) {
                           <div className="grid grid-cols-4 gap-2 text-center text-xs">
                             <div>
                               <div className="text-slate-500">Side</div>
-                              <div className={'font-bold ' + (t.direction === 'short' ? 'text-rose-400' : 'text-blue-400')}>
+                              <div className={'font-bold ' + (t.direction === 'short' ? 'text-violet-400' : 'text-blue-400')}>
                                 {t.direction === 'short' ? 'Short' : t.direction === 'long' ? 'Long' : '--'}
                               </div>
                             </div>

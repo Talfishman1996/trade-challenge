@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Download, Upload, Trash2, FileSpreadsheet, Cloud, CloudOff, RefreshCw, Copy, Check, Link2, Loader2 } from 'lucide-react';
-import { getPhaseName } from '../math/risk.js';
 import { getSyncConfig, clearSyncConfig, saveSyncConfig, extractBlobId, pullFromBlobId, createBlob } from '../sync.js';
+import { exportJSON, exportCSV, importJSON } from '../utils/dataIO.js';
 
 export default function Settings({ settings, trades }) {
   const [showConfirm, setShowConfirm] = useState(null);
@@ -28,26 +28,12 @@ export default function Settings({ settings, trades }) {
     }
   };
 
-  const handleExport = () => {
-    const json = trades.exportJSON();
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `tradevault-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const handleExport = () => exportJSON(trades);
 
   const handleImport = e => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = evt => {
-      const ok = trades.importJSON(evt.target.result);
-      if (!ok) alert('Invalid file format');
-    };
-    reader.readAsText(file);
+    importJSON(file, trades, msg => alert(msg));
     e.target.value = '';
   };
 
@@ -150,30 +136,7 @@ export default function Settings({ settings, trades }) {
     }
   };
 
-  const handleCSVExport = () => {
-    const rows = [['Trade #', 'Date', 'P&L', 'Equity Before', 'Equity After', 'Risk %', 'Phase', 'Notes']];
-    for (const t of trades.trades) {
-      const esc = (s) => s && s.includes(',') ? `"${s.replace(/"/g, '""')}"` : (s || '');
-      rows.push([
-        t.id,
-        new Date(t.date).toISOString().slice(0, 10),
-        t.pnl,
-        t.equityBefore,
-        t.equityAfter,
-        (t.riskPct * 100).toFixed(2) + '%',
-        getPhaseName(t.phase),
-        esc(t.notes),
-      ]);
-    }
-    const csv = rows.map(r => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `tradevault-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const handleCSVExport = () => exportCSV(trades);
 
   return (
     <div className="px-4 pt-4 md:pt-6 pb-6 max-w-lg md:max-w-2xl mx-auto space-y-5">
