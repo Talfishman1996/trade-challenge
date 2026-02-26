@@ -1,19 +1,35 @@
 import React, { useState, useMemo } from 'react';
-import { TrendingUp, TrendingDown, Undo2, Redo2, Plus, List, LayoutGrid, TableProperties, Pencil, Tag, Trash2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Undo2, Redo2, Plus, LayoutGrid, TableProperties, Pencil } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { fmt, fmtPnl } from '../math/format.js';
-import { getPhaseName } from '../math/risk.js';
 import FilterBar from './FilterBar.jsx';
 
-const fmtDate = d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+const ordSuffix = n => {
+  const s = ['th','st','nd','rd'];
+  const v = n % 100;
+  return s[(v - 20) % 10] || s[v] || s[0];
+};
+const fmtDate = d => {
+  const dt = new Date(d);
+  const mon = dt.toLocaleDateString('en-US', { month: 'short' });
+  const day = dt.getDate();
+  return `${mon} ${day}${ordSuffix(day)}`;
+};
+const fmtDateFull = d => {
+  const dt = new Date(d);
+  const mon = dt.toLocaleDateString('en-US', { month: 'short' });
+  const day = dt.getDate();
+  return `${mon} ${day}${ordSuffix(day)} ${dt.getFullYear()}`;
+};
 
-const DirBadge = ({ dir }) => {
+const DirBadge = ({ dir, compact }) => {
   if (!dir) return null;
   const isLong = dir === 'long';
   return (
-    <span className={'inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold tracking-wide leading-none ' +
+    <span className={'inline-flex items-center py-0.5 rounded font-bold leading-none ' +
+      (compact ? 'px-1 text-[10px] ' : 'px-1.5 text-[11px] tracking-wide ') +
       (isLong ? 'bg-blue-500/15 text-blue-400' : 'bg-rose-500/15 text-rose-400')}>
-      {isLong ? 'Long' : 'Short'}
+      {compact ? (isLong ? 'L' : 'S') : (isLong ? 'Long' : 'Short')}
     </span>
   );
 };
@@ -28,8 +44,6 @@ const calcDuration = (open, close) => {
 
 export default function Trades({ trades, settings, onOpenTradeEntry, showToast }) {
   const rMode = settings.rMultipleDisplay;
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [expandedId, setExpandedId] = useState(null);
   const [view, setView] = useState('grid');
   const [filteredTrades, setFilteredTrades] = useState(null);
   const [sortCol, setSortCol] = useState(null);
@@ -40,13 +54,6 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
 
   const openEdit = (trade) => {
     onOpenTradeEntry(trade);
-    setExpandedId(null);
-  };
-
-  const handleDelete = (id) => {
-    trades.deleteTrade(id);
-    setDeleteConfirm(null);
-    setExpandedId(null);
   };
 
   const handleFilter = (filtered) => {
@@ -61,10 +68,8 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
       let va, vb;
       switch (sortCol) {
         case 'date': va = a.date; vb = b.date; break;
-        case 'ticker': va = a.ticker || ''; vb = b.ticker || ''; break;
         case 'pnl': va = a.pnl; vb = b.pnl; break;
         case 'rMult': va = a.riskDol > 0 ? a.pnl / a.riskDol : 0; vb = b.riskDol > 0 ? b.pnl / b.riskDol : 0; break;
-        case 'strategy': va = a.strategy || ''; vb = b.strategy || ''; break;
         default: return 0;
       }
       const cmp = typeof va === 'string' ? va.localeCompare(vb) : va - vb;
@@ -80,27 +85,6 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
       setSortDir('desc');
     }
   };
-
-  // Group trades by month (reverse chronological) for list view
-  const monthGroups = useMemo(() => {
-    if (displayTrades.length === 0) return [];
-    const groups = {};
-    for (const t of displayTrades) {
-      const key = t.date.slice(0, 7);
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(t);
-    }
-    return Object.entries(groups)
-      .sort((a, b) => b[0].localeCompare(a[0]))
-      .map(([key, monthTrades]) => ({
-        key,
-        label: new Date(key + '-15').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-        trades: [...monthTrades].sort((a, b) => new Date(b.date) - new Date(a.date)),
-        pnl: monthTrades.reduce((s, t) => s + t.pnl, 0),
-        wins: monthTrades.filter(t => t.pnl > 0).length,
-        count: monthTrades.length,
-      }));
-  }, [displayTrades]);
 
   const SortHeader = ({ col, children, className = '' }) => (
     <th
@@ -206,12 +190,11 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
         <FilterBar trades={trades.trades} onFilter={handleFilter} />
       )}
 
-      {/* View Toggle — Grid / List / Table */}
+      {/* View Toggle — Grid / Table */}
       {trades.trades.length > 0 && (
         <div className="flex gap-1 bg-surface rounded-xl p-1 border border-line">
           {[
             { id: 'grid', l: 'Grid', ic: LayoutGrid },
-            { id: 'list', l: 'List', ic: List },
             { id: 'table', l: 'Table', ic: TableProperties },
           ].map(v => {
             const Ic = v.ic;
@@ -287,13 +270,10 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
               <tr className="bg-surface text-slate-500 text-left border-b border-line">
                 <th className="px-3 py-2.5 font-medium sticky left-0 bg-surface z-10">#</th>
                 <SortHeader col="date" className="px-3 py-2.5 font-medium whitespace-nowrap">Date</SortHeader>
-                <SortHeader col="ticker" className="px-3 py-2.5 font-medium">Ticker</SortHeader>
                 <th className="px-3 py-2.5 font-medium">Side</th>
-                <SortHeader col="strategy" className="px-3 py-2.5 font-medium whitespace-nowrap">Strategy</SortHeader>
                 <SortHeader col="pnl" className="px-3 py-2.5 font-medium text-right">P&L</SortHeader>
                 <SortHeader col="rMult" className="px-3 py-2.5 font-medium text-right">R-Mult</SortHeader>
                 <th className="px-3 py-2.5 font-medium text-right">Equity</th>
-                <th className="px-3 py-2.5 font-medium">Tags</th>
               </tr>
             </thead>
             <tbody>
@@ -309,10 +289,15 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
                     style={{ height: '48px' }}
                   >
                     <td className="px-3 py-2 text-slate-500 sticky left-0 bg-inherit z-10">{t.id}</td>
-                    <td className="px-3 py-2 text-slate-400 whitespace-nowrap">{new Date(t.date).toISOString().slice(0, 10)}</td>
-                    <td className="px-3 py-2 text-slate-300 font-bold">{t.ticker || '--'}</td>
-                    <td className="px-3 py-2"><DirBadge dir={t.direction} /></td>
-                    <td className="px-3 py-2 text-slate-500 whitespace-nowrap">{t.strategy || '--'}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <div className="text-slate-400">{fmtDateFull(t.date)}</div>
+                      {t.openDate && (
+                        <div className="text-[10px] text-slate-600">
+                          {'\u2190'} {fmtDate(t.openDate)} {'\u00B7'} {calcDuration(t.openDate, t.date) || '<1d'}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-3 py-2"><DirBadge dir={t.direction} compact /></td>
                     <td className={'px-3 py-2 text-right font-bold tabular-nums ' + (isWin ? 'text-emerald-400' : 'text-rose-400')}>
                       {fmtPnl(t.pnl, t.riskDol, rMode)}
                     </td>
@@ -320,182 +305,11 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
                       {rMode ? (isWin ? '+$' : '-$') + fmt(Math.abs(t.pnl)) : (t.riskDol > 0 ? (isWin ? '+' : '') + rMult.toFixed(1) + 'R' : '--')}
                     </td>
                     <td className="px-3 py-2 text-right text-slate-400 tabular-nums">${fmt(t.equityAfter)}</td>
-                    <td className="px-3 py-2">
-                      {t.setupTags && t.setupTags.length > 0 && (
-                        <div className="flex gap-1">
-                          {t.setupTags.slice(0, 1).map(tag => (
-                            <span key={tag} className="text-[9px] px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-400/70 whitespace-nowrap">{tag}</span>
-                          ))}
-                          {t.setupTags.length > 1 && <span className="text-[9px] text-slate-600">+{t.setupTags.length - 1}</span>}
-                        </div>
-                      )}
-                    </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {/* ===== LIST VIEW ===== */}
-      {view === 'list' && monthGroups.length > 0 && (
-        <div className="space-y-5">
-          {monthGroups.map(group => (
-            <div key={group.key} className="space-y-2">
-              {/* Sticky month header */}
-              <div className="flex items-center justify-between px-1 sticky top-0 bg-deep/95 backdrop-blur-sm z-10 py-1.5 -mx-1 px-1">
-                <span className="text-sm font-semibold text-slate-400">{group.label}</span>
-                <div className="flex items-center gap-2.5">
-                  <span className={'text-xs font-bold font-mono tabular-nums ' + (group.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
-                    {(group.pnl >= 0 ? '+$' : '-$') + fmt(Math.abs(group.pnl))}
-                  </span>
-                  <span className="text-xs text-slate-500 font-mono">{group.count} trades</span>
-                </div>
-              </div>
-
-              <AnimatePresence>
-                {group.trades.map(t => {
-                  const isExpanded = expandedId === t.id;
-                  const isDeleting = deleteConfirm === t.id;
-                  const isWin = t.pnl >= 0;
-                  return (
-                    <motion.div
-                      key={t.id}
-                      initial={{ opacity: 0, y: -8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className={'bg-surface rounded-xl border-l-[3px] border overflow-hidden transition-colors ' +
-                        (isWin
-                          ? 'border-l-emerald-500 border-emerald-500/15'
-                          : 'border-l-rose-500 border-rose-500/15') +
-                        (isExpanded ? ' ring-1 ring-slate-700' : '')}
-                    >
-                      <div
-                        className="px-3 py-2.5 cursor-pointer active:bg-elevated/30 transition-colors"
-                        onClick={() => setExpandedId(isExpanded ? null : t.id)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-xs text-slate-500 font-mono min-w-7 shrink-0">#{t.id}</span>
-                            <DirBadge dir={t.direction} />
-                            {t.ticker && <span className="text-xs text-slate-400 font-mono font-bold truncate">{t.ticker}</span>}
-                            <span className="text-xs text-slate-600 font-mono shrink-0">
-                              {t.openDate
-                                ? <>{fmtDate(t.openDate)}<span className="text-slate-700"> {'\u2192'} </span>{fmtDate(t.date)}{calcDuration(t.openDate, t.date) && <span className="text-slate-700"> ({calcDuration(t.openDate, t.date)})</span>}</>
-                                : fmtDate(t.date)}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0 ml-2">
-                            {((t.setupTags?.length || 0) + (t.emotionTags?.length || 0) + (t.mistakes?.length || 0)) > 0 && (
-                              <Tag className="w-3 h-3 text-slate-600" />
-                            )}
-                            <div className="text-right">
-                              <span className={'text-sm font-bold font-mono tabular-nums ' +
-                                (isWin ? 'text-emerald-400' : 'text-rose-400')}>
-                                {fmtPnl(t.pnl, t.riskDol, rMode)}
-                              </span>
-                              <div className="text-xs text-slate-500 font-mono tabular-nums">${fmt(t.equityAfter)}</div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <AnimatePresence>
-                        {isExpanded && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.15 }}
-                            className="border-t border-line/60"
-                          >
-                            <div className="px-3 pt-2.5 pb-1">
-                              <div className="grid grid-cols-4 gap-2 text-center text-xs">
-                                <div>
-                                  <div className="text-slate-500">Side</div>
-                                  <div className={'font-bold ' + (t.direction === 'short' ? 'text-violet-400' : 'text-blue-400')}>
-                                    {t.direction === 'short' ? 'Short' : t.direction === 'long' ? 'Long' : '--'}
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="text-slate-500">Risk</div>
-                                  <div className="font-bold font-mono text-slate-300">{(t.riskPct * 100).toFixed(1)}%</div>
-                                </div>
-                                <div>
-                                  <div className="text-slate-500">Phase</div>
-                                  <div className="font-bold text-slate-300">{getPhaseName(t.phase)}</div>
-                                </div>
-                                <div>
-                                  <div className="text-slate-500">R-Mult</div>
-                                  <div className={'font-bold font-mono ' + (t.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
-                                    {t.riskDol > 0 ? (t.pnl >= 0 ? '+' : '') + (t.pnl / t.riskDol).toFixed(1) + 'R' : '--'}
-                                  </div>
-                                </div>
-                              </div>
-                              {/* Strategy info if present */}
-                              {t.strategy && (
-                                <div className="flex gap-3 mt-2 text-xs">
-                                  <span className="text-slate-500">Strategy: <span className="text-slate-300">{t.strategy}</span></span>
-                                  {t.contracts > 0 && <span className="text-slate-500">Size: <span className="text-slate-300 font-mono">{t.contracts}</span></span>}
-                                </div>
-                              )}
-                              {t.notes && <p className="text-xs text-slate-400 mt-2 italic">{t.notes}</p>}
-                              {/* Tags display */}
-                              {((t.setupTags?.length || 0) + (t.emotionTags?.length || 0) + (t.mistakes?.length || 0)) > 0 && (
-                                <div className="flex flex-wrap gap-1 mt-2">
-                                  {(t.setupTags || []).map(tag => (
-                                    <span key={'s-' + tag} className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-medium">{tag}</span>
-                                  ))}
-                                  {(t.emotionTags || []).map(tag => (
-                                    <span key={'e-' + tag} className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-medium">{tag}</span>
-                                  ))}
-                                  {(t.mistakes || []).map(tag => (
-                                    <span key={'m-' + tag} className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-400 font-medium">{tag}</span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                            {isDeleting ? (
-                              <div className="flex gap-2 p-3 pt-2">
-                                <button
-                                  onClick={() => handleDelete(t.id)}
-                                  className="flex-1 py-2 bg-rose-500/15 text-rose-400 text-xs font-semibold rounded-lg border border-rose-500/30 active:scale-[0.97] transition-all"
-                                >
-                                  Confirm Delete
-                                </button>
-                                <button
-                                  onClick={() => setDeleteConfirm(null)}
-                                  className="flex-1 py-2 bg-elevated text-slate-400 text-xs font-medium rounded-lg active:scale-[0.97] transition-all"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="flex gap-2 p-3 pt-2">
-                                <button
-                                  onClick={() => openEdit(t)}
-                                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-elevated text-slate-300 text-xs font-semibold rounded-lg hover:bg-line active:scale-[0.97] transition-all"
-                                >
-                                  <Pencil className="w-3.5 h-3.5" /> Edit
-                                </button>
-                                <button
-                                  onClick={() => setDeleteConfirm(t.id)}
-                                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-elevated text-rose-400 text-xs font-semibold rounded-lg hover:bg-rose-500/10 active:scale-[0.97] transition-all"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" /> Delete
-                                </button>
-                              </div>
-                            )}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
-            </div>
-          ))}
         </div>
       )}
 
