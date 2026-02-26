@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Zap, TrendingUp, Trophy, X, Info, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fmt } from '../math/format.js';
-import { rN, r$N, getPhaseName, getPhase, riskSeverity, lossesToWipe } from '../math/risk.js';
+import { rN, r$N, getPhaseName, getPhase, riskSeverity } from '../math/risk.js';
 import { E0, MILES } from '../math/constants.js';
 import EquityCurve from './EquityCurve.jsx';
 
@@ -38,8 +38,6 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
   const [showPhaseInfo, setShowPhaseInfo] = useState(false);
   const [dismissAlert, setDismissAlert] = useState(() => sessionStorage.getItem('dd-dismiss') === '1');
   const [exploreEq, setExploreEq] = useState(20000);
-  const [stopLoss, setStopLoss] = useState('');
-
   const eq = trades.currentEquity;
   const phase = getPhase(eq);
   const rPct = trades.nextRisk.pct * 100;
@@ -47,10 +45,6 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
   const rColor = rSev === 'safe' ? 'text-amber-400' : rSev === 'elevated' ? 'text-orange-400' : 'text-red-500';
   const hasTrades = trades.stats.totalTrades > 0;
   const inProfit = trades.stats.totalPnl >= 0;
-  const ruinLosses = lossesToWipe(eq);
-  const parsedStop = parseFloat(stopLoss) || 0;
-  const contracts = parsedStop > 0 ? Math.floor(trades.nextRisk.dol / parsedStop) : 0;
-
   const nextMilestone = trades.milestones.find(m => !m.achieved);
 
   // Mini sparkline data
@@ -138,9 +132,11 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
       c: trades.stats.streakType === 'win' ? 'text-emerald-400' : trades.stats.streakType === 'loss' ? 'text-red-500' : 'text-white'
     },
     {
-      l: 'Ruin',
-      v: ruinLosses >= 200 ? '200+' : ruinLosses + 'L',
-      c: ruinLosses <= 5 ? 'text-red-500' : ruinLosses <= 15 ? 'text-amber-400' : 'text-emerald-400'
+      l: '30 Days',
+      v: trades.stats.last30Trades > 0
+        ? (trades.stats.last30Pnl >= 0 ? '+$' : '-$') + fmt(Math.abs(trades.stats.last30Pnl))
+        : '--',
+      c: trades.stats.last30Pnl > 0 ? 'text-emerald-400' : trades.stats.last30Pnl < 0 ? 'text-red-500' : 'text-white'
     },
   ];
 
@@ -284,42 +280,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
 
       {/* Right column on desktop */}
       <div className="space-y-4">
-        {/* 3. POSITION SIZER */}
-        <div className="bg-surface rounded-xl p-3 border border-line/50 space-y-2">
-          <div className="text-xs text-slate-500 font-medium">Position Sizer</div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 shrink-0">Stop Loss</span>
-            <div className="relative flex-1">
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-600 font-mono">$</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={stopLoss}
-                onChange={e => setStopLoss(e.target.value.replace(/[^0-9.]/g, ''))}
-                placeholder="per contract"
-                className="w-full bg-deep border border-line rounded-lg text-sm font-mono text-white py-2 pl-7 pr-3 outline-none focus:border-emerald-500/50 transition-all placeholder:text-slate-700 tabular-nums"
-              />
-            </div>
-          </div>
-          {parsedStop > 0 && (
-            <div className="grid grid-cols-3 gap-1.5">
-              <div className="bg-deep rounded-lg p-2 text-center border border-line/50">
-                <div className="text-sm font-bold font-mono tabular-nums text-white">{contracts}</div>
-                <div className="text-[10px] text-slate-500">Contracts</div>
-              </div>
-              <div className="bg-deep rounded-lg p-2 text-center border border-line/50">
-                <div className="text-sm font-bold font-mono tabular-nums text-red-400">${fmt(trades.nextRisk.dol)}</div>
-                <div className="text-[10px] text-slate-500">Risk $</div>
-              </div>
-              <div className="bg-deep rounded-lg p-2 text-center border border-line/50">
-                <div className="text-sm font-bold font-mono tabular-nums text-red-400">{rPct.toFixed(1)}%</div>
-                <div className="text-[10px] text-slate-500">Risk %</div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* 4. QUICK STATS ROW */}
+        {/* 3. QUICK STATS ROW */}
         <div className="grid grid-cols-4 md:grid-cols-2 gap-2">
           {stats.map((s, i) => (
             <div key={i} className="bg-surface rounded-xl p-2.5 text-center border border-line/50">
