@@ -151,27 +151,11 @@ export default function Settings({ settings, trades, showToast }) {
     <div className="px-4 pt-4 md:pt-6 pb-6 max-w-lg md:max-w-2xl mx-auto space-y-5">
       <h2 className="text-lg font-bold text-white">Settings</h2>
 
-      {/* Starting Equity */}
-      <div className="bg-surface rounded-2xl p-4 border border-line space-y-3">
-        <div className="text-xs text-slate-500 font-medium">Starting Equity</div>
-        <div className="relative">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-slate-600">$</span>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={eqInput}
-            onChange={handleEqChange}
-            className="w-full bg-deep border border-line rounded-xl text-xl font-bold font-mono text-white py-3 pl-10 pr-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all tabular-nums"
-          />
-        </div>
-        <p className="text-xs text-slate-500">Your challenge starting balance. Only affects new calculations if no trades logged.</p>
-      </div>
-
       {/* Risk Controls */}
       <div className="bg-surface rounded-2xl p-4 border border-line space-y-4">
         <div>
           <div className="text-xs text-slate-500 font-medium">Risk Controls</div>
-          <p className="text-xs text-slate-600 mt-1">Alerts and overrides for risk management.</p>
+          <p className="text-xs text-slate-500 mt-1">Alerts and overrides for risk management.</p>
         </div>
 
         <div>
@@ -224,7 +208,7 @@ export default function Settings({ settings, trades, showToast }) {
           <div className="flex justify-between items-center mb-2">
             <div>
               <label className="text-sm text-slate-400">Tilt Lock</label>
-              <p className="text-[10px] text-slate-600 mt-0.5">Warns before trading during a losing streak</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">Warns before trading during a losing streak</p>
             </div>
             <button
               onClick={() => settings.setTiltLockEnabled(!settings.tiltLockEnabled)}
@@ -283,7 +267,7 @@ export default function Settings({ settings, trades, showToast }) {
           <div className="flex justify-between items-center mb-2">
             <div>
               <label className="text-sm text-slate-400">Daily Loss Limit</label>
-              <p className="text-[10px] text-slate-600 mt-0.5">Warns when daily losses exceed this amount (0 = off)</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">Warns when daily losses exceed this amount (0 = off)</p>
             </div>
           </div>
           <div className="relative">
@@ -300,14 +284,30 @@ export default function Settings({ settings, trades, showToast }) {
         </div>
       </div>
 
-      {/* Simulation Parameters */}
+      {/* Simulation */}
       <div className="bg-surface rounded-2xl p-4 border border-line space-y-4">
         <div>
-          <div className="text-xs text-slate-500 font-medium">Simulation Parameters</div>
-          <p className="text-xs text-slate-600 mt-1">Defaults for Monte Carlo projections and scenarios.</p>
+          <div className="text-xs text-slate-500 font-medium">Simulation</div>
+          <p className="text-xs text-slate-500 mt-1">Starting balance and Monte Carlo defaults.</p>
         </div>
 
+        {/* Starting Equity */}
         <div>
+          <label className="text-sm text-slate-400 mb-2 block">Starting Equity</label>
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-slate-600">$</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={eqInput}
+              onChange={handleEqChange}
+              className="w-full bg-deep border border-line rounded-xl text-xl font-bold font-mono text-white py-3 pl-10 pr-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all tabular-nums"
+            />
+          </div>
+          <p className="text-[10px] text-slate-500 mt-1.5">Only affects new calculations if no trades logged.</p>
+        </div>
+
+        <div className="border-t border-line/50 pt-4">
           <div className="flex justify-between items-center mb-2">
             <label className="text-sm text-slate-400">Win Rate</label>
             <span className="text-sm text-emerald-400 font-bold font-mono bg-deep px-2 py-0.5 rounded-md border border-line tabular-nums">
@@ -352,6 +352,31 @@ export default function Settings({ settings, trades, showToast }) {
         </div>
       </div>
 
+      {/* Display */}
+      <div className="bg-surface rounded-2xl p-4 border border-line space-y-4">
+        <div>
+          <div className="text-xs text-slate-500 font-medium">Display</div>
+          <p className="text-xs text-slate-500 mt-1">How data is presented across the app.</p>
+        </div>
+
+        <div className="flex justify-between items-center">
+          <div>
+            <label className="text-sm text-slate-400">R-Multiple Mode</label>
+            <p className="text-[10px] text-slate-500 mt-0.5">Show P&L as R-multiples (e.g. +2.1R) instead of dollars</p>
+          </div>
+          <button
+            onClick={() => settings.setRMultipleDisplay(!settings.rMultipleDisplay)}
+            className={'relative w-10 h-5 rounded-full transition-colors duration-200 ' +
+              (settings.rMultipleDisplay ? 'bg-emerald-500' : 'bg-elevated border border-line')}
+          >
+            <div
+              className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-200"
+              style={{ left: settings.rMultipleDisplay ? 22 : 2 }}
+            />
+          </button>
+        </div>
+      </div>
+
       {/* Cloud Sync */}
       <div className="bg-surface rounded-2xl p-4 border border-line space-y-3">
         <div className="flex items-center justify-between">
@@ -366,7 +391,7 @@ export default function Settings({ settings, trades, showToast }) {
 
         {syncConfig ? (
           <>
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-slate-500 leading-relaxed">
               Syncs automatically every 60s and on each trade. Open this link on another device to sync there too.
             </p>
 
@@ -569,9 +594,9 @@ export default function Settings({ settings, trades, showToast }) {
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-white font-bold tracking-widest">TRADEVAULT</span> <span className="text-slate-600">v3.0</span>
         </div>
         <p className="text-xs text-slate-500 font-medium mt-0.5">$20K {'\u2192'} $10M</p>
-        <p className="text-xs text-slate-600 leading-relaxed mt-1">
+        <p className="text-xs text-slate-500 leading-relaxed mt-1">
           {'\u2154'} Power Decay position sizing. Risk scales with equity to protect gains and maximize growth.
-          {syncConfig ? 'Data syncs to cloud and is stored locally.' : 'All data stored locally in your browser.'}
+          {syncConfig ? ' Data syncs to cloud and is stored locally.' : ' All data stored locally in your browser.'}
         </p>
       </div>
     </div>

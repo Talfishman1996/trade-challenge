@@ -11,6 +11,15 @@ export const fmt = v => {
   return `${v.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
 };
 
+// Format P&L: R-multiple mode shows +2.1R, dollar mode shows +$2,100
+export const fmtPnl = (pnl, riskDol, rMode) => {
+  if (rMode && riskDol > 0) {
+    const r = pnl / riskDol;
+    return (r >= 0 ? '+' : '') + r.toFixed(1) + 'R';
+  }
+  return (pnl >= 0 ? '+$' : '-$') + fmt(Math.abs(pnl));
+};
+
 export const lg = v => Math.log10(Math.max(v, 1));
 export const unlg = v => Math.pow(10, v);
 

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { TrendingUp, TrendingDown, Undo2, Redo2, Plus, List, LayoutGrid, TableProperties, Pencil, Tag, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fmt } from '../math/format.js';
+import { fmt, fmtPnl } from '../math/format.js';
 import { getPhaseName } from '../math/risk.js';
 import FilterBar from './FilterBar.jsx';
 
@@ -12,7 +12,7 @@ const DirBadge = ({ dir }) => {
   const isLong = dir === 'long';
   return (
     <span className={'inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold tracking-wide leading-none ' +
-      (isLong ? 'bg-blue-500/15 text-blue-400' : 'bg-violet-500/15 text-violet-400')}>
+      (isLong ? 'bg-blue-500/15 text-blue-400' : 'bg-rose-500/15 text-rose-400')}>
       {isLong ? 'Long' : 'Short'}
     </span>
   );
@@ -27,6 +27,7 @@ const calcDuration = (open, close) => {
 };
 
 export default function Trades({ trades, settings, onOpenTradeEntry, showToast }) {
+  const rMode = settings.rMultipleDisplay;
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [view, setView] = useState('grid');
@@ -257,11 +258,11 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
                 </div>
                 <div className={'text-lg font-bold font-mono tabular-nums tracking-tight ' +
                   (isWin ? 'text-emerald-400' : 'text-rose-400')}>
-                  {(isWin ? '+$' : '-$') + fmt(Math.abs(t.pnl))}
+                  {fmtPnl(t.pnl, t.riskDol, rMode)}
                 </div>
                 <div className={'text-xs font-mono font-semibold mt-0.5 ' +
                   (isWin ? 'text-emerald-400/60' : 'text-rose-400/60')}>
-                  {t.riskDol > 0 ? (isWin ? '+' : '-') + rMult.toFixed(1) + 'R' : '--'}
+                  {rMode ? (isWin ? '+$' : '-$') + fmt(Math.abs(t.pnl)) : (t.riskDol > 0 ? (isWin ? '+' : '-') + rMult.toFixed(1) + 'R' : '--')}
                 </div>
                 {t.setupTags && t.setupTags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1.5">
@@ -313,10 +314,10 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
                     <td className="px-3 py-2"><DirBadge dir={t.direction} /></td>
                     <td className="px-3 py-2 text-slate-500 whitespace-nowrap">{t.strategy || '--'}</td>
                     <td className={'px-3 py-2 text-right font-bold tabular-nums ' + (isWin ? 'text-emerald-400' : 'text-rose-400')}>
-                      {(isWin ? '+$' : '-$') + fmt(Math.abs(t.pnl))}
+                      {fmtPnl(t.pnl, t.riskDol, rMode)}
                     </td>
                     <td className={'px-3 py-2 text-right font-bold tabular-nums ' + (isWin ? 'text-emerald-400' : 'text-rose-400')}>
-                      {t.riskDol > 0 ? (isWin ? '+' : '') + rMult.toFixed(1) + 'R' : '--'}
+                      {rMode ? (isWin ? '+$' : '-$') + fmt(Math.abs(t.pnl)) : (t.riskDol > 0 ? (isWin ? '+' : '') + rMult.toFixed(1) + 'R' : '--')}
                     </td>
                     <td className="px-3 py-2 text-right text-slate-400 tabular-nums">${fmt(t.equityAfter)}</td>
                     <td className="px-3 py-2">
@@ -349,7 +350,7 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
                   <span className={'text-xs font-bold font-mono tabular-nums ' + (group.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
                     {(group.pnl >= 0 ? '+$' : '-$') + fmt(Math.abs(group.pnl))}
                   </span>
-                  <span className="text-xs text-slate-600 font-mono">{group.count} trades</span>
+                  <span className="text-xs text-slate-500 font-mono">{group.count} trades</span>
                 </div>
               </div>
 
@@ -392,7 +393,7 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
                             <div className="text-right">
                               <span className={'text-sm font-bold font-mono tabular-nums ' +
                                 (isWin ? 'text-emerald-400' : 'text-rose-400')}>
-                                {(isWin ? '+$' : '-$') + fmt(Math.abs(t.pnl))}
+                                {fmtPnl(t.pnl, t.riskDol, rMode)}
                               </span>
                               <div className="text-xs text-slate-500 font-mono tabular-nums">${fmt(t.equityAfter)}</div>
                             </div>
@@ -516,7 +517,7 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
             </circle>
           </svg>
           <p className="text-sm font-semibold text-slate-400 mb-1">Your trading journal starts here</p>
-          <p className="text-xs text-slate-600 text-center max-w-[240px]">
+          <p className="text-xs text-slate-500 text-center max-w-[240px]">
             Log your first trade to begin tracking equity, risk, and performance.
           </p>
           <button

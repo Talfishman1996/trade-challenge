@@ -12,6 +12,7 @@ const DEFAULTS = {
   tiltLockThreshold: 3,
   tiltCooldownMinutes: 15,
   dailyLossLimit: 0,
+  rMultipleDisplay: false,
 };
 
 const load = () => {
@@ -47,5 +48,6 @@ export const useSettings = () => {
     setTiltLockThreshold: v => set('tiltLockThreshold', v),
     setTiltCooldownMinutes: v => set('tiltCooldownMinutes', v),
     setDailyLossLimit: v => set('dailyLossLimit', v),
+    setRMultipleDisplay: v => set('rMultipleDisplay', v),
   };
 };

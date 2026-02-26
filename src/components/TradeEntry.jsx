@@ -363,7 +363,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                 <div className="space-y-3">
                   {/* Strategy dropdown */}
                   <div>
-                    <label className="text-[10px] text-slate-600 font-medium mb-1 block">Strategy</label>
+                    <label className="text-[10px] text-slate-500 font-medium mb-1 block">Strategy</label>
                     <select
                       value={strategy}
                       onChange={e => setStrategy(e.target.value)}
@@ -376,7 +376,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                   {/* Contracts + Entry/Exit Price — 2-column grid */}
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <label className="text-[10px] text-slate-600 font-medium mb-1 block">Size</label>
+                      <label className="text-[10px] text-slate-500 font-medium mb-1 block">Size</label>
                       <input
                         type="text"
                         inputMode="numeric"
@@ -387,7 +387,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-600 font-medium mb-1 block">Entry $</label>
+                      <label className="text-[10px] text-slate-500 font-medium mb-1 block">Entry $</label>
                       <input
                         type="text"
                         inputMode="decimal"
@@ -398,7 +398,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-600 font-medium mb-1 block">Exit $</label>
+                      <label className="text-[10px] text-slate-500 font-medium mb-1 block">Exit $</label>
                       <input
                         type="text"
                         inputMode="decimal"
@@ -508,7 +508,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                     className="hidden"
                     onChange={handleImageUpload}
                   />
-                  <p className="text-[10px] text-slate-600">Images auto-compressed to &lt;200KB JPEG</p>
+                  <p className="text-[10px] text-slate-500">Images auto-compressed to &lt;200KB JPEG</p>
                 </div>
               </Section>
 
@@ -516,7 +516,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
               <Section title="Advanced Risk" open={advancedOpen} onToggle={() => setAdvancedOpen(!advancedOpen)} count={[mae, mfe].filter(Boolean).length}>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-[10px] text-slate-600 font-medium mb-1 block">MAE — Worst drawdown during trade ($)</label>
+                    <label className="text-[10px] text-slate-500 font-medium mb-1 block">MAE — Worst drawdown during trade ($)</label>
                     <input
                       type="text"
                       inputMode="decimal"
@@ -527,7 +527,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-600 font-medium mb-1 block">MFE — Best unrealized gain during trade ($)</label>
+                    <label className="text-[10px] text-slate-500 font-medium mb-1 block">MFE — Best unrealized gain during trade ($)</label>
                     <input
                       type="text"
                       inputMode="decimal"
@@ -537,7 +537,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                       className="w-full bg-surface border border-line rounded-lg text-sm font-mono text-white py-2.5 px-3 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all tabular-nums placeholder:text-slate-700"
                     />
                   </div>
-                  <p className="text-[10px] text-slate-600 leading-relaxed">
+                  <p className="text-[10px] text-slate-500 leading-relaxed">
                     MAE = maximum adverse excursion (how bad it got before recovery).
                     MFE = maximum favorable excursion (best unrealized profit before exit).
                     Both help identify if you're cutting winners short or letting losers run.

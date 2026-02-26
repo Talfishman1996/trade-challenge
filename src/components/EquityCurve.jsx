@@ -179,7 +179,7 @@ export default function EquityCurve({ trades, height = 280 }) {
       </div>
 
       {chartData.length > 2 && (
-        <div className="text-center text-[10px] text-slate-600 mt-1">Equity (top) / Drawdown (bottom)</div>
+        <div className="text-center text-[10px] text-slate-500 mt-1">Equity (top) / Drawdown (bottom)</div>
       )}
     </div>
   );

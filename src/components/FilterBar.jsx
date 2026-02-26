@@ -155,7 +155,7 @@ export default function FilterBar({ trades, onFilter }) {
 
       {/* Active filter summary */}
       {hasFilters && (
-        <div className="text-[10px] text-slate-600 px-1">
+        <div className="text-[10px] text-slate-500 px-1">
           Showing filtered results
         </div>
       )}

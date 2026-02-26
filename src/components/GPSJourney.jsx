@@ -163,7 +163,7 @@ export default function ProbabilityCone({ equity, winRate, rewardRatio, seed = 5
         <span className="flex items-center gap-1.5"><span className="w-4 h-2 rounded-sm bg-emerald-500/25 border border-emerald-500/35" />P25{'\u2013'}P75</span>
         <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-emerald-500" />Median</span>
       </div>
-      <p className="text-center text-[10px] text-slate-600 mt-1 font-mono">500 paths {'\u00D7'} {numTrades} trades</p>
+      <p className="text-center text-[10px] text-slate-500 mt-1 font-mono">500 paths {'\u00D7'} {numTrades} trades</p>
     </div>
   );
 }
