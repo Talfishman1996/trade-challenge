@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { TrendingUp, TrendingDown, Download, Upload, Trash2, Undo2, Redo2, Plus, Pencil } from 'lucide-react';
+import { TrendingUp, TrendingDown, Download, Upload, Trash2, Undo2, Redo2, Plus, List, CalendarDays, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fmt } from '../math/format.js';
 import { getPhaseName, rN } from '../math/risk.js';
@@ -29,6 +29,7 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
   const [showConfirm, setShowConfirm] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
+  const [view, setView] = useState('calendar');
   const fileRef = useRef(null);
 
   const handleExport = () => exportJSON(trades);
@@ -51,7 +52,7 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
     setExpandedId(null);
   };
 
-  // Group trades by month (reverse chronological)
+  // Group trades by month (reverse chronological) for list view
   const monthGroups = useMemo(() => {
     if (trades.trades.length === 0) return [];
     const groups = {};
@@ -161,6 +162,70 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
         </div>
       )}
 
+      {/* View Toggle */}
+      {trades.trades.length > 0 && (
+        <div className="flex gap-1 bg-surface rounded-xl p-1 border border-line">
+          {[
+            { id: 'calendar', l: 'Calendar', ic: CalendarDays },
+            { id: 'list', l: 'List', ic: List },
+          ].map(v => {
+            const Ic = v.ic;
+            const on = view === v.id;
+            return (
+              <button key={v.id} onClick={() => setView(v.id)}
+                className={'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold rounded-lg transition-all ' +
+                  (on ? 'bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30' : 'text-slate-500 hover:text-slate-300')}>
+                <Ic className="w-3.5 h-3.5" /> {v.l}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Calendar Grid View */}
+      {view === 'calendar' && trades.trades.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {trades.trades.map(t => {
+            const isWin = t.pnl >= 0;
+            const rMult = t.riskDol > 0 ? Math.abs(t.pnl) / t.riskDol : 0;
+            return (
+              <motion.div
+                key={t.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                onClick={() => openEdit(t)}
+                className={'rounded-xl p-3 border-l-[3px] relative overflow-hidden cursor-pointer active:scale-[0.97] transition-transform ' +
+                  (isWin
+                    ? 'bg-emerald-500/5 border-l-emerald-500 border border-emerald-500/10'
+                    : 'bg-rose-500/5 border-l-rose-500 border border-rose-500/10')}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-xs text-slate-500 font-semibold shrink-0">#{t.id}</span>
+                    <DirBadge dir={t.direction} />
+                    {t.ticker && <span className="text-xs text-slate-400 font-mono font-bold truncate">{t.ticker}</span>}
+                  </div>
+                </div>
+                <div className="text-xs text-slate-500 font-mono leading-tight mb-1">
+                  {t.openDate
+                    ? <>{fmtDate(t.openDate)}<span className="text-slate-700"> {'\u2192'} </span>{fmtDate(t.date)}{calcDuration(t.openDate, t.date) && <span className="text-slate-700 ml-0.5">({calcDuration(t.openDate, t.date)})</span>}</>
+                    : fmtDate(t.date)}
+                </div>
+                <div className={'text-lg font-bold font-mono tabular-nums tracking-tight ' +
+                  (isWin ? 'text-emerald-400' : 'text-rose-400')}>
+                  {(isWin ? '+$' : '-$') + fmt(Math.abs(t.pnl))}
+                </div>
+                <div className={'text-xs font-mono font-semibold mt-0.5 ' +
+                  (isWin ? 'text-emerald-400/60' : 'text-rose-400/60')}>
+                  {t.riskDol > 0 ? (isWin ? '+' : '-') + rMult.toFixed(1) + 'R' : '--'}
+                </div>
+                <Pencil className="absolute top-2.5 right-2.5 w-3 h-3 text-slate-700" />
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Empty state */}
       {trades.trades.length === 0 && (
         <div className="flex flex-col items-center py-12 px-4">
@@ -192,8 +257,8 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
         </div>
       )}
 
-      {/* Trade List — grouped by month */}
-      {monthGroups.length > 0 && (
+      {/* List View — grouped by month */}
+      {view === 'list' && monthGroups.length > 0 && (
         <div className="space-y-5">
           {monthGroups.map(group => (
             <div key={group.key} className="space-y-2">
