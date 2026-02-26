@@ -5,12 +5,31 @@ import { pushToCloud, pullFromCloud, getSyncConfig } from '../sync.js';
 
 const STORAGE_KEY = 'risk-engine-data';
 
+// Default values for new V3 trade fields — applied during migration
+const freshTradeDefaults = () => ({
+  strategy: '',
+  contracts: 0,
+  entryPrice: 0,
+  exitPrice: 0,
+  entryTime: '',
+  exitTime: '',
+  setupTags: [],
+  emotionTags: [],
+  mistakes: [],
+  mae: null,
+  mfe: null,
+  images: [],
+});
+
+// Migrate a trade: fill in missing V3 fields with defaults
+const migrateTrade = (t) => ({ ...freshTradeDefaults(), ...t });
+
 const loadData = (initialEquity) => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      return { ...parsed, trades: parsed.trades || [] };
+      return { ...parsed, trades: (parsed.trades || []).map(migrateTrade) };
     }
   } catch {}
   return { version: 1, initialEquity, trades: [] };
@@ -66,28 +85,31 @@ export const useTrades = (initialEquity = 20000) => {
     return result;
   };
 
-  // Add a new trade
-  const addTrade = useCallback((pnl, notes = '', date = null, openDate = null, direction = 'long', ticker = '') => {
+  // Add a new trade — accepts a tradeData object with at minimum { pnl }
+  const addTrade = useCallback((tradeData) => {
     undoStackRef.current = []; setUndoStackLen(0);
     const eq = data.trades.length > 0
       ? data.trades[data.trades.length - 1].equityAfter
       : (data.initialEquity || initialEquity);
 
+    const { pnl } = tradeData;
     const equityAfter = Math.max(1, eq + pnl);
     const maxId = data.trades.length > 0 ? Math.max(...data.trades.map(t => t.id)) : 0;
     const trade = {
+      ...freshTradeDefaults(),
+      ...tradeData,
       id: maxId + 1,
-      date: date || new Date().toISOString(),
-      openDate: openDate || null,
+      date: tradeData.date || new Date().toISOString(),
+      openDate: tradeData.openDate || null,
       pnl,
-      direction: direction || 'long',
-      ticker: ticker || '',
+      direction: tradeData.direction || 'long',
+      ticker: tradeData.ticker || '',
       equityBefore: eq,
       equityAfter,
       riskPct: rN(eq),
       riskDol: r$N(eq),
       phase: getPhase(eq),
-      notes,
+      notes: tradeData.notes || '',
     };
 
     persist({ ...data, trades: [...data.trades, trade] });
@@ -101,19 +123,24 @@ export const useTrades = (initialEquity = 20000) => {
     return trade;
   }, [data, initialEquity, persist]);
 
-  // Edit an existing trade
-  const editTrade = useCallback((id, { pnl, notes, date, openDate, direction, ticker }) => {
+  // Edit an existing trade — changes is an object of fields to update
+  const editTrade = useCallback((id, changes) => {
     undoStackRef.current = []; setUndoStackLen(0);
     const idx = data.trades.findIndex(t => t.id === id);
     if (idx === -1) return;
     const updated = [...data.trades];
     updated[idx] = { ...updated[idx] };
-    if (pnl !== undefined) updated[idx].pnl = pnl;
-    if (notes !== undefined) updated[idx].notes = notes;
-    if (date !== undefined) updated[idx].date = date;
-    if (openDate !== undefined) updated[idx].openDate = openDate;
-    if (direction !== undefined) updated[idx].direction = direction;
-    if (ticker !== undefined) updated[idx].ticker = ticker;
+    // Apply all provided fields
+    const editableFields = [
+      'pnl', 'notes', 'date', 'openDate', 'direction', 'ticker',
+      'strategy', 'contracts', 'entryPrice', 'exitPrice',
+      'entryTime', 'exitTime',
+      'setupTags', 'emotionTags', 'mistakes',
+      'mae', 'mfe', 'images',
+    ];
+    for (const key of editableFields) {
+      if (changes[key] !== undefined) updated[idx][key] = changes[key];
+    }
     const baseEq = data.initialEquity || initialEquity;
     const recalced = recalcChain(updated, idx, baseEq);
     persist({ ...data, trades: recalced });

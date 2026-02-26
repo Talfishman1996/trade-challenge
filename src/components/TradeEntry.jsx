@@ -64,7 +64,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
       onEdit(editData.id, { pnl, notes, date: dateISO, openDate: openDateISO, direction, ticker });
     } else {
       const dateISO = tradeDate ? new Date(tradeDate + 'T12:00:00').toISOString() : null;
-      onSave(pnl, notes, dateISO, openDateISO, direction, ticker);
+      onSave({ pnl, notes, date: dateISO, openDate: openDateISO, direction, ticker });
     }
     onClose();
   };

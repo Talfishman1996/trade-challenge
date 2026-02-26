@@ -169,8 +169,8 @@ export default function App() {
     setShowTradeEntry(false);
     setEditTradeData(null);
   };
-  const handleTradeSave = (...args) => {
-    trades.addTrade(...args);
+  const handleTradeSave = (tradeData) => {
+    trades.addTrade(tradeData);
     showToast('Trade logged');
   };
   const handleTradeEdit = (id, changes) => {
