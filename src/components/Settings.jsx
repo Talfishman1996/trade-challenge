@@ -6,6 +6,7 @@ import { exportJSON, exportCSV, importJSON } from '../utils/dataIO.js';
 export default function Settings({ settings, trades, showToast }) {
   const [showConfirm, setShowConfirm] = useState(null);
   const [eqInput, setEqInput] = useState(String(settings.initialEquity));
+  const [dailyLimitInput, setDailyLimitInput] = useState(String(settings.dailyLossLimit || 0));
   const fileRef = useRef(null);
   const [syncConfig, setSyncConfig] = useState(() => getSyncConfig());
   const [syncing, setSyncing] = useState(false);
@@ -26,6 +27,14 @@ export default function Settings({ settings, trades, showToast }) {
       settings.setInitialEquity(num);
       trades.setInitialEquity(num);
     }
+  };
+
+  const handleDailyLimitChange = e => {
+    const val = e.target.value.replace(/[^0-9]/g, '');
+    setDailyLimitInput(val);
+    const num = parseInt(val, 10);
+    if (!isNaN(num)) settings.setDailyLossLimit(num);
+    else if (val === '') settings.setDailyLossLimit(0);
   };
 
   const handleExport = () => exportJSON(trades);
@@ -207,6 +216,86 @@ export default function Settings({ settings, trades, showToast }) {
           <div className="flex justify-between text-xs text-slate-600 mt-1">
             <span>Off</span>
             <span>20%</span>
+          </div>
+        </div>
+
+        {/* Tilt Lock */}
+        <div className="border-t border-line/50 pt-4">
+          <div className="flex justify-between items-center mb-2">
+            <div>
+              <label className="text-sm text-slate-400">Tilt Lock</label>
+              <p className="text-[10px] text-slate-600 mt-0.5">Warns before trading during a losing streak</p>
+            </div>
+            <button
+              onClick={() => settings.setTiltLockEnabled(!settings.tiltLockEnabled)}
+              className={'relative w-10 h-5 rounded-full transition-colors duration-200 ' +
+                (settings.tiltLockEnabled ? 'bg-emerald-500' : 'bg-elevated border border-line')}
+            >
+              <div
+                className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-200"
+                style={{ left: settings.tiltLockEnabled ? 22 : 2 }}
+              />
+            </button>
+          </div>
+
+          {settings.tiltLockEnabled && (
+            <div className="space-y-3 mt-3">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-xs text-slate-500">Streak Threshold</label>
+                  <span className="text-sm text-amber-400 font-bold font-mono bg-deep px-2 py-0.5 rounded-md border border-line tabular-nums">
+                    {settings.tiltLockThreshold}L
+                  </span>
+                </div>
+                <input
+                  type="range" min={2} max={10} step={1}
+                  value={settings.tiltLockThreshold}
+                  onChange={e => settings.setTiltLockThreshold(+e.target.value)}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-slate-600 mt-1">
+                  <span>2</span><span>10</span>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-xs text-slate-500">Cooldown Reminder</label>
+                  <span className="text-sm text-slate-400 font-bold font-mono bg-deep px-2 py-0.5 rounded-md border border-line tabular-nums">
+                    {settings.tiltCooldownMinutes}m
+                  </span>
+                </div>
+                <input
+                  type="range" min={5} max={60} step={5}
+                  value={settings.tiltCooldownMinutes}
+                  onChange={e => settings.setTiltCooldownMinutes(+e.target.value)}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-slate-600 mt-1">
+                  <span>5m</span><span>60m</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Daily Loss Limit */}
+        <div className="border-t border-line/50 pt-4">
+          <div className="flex justify-between items-center mb-2">
+            <div>
+              <label className="text-sm text-slate-400">Daily Loss Limit</label>
+              <p className="text-[10px] text-slate-600 mt-0.5">Warns when daily losses exceed this amount (0 = off)</p>
+            </div>
+          </div>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-600 font-mono">$</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={dailyLimitInput}
+              onChange={handleDailyLimitChange}
+              className={'w-full bg-deep border border-line rounded-xl text-sm font-bold font-mono py-2.5 pl-8 pr-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all tabular-nums ' +
+                (settings.dailyLossLimit > 0 ? 'text-red-400' : 'text-slate-500')}
+            />
           </div>
         </div>
       </div>
@@ -477,7 +566,7 @@ export default function Settings({ settings, trades, showToast }) {
       <div className="bg-surface rounded-2xl p-4 border border-line space-y-2">
         <div className="text-xs text-slate-500 font-medium">About</div>
         <div className="text-sm text-slate-400">
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-white font-bold tracking-widest">TRADEVAULT</span> <span className="text-slate-600">v2.0</span>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-white font-bold tracking-widest">TRADEVAULT</span> <span className="text-slate-600">v3.0</span>
         </div>
         <p className="text-xs text-slate-500 font-medium mt-0.5">$20K {'\u2192'} $10M</p>
         <p className="text-xs text-slate-600 leading-relaxed mt-1">

@@ -8,6 +8,10 @@ const DEFAULTS = {
   initialEquity: 20000,
   drawdownAlertPct: 20,
   maxRiskPct: 0,
+  tiltLockEnabled: true,
+  tiltLockThreshold: 3,
+  tiltCooldownMinutes: 15,
+  dailyLossLimit: 0,
 };
 
 const load = () => {
@@ -39,5 +43,9 @@ export const useSettings = () => {
     setInitialEquity: v => set('initialEquity', v),
     setDrawdownAlertPct: v => set('drawdownAlertPct', v),
     setMaxRiskPct: v => set('maxRiskPct', v),
+    setTiltLockEnabled: v => set('tiltLockEnabled', v),
+    setTiltLockThreshold: v => set('tiltLockThreshold', v),
+    setTiltCooldownMinutes: v => set('tiltCooldownMinutes', v),
+    setDailyLossLimit: v => set('dailyLossLimit', v),
   };
 };

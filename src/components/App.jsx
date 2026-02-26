@@ -47,6 +47,7 @@ export default function App() {
   const [syncGate, setSyncGate] = useState(null); // null = checking, 'ready' = proceed, 'setup' = show gate
   const [syncGateInput, setSyncGateInput] = useState('');
   const [syncGateStatus, setSyncGateStatus] = useState(''); // '', 'connecting', 'error', 'creating'
+  const [riskGate, setRiskGate] = useState(null);
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
   const showToast = useCallback((msg, type = 'success') => {
@@ -162,7 +163,25 @@ export default function App() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openTradeEntry = (trade = null) => {
+    if (!trade) {
+      if (settings.tiltLockEnabled &&
+          trades.stats.streakType === 'loss' &&
+          trades.stats.currentStreak >= settings.tiltLockThreshold) {
+        setRiskGate('tilt');
+        return;
+      }
+      if (settings.dailyLossLimit > 0 &&
+          trades.stats.todayPnl <= -settings.dailyLossLimit) {
+        setRiskGate('daily');
+        return;
+      }
+    }
     setEditTradeData(trade);
+    setShowTradeEntry(true);
+  };
+  const overrideRiskGate = () => {
+    setRiskGate(null);
+    setEditTradeData(null);
     setShowTradeEntry(true);
   };
   const closeTradeEntry = () => {
@@ -360,6 +379,73 @@ export default function App() {
           })}
         </div>
       </nav>
+
+      {/* Risk Gate Overlay (Tilt Lock / Daily Limit) */}
+      <AnimatePresence>
+        {riskGate && (
+          <motion.div
+            className="fixed inset-0 z-[80] flex items-center justify-center p-6"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+          >
+            <div className="absolute inset-0 bg-deep/95 backdrop-blur-sm" onClick={() => setRiskGate(null)} />
+            <motion.div
+              className="relative w-full max-w-sm bg-surface rounded-2xl border border-line p-6 space-y-4"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+            >
+              <div className="flex flex-col items-center text-center space-y-3">
+                <div className={'w-14 h-14 rounded-2xl flex items-center justify-center ' +
+                  (riskGate === 'tilt' ? 'bg-amber-500/10 border border-amber-500/20' : 'bg-red-500/10 border border-red-500/20')}>
+                  <AlertTriangle className={'w-7 h-7 ' + (riskGate === 'tilt' ? 'text-amber-400' : 'text-red-400')} />
+                </div>
+                <h3 className="text-lg font-bold text-white">
+                  {riskGate === 'tilt' ? 'Losing Streak Warning' : 'Daily Limit Reached'}
+                </h3>
+                {riskGate === 'tilt' ? (
+                  <div className="space-y-2">
+                    <p className="text-sm text-slate-400">
+                      You're on a <span className="text-red-400 font-bold font-mono">{trades.stats.currentStreak}-loss</span> streak.
+                    </p>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      Consider stepping away for {settings.tiltCooldownMinutes} minutes.
+                      Emotional trading after losses often makes things worse.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-center gap-4 text-sm font-mono tabular-nums">
+                      <span className="text-red-400 font-bold">{'\u2212'}${fmt(Math.abs(trades.stats.todayPnl))}</span>
+                      <span className="text-slate-600">/</span>
+                      <span className="text-slate-400">${fmt(settings.dailyLossLimit)} limit</span>
+                    </div>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      You've exceeded your daily loss limit. Continuing to trade
+                      may compound losses. Consider stopping for the day.
+                    </p>
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => setRiskGate(null)}
+                className={'w-full py-3 font-bold text-sm rounded-xl active:scale-[0.98] transition-all ' +
+                  (riskGate === 'tilt'
+                    ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                    : 'bg-red-500/15 text-red-400 border border-red-500/30')}
+              >
+                Take a Break
+              </button>
+              <button
+                onClick={overrideRiskGate}
+                className="w-full py-2 text-xs text-slate-600 hover:text-slate-400 transition-colors"
+              >
+                Override & Continue
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* App-Level Trade Entry */}
       <TradeEntry
