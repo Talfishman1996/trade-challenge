@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  base: '/20k-10mil-challenge/',
+  base: '/trade-challenge/',
   plugins: [react(), tailwindcss()],
   server: { open: true }
 });
