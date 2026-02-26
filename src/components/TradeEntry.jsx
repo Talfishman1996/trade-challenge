@@ -3,6 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, TrendingUp, TrendingDown, Calendar, ArrowUpRight, ArrowDownRight, Clock } from 'lucide-react';
 import { fmt } from '../math/format.js';
 
+const localDate = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 const calcDuration = (open, close) => {
   if (!open || !close) return null;
   const ms = new Date(close) - new Date(open);
@@ -31,14 +36,14 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
         setIsWin(editData.pnl >= 0);
         setAmount(String(Math.abs(editData.pnl)));
         setNotes(editData.notes || '');
-        setTradeDate(editData.date ? editData.date.slice(0, 10) : new Date().toISOString().slice(0, 10));
+        setTradeDate(editData.date ? editData.date.slice(0, 10) : localDate());
         setOpenDate(editData.openDate ? editData.openDate.slice(0, 10) : '');
       } else {
         setDirection('long');
         setAmount('');
         setNotes('');
         setIsWin(true);
-        setTradeDate(new Date().toISOString().slice(0, 10));
+        setTradeDate(localDate());
         setOpenDate('');
       }
       setTimeout(() => inputRef.current?.focus(), 300);
@@ -62,7 +67,9 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
   };
 
   const handleAmountChange = e => {
-    const val = e.target.value.replace(/[^0-9.]/g, '');
+    const raw = e.target.value.replace(/[^0-9.]/g, '');
+    const parts = raw.split('.');
+    const val = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : raw;
     setAmount(val);
   };
 
@@ -102,7 +109,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                   {isEditMode ? 'Edit Trade' : 'Log Trade'}
                   {isEditMode && <span className="text-sm font-normal text-slate-500 ml-2">#{editData.id}</span>}
                 </h2>
-                <button onClick={onClose} className="p-2 text-slate-500 hover:text-white rounded-lg transition-colors">
+                <button onClick={onClose} className="p-3 text-slate-500 hover:text-white rounded-lg transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -133,7 +140,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
               <div className="flex bg-deep rounded-xl border border-line p-0.5 mb-5">
                 <button
                   onClick={() => setDirection('long')}
-                  className={'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-xs font-semibold transition-all ' +
+                  className={'flex-1 flex items-center justify-center gap-1.5 py-3 rounded-[10px] text-xs font-semibold transition-all ' +
                     (direction === 'long'
                       ? 'bg-blue-500/15 text-blue-400'
                       : 'text-slate-500 hover:text-slate-400')}
@@ -142,7 +149,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                 </button>
                 <button
                   onClick={() => setDirection('short')}
-                  className={'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-xs font-semibold transition-all ' +
+                  className={'flex-1 flex items-center justify-center gap-1.5 py-3 rounded-[10px] text-xs font-semibold transition-all ' +
                     (direction === 'short'
                       ? 'bg-rose-500/15 text-rose-400'
                       : 'text-slate-500 hover:text-slate-400')}
@@ -178,7 +185,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
                   placeholder="e.g., AAPL breakout"
-                  className="w-full bg-deep border border-line rounded-xl text-sm text-white py-3 px-4 outline-none focus:border-line transition-all placeholder:text-slate-700"
+                  className="w-full bg-deep border border-line rounded-xl text-sm text-white py-3 px-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all placeholder:text-slate-700"
                 />
               </div>
 
@@ -193,8 +200,8 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                     type="date"
                     value={openDate}
                     onChange={e => setOpenDate(e.target.value)}
-                    max={tradeDate || new Date().toISOString().slice(0, 10)}
-                    className="flex-1 bg-deep border border-line rounded-lg text-xs text-white py-2.5 px-3 outline-none focus:border-line transition-all [color-scheme:dark]"
+                    max={tradeDate || localDate()}
+                    className="flex-1 bg-deep border border-line rounded-lg text-base text-white py-2.5 px-3 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all [color-scheme:dark]"
                   />
                 </div>
                 <div className="flex items-center gap-3">
@@ -207,8 +214,8 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                     value={tradeDate}
                     onChange={e => setTradeDate(e.target.value)}
                     min={openDate || undefined}
-                    max={new Date().toISOString().slice(0, 10)}
-                    className="flex-1 bg-deep border border-line rounded-lg text-xs text-white py-2.5 px-3 outline-none focus:border-line transition-all [color-scheme:dark]"
+                    max={localDate()}
+                    className="flex-1 bg-deep border border-line rounded-lg text-base text-white py-2.5 px-3 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all [color-scheme:dark]"
                   />
                 </div>
                 {duration && (

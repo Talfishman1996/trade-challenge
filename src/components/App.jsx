@@ -289,7 +289,7 @@ export default function App() {
       </aside>
 
       {/* Main content area */}
-      <main className="flex-1 overflow-y-auto pb-20 md:pb-6 md:ml-16 no-sb">
+      <main className="flex-1 overflow-y-auto pb-24 md:pb-6 md:ml-16 no-sb">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={tab}
@@ -329,7 +329,7 @@ export default function App() {
                     (active ? 'text-emerald-400' : 'text-slate-500 active:text-slate-300')}
                 >
                   <Icon className={'w-5 h-5 transition-transform ' + (active ? 'scale-110' : '')} strokeWidth={active ? 2.5 : 1.5} />
-                  <span className={'text-[10px] font-medium ' + (active ? 'font-semibold' : '')}>{t.label}</span>
+                  <span className={'text-xs font-medium ' + (active ? 'font-semibold' : '')}>{t.label}</span>
                   {active && (
                     <motion.div
                       layoutId="bottomTab"

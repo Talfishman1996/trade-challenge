@@ -159,7 +159,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
             }} />
 
           <div className="relative text-center">
-            <div className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-medium mb-2">Portfolio Value</div>
+            <div className="text-xs text-slate-500 uppercase tracking-[0.2em] font-medium mb-2">Portfolio Value</div>
 
             {/* The number — with shimmer sweep */}
             <div className="text-5xl font-bold font-mono tabular-nums tracking-tight"
@@ -206,7 +206,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
               {' '}Max historical: {'\u2212'}{trades.stats.maxDrawdownPct.toFixed(1)}%.
             </div>
           </div>
-          <button onClick={() => setDismissAlert(true)} className="text-slate-600 hover:text-slate-400 transition-colors shrink-0">
+          <button onClick={() => setDismissAlert(true)} className="p-2 -m-2 text-slate-600 hover:text-slate-400 transition-colors shrink-0">
             <X className="w-3.5 h-3.5" />
           </button>
         </motion.div>
@@ -235,15 +235,15 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="bg-deep rounded-xl p-2.5 border border-line/50">
               <div className={'text-sm font-bold font-mono tabular-nums ' + (riskSeverity(rN(exploreEq) * 100) === 'safe' ? 'text-amber-400' : riskSeverity(rN(exploreEq) * 100) === 'elevated' ? 'text-orange-400' : 'text-red-500')}>{(rN(exploreEq) * 100).toFixed(1)}%</div>
-              <div className="text-[10px] text-slate-600 mt-0.5">Risk</div>
+              <div className="text-xs text-slate-500 mt-0.5">Risk</div>
             </div>
             <div className="bg-deep rounded-xl p-2.5 border border-line/50">
               <div className="text-sm font-bold font-mono tabular-nums text-red-500">${fmt(r$N(exploreEq))}</div>
-              <div className="text-[10px] text-slate-600 mt-0.5">At Risk</div>
+              <div className="text-xs text-slate-500 mt-0.5">At Risk</div>
             </div>
             <div className="bg-deep rounded-xl p-2.5 border border-line/50">
               <div className="text-sm font-bold font-mono tabular-nums text-amber-400">${fmt(r$N(exploreEq) * 2)}</div>
-              <div className="text-[10px] text-slate-600 mt-0.5">2R Gain</div>
+              <div className="text-xs text-slate-500 mt-0.5">2R Gain</div>
             </div>
           </div>
           <button
@@ -269,7 +269,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
 
         <button
           onClick={() => setShowPhaseInfo(!showPhaseInfo)}
-          className="mt-3 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors text-slate-500 hover:text-slate-300 hover:bg-elevated/50"
+          className="mt-3 flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg transition-colors text-slate-500 hover:text-slate-300 hover:bg-elevated/50"
         >
           <Info className="w-3 h-3" />
           {rSev === 'danger' ? 'Why so high?' : 'About this phase'}
@@ -304,7 +304,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
             <div key={i} className="bg-surface rounded-xl p-2.5 text-center border border-line/50">
               <div className={'text-sm font-bold font-mono tabular-nums ' + s.c}
                 style={s.glow ? { textShadow: '0 0 12px rgba(252, 211, 77, 0.5)' } : undefined}>{s.v}</div>
-              <div className="text-[10px] text-slate-600 mt-0.5">{s.l}</div>
+              <div className="text-xs text-slate-500 mt-0.5">{s.l}</div>
             </div>
           ))}
         </div>
@@ -314,8 +314,8 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
           <div className="bg-surface rounded-xl p-3 border border-line/50 cursor-pointer group"
             onClick={() => setShowCurve(true)}>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] text-slate-600 font-medium">P&L Curve</span>
-              <span className="text-[10px] text-amber-400/70 font-mono tabular-nums">Peak: ${fmt(sparkMax)}</span>
+              <span className="text-xs text-slate-500 font-medium">P&L Curve</span>
+              <span className="text-xs text-amber-400/70 font-mono tabular-nums">Peak: ${fmt(sparkMax)}</span>
             </div>
             <svg className="w-full h-16" viewBox="0 0 100 50" preserveAspectRatio="none">
               <defs>
@@ -347,7 +347,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
             <Trophy className="w-4 h-4 text-amber-400" />
             <span className="text-xs font-semibold text-white">Summit Tracker</span>
           </div>
-          <span className="text-[10px] text-slate-500 font-mono tabular-nums">
+          <span className="text-xs text-slate-500 font-mono tabular-nums">
             {summitData.achievedCount}/{MILES.length} cleared
           </span>
         </div>
@@ -375,7 +375,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
                       : 'bg-elevated text-slate-600 ring-1 ring-line')}>
                   {m.achieved ? '\u2713' : i + 1}
                 </div>
-                <span className={'text-[9px] mt-1.5 font-mono tabular-nums leading-none ' +
+                <span className={'text-[11px] mt-1.5 font-mono tabular-nums leading-none ' +
                   (m.achieved ? 'text-slate-400' : m.isNext ? 'text-amber-400 font-semibold' : 'text-slate-600')}>
                   {m.l}
                 </span>
@@ -404,7 +404,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
                 transition={{ duration: 0.8, ease: 'easeOut' }}
               />
             </div>
-            <div className="flex justify-between mt-1.5 text-[10px] text-slate-600 font-mono tabular-nums">
+            <div className="flex justify-between mt-1.5 text-xs text-slate-500 font-mono tabular-nums">
               <span>${fmt(eq)}</span>
               <span>${fmt(summitData.toGo)} to go</span>
             </div>
@@ -438,15 +438,15 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
                   <div className={'text-base font-bold font-mono tabular-nums ' + (trades.stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-red-500')}>
                     {trades.stats.totalPnl >= 0 ? '+$' : '-$'}{fmt(Math.abs(trades.stats.totalPnl))}
                   </div>
-                  <div className="text-xs text-slate-600">Total P&L</div>
+                  <div className="text-xs text-slate-500">Total P&L</div>
                 </div>
                 <div className="bg-surface rounded-xl p-3 text-center border border-line">
                   <div className="text-base font-bold font-mono tabular-nums text-white">{trades.stats.totalTrades}</div>
-                  <div className="text-xs text-slate-600">Trades</div>
+                  <div className="text-xs text-slate-500">Trades</div>
                 </div>
                 <div className="bg-surface rounded-xl p-3 text-center border border-line">
                   <div className="text-base font-bold font-mono tabular-nums text-amber-400">${fmt(trades.peakEquity)}</div>
-                  <div className="text-xs text-slate-600">Peak</div>
+                  <div className="text-xs text-slate-500">Peak</div>
                 </div>
               </div>
             </div>

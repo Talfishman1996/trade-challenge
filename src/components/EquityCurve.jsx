@@ -111,7 +111,7 @@ export default function EquityCurve({ trades, height = 256 }) {
         </AreaChart>
       </ResponsiveContainer>
       {chartData.length > 2 && (
-        <div className="text-center text-[10px] text-slate-700 mt-1">Tap & drag to inspect</div>
+        <div className="text-center text-xs text-slate-500 mt-1">Slide to inspect</div>
       )}
     </div>
   );

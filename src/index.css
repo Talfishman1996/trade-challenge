@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Safe area for iPhone notch/home indicator */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 @theme {
   --color-deep: #0D1117;
   --color-surface: #161C24;

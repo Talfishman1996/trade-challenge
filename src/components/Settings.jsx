@@ -34,7 +34,7 @@ export default function Settings({ settings, trades }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `apex-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `tradevault-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -110,13 +110,20 @@ export default function Settings({ settings, trades }) {
     }
   };
 
+  const [switchConfirm, setSwitchConfirm] = useState(false);
+
   const handleSwitchSync = async () => {
+    if (!switchConfirm) {
+      setSwitchConfirm(true);
+      return;
+    }
     const blobId = extractBlobId(switchInput);
-    if (!blobId) { setSwitchStatus('error'); return; }
+    if (!blobId) { setSwitchStatus('error'); setSwitchConfirm(false); return; }
     setSwitchStatus('connecting');
     const cloud = await pullFromBlobId(blobId);
     if (!cloud || !Array.isArray(cloud.trades)) {
       setSwitchStatus('error');
+      setSwitchConfirm(false);
       return;
     }
     saveSyncConfig({ blobId, lastSync: Date.now() });
@@ -163,7 +170,7 @@ export default function Settings({ settings, trades }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `apex-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `tradevault-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -185,7 +192,7 @@ export default function Settings({ settings, trades }) {
             className="w-full bg-deep border border-line rounded-xl text-xl font-bold font-mono text-white py-3 pl-10 pr-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all tabular-nums"
           />
         </div>
-        <p className="text-xs text-slate-600">Your challenge starting balance. Only affects new calculations if no trades logged.</p>
+        <p className="text-xs text-slate-500">Your challenge starting balance. Only affects new calculations if no trades logged.</p>
       </div>
 
       {/* Analysis Defaults */}
@@ -236,7 +243,7 @@ export default function Settings({ settings, trades }) {
             {syncConfig ? <Cloud className="w-4 h-4 text-emerald-400" /> : <CloudOff className="w-4 h-4 text-slate-600" />}
             <div className="text-xs text-slate-500 font-medium">Cloud Sync</div>
           </div>
-          <span className={'text-[10px] font-mono ' + (syncConfig ? 'text-emerald-400/70' : 'text-slate-600')}>
+          <span className={'text-xs font-mono ' + (syncConfig ? 'text-emerald-400/70' : 'text-slate-600')}>
             {syncConfig ? 'Auto-synced' : 'Offline'}
           </span>
         </div>
@@ -256,7 +263,7 @@ export default function Settings({ settings, trades }) {
             </button>
 
             {syncConfig.lastSync && (
-              <div className="text-[10px] text-slate-600 text-center">
+              <div className="text-xs text-slate-500 text-center">
                 Last synced: {new Date(syncConfig.lastSync).toLocaleString()}
               </div>
             )}
@@ -270,7 +277,7 @@ export default function Settings({ settings, trades }) {
               {syncing ? 'Syncing...' : 'Sync Now'}
             </button>
 
-            {syncMsg && <div className="text-[10px] text-emerald-400/70 text-center">{syncMsg}</div>}
+            {syncMsg && <div className="text-xs text-emerald-400/70 text-center">{syncMsg}</div>}
 
             {/* Switch to different sync */}
             {showSwitchSync ? (
@@ -283,7 +290,10 @@ export default function Settings({ settings, trades }) {
                   className="w-full bg-deep border border-line rounded-xl text-xs text-white py-2.5 px-3 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all placeholder:text-slate-700"
                 />
                 {switchStatus === 'error' && (
-                  <p className="text-[10px] text-red-400">Invalid link or sync not found. Check and try again.</p>
+                  <p className="text-xs text-red-400">Invalid link or sync not found. Check and try again.</p>
+                )}
+                {switchConfirm && (
+                  <p className="text-xs text-amber-400">This will replace all local data with the cloud data. Continue?</p>
                 )}
                 <div className="flex gap-2">
                   <button
@@ -297,7 +307,7 @@ export default function Settings({ settings, trades }) {
                     {switchStatus === 'connecting' ? <><Loader2 className="w-3 h-3 animate-spin" /> Connecting...</> : 'Connect'}
                   </button>
                   <button
-                    onClick={() => { setShowSwitchSync(false); setSwitchInput(''); setSwitchStatus(''); }}
+                    onClick={() => { setShowSwitchSync(false); setSwitchInput(''); setSwitchStatus(''); setSwitchConfirm(false); }}
                     className="flex-1 py-2 text-xs font-medium text-slate-500 bg-deep rounded-xl border border-line active:scale-[0.98] transition-all"
                   >
                     Cancel
@@ -315,7 +325,7 @@ export default function Settings({ settings, trades }) {
 
             <button
               onClick={handleSyncDisconnect}
-              className="w-full text-[10px] text-slate-600 hover:text-red-400 transition-colors py-1"
+              className="w-full text-xs text-slate-500 hover:text-red-400 transition-colors py-1"
             >
               Disconnect
             </button>
@@ -381,7 +391,7 @@ export default function Settings({ settings, trades }) {
         <div className="flex items-center justify-between">
           <div className="text-xs text-slate-500 font-medium">Data Management</div>
           {trades.trades.length > 0 && (
-            <span className="text-[10px] text-slate-600 font-mono tabular-nums">{trades.trades.length} trades</span>
+            <span className="text-xs text-slate-500 font-mono tabular-nums">{trades.trades.length} trades</span>
           )}
         </div>
 
@@ -445,7 +455,7 @@ export default function Settings({ settings, trades }) {
         <p className="text-xs text-slate-500 font-medium mt-0.5">$20K {'\u2192'} $10M</p>
         <p className="text-xs text-slate-600 leading-relaxed mt-1">
           {'\u2154'} Power Decay position sizing. Risk scales with equity to protect gains and maximize growth.
-          All data stored locally in your browser.
+          {syncConfig ? 'Data syncs to cloud and is stored locally.' : 'All data stored locally in your browser.'}
         </p>
       </div>
     </div>

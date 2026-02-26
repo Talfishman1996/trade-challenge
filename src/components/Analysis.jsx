@@ -173,7 +173,7 @@ export default function Analysis({ trades, settings }) {
             {kellyPct > 0 ? (kellyMult > 1.05 ? '\u26A0 ' + kellyMult.toFixed(2) + '\u00D7 Kelly' : '\u2713 ' + kellyMult.toFixed(2) + '\u00D7 Kelly') : '\u2620 No edge'}
           </div>
         </MetricCard>
-        <MetricCard label="Capital at Risk" tip="Maximum dollar loss on a single trade at current risk level." barColor="bg-rose-500" sub="max single-trade loss" value={{ text: fmt(rd), className: 'text-rose-400' }} />
+        <MetricCard label="Capital at Risk" tip="Maximum dollar loss on a single trade at current risk level." barColor={riskSeverity(rp) === 'safe' ? 'bg-emerald-500' : riskSeverity(rp) === 'elevated' ? 'bg-amber-500' : 'bg-rose-500'} sub="max single-trade loss" value={{ text: fmt(rd), className: riskSeverity(rp) === 'safe' ? 'text-emerald-400' : riskSeverity(rp) === 'elevated' ? 'text-amber-400' : 'text-rose-400' }} />
       </div>
 
       {/* 3 Analysis Tabs */}
@@ -202,7 +202,7 @@ export default function Analysis({ trades, settings }) {
                   <TrendingUp className="w-7 h-7 text-emerald-400/50" />
                 </div>
                 <p className="text-sm font-semibold text-slate-400 mb-1">No performance data yet</p>
-                <p className="text-xs text-slate-600 text-center max-w-[260px] leading-relaxed">
+                <p className="text-xs text-slate-500 text-center max-w-[260px] leading-relaxed">
                   Log trades to see your equity curve, win rate, drawdowns, and R-multiple distribution.
                 </p>
               </div>
@@ -219,19 +219,19 @@ export default function Analysis({ trades, settings }) {
                     <div className={'text-lg font-bold font-mono tabular-nums ' + (trades.stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
                       {trades.stats.totalPnl >= 0 ? '+$' : '-$'}{fmt(Math.abs(trades.stats.totalPnl))}
                     </div>
-                    <div className="text-xs text-slate-600 mt-0.5">Total P&L</div>
+                    <div className="text-xs text-slate-500 mt-0.5">Total P&L</div>
                   </div>
                   <div className="bg-deep rounded-xl p-3 text-center border border-line">
                     <div className="text-lg font-bold font-mono tabular-nums text-amber-400">
                       ${fmt(trades.peakEquity)}
                     </div>
-                    <div className="text-xs text-slate-600 mt-0.5">Peak</div>
+                    <div className="text-xs text-slate-500 mt-0.5">Peak</div>
                   </div>
                   <div className="bg-deep rounded-xl p-3 text-center border border-line">
                     <div className="text-lg font-bold font-mono tabular-nums text-rose-400">
                       {trades.stats.maxDrawdownPct > 0 ? '-' + trades.stats.maxDrawdownPct.toFixed(1) + '%' : '--'}
                     </div>
-                    <div className="text-xs text-slate-600 mt-0.5">Max DD</div>
+                    <div className="text-xs text-slate-500 mt-0.5">Max DD</div>
                   </div>
                 </div>
 
@@ -295,22 +295,22 @@ export default function Analysis({ trades, settings }) {
                     </div>
                     <div>
                       <input type="range" min={20000} max={110000} step={500} value={explorerEq} onChange={e => setExplorerEq(+e.target.value)} className="w-full" />
-                      <div className="flex justify-between text-[10px] text-slate-600 font-mono mt-1">
+                      <div className="flex justify-between text-xs text-slate-500 font-mono mt-1">
                         <span>$20K</span><span>$87.5K anchor</span><span>$110K</span>
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center">
                       <div className="bg-surface rounded-lg p-3 border border-line">
                         <div className={'text-xl font-bold font-mono tabular-nums ' + (riskSeverity(expR) === 'safe' ? 'text-emerald-400' : riskSeverity(expR) === 'elevated' ? 'text-amber-400' : 'text-rose-400')}>{expR.toFixed(1)}%</div>
-                        <div className="text-[10px] text-slate-600 mt-0.5">Risk %</div>
+                        <div className="text-xs text-slate-500 mt-0.5">Risk %</div>
                       </div>
                       <div className="bg-surface rounded-lg p-3 border border-line">
                         <div className="text-xl font-bold font-mono tabular-nums text-rose-400">${fmt(expRD)}</div>
-                        <div className="text-[10px] text-slate-600 mt-0.5">Risk $</div>
+                        <div className="text-xs text-slate-500 mt-0.5">Risk $</div>
                       </div>
                       <div className="bg-surface rounded-lg p-3 border border-line">
                         <div className="text-xl font-bold font-mono tabular-nums text-emerald-400">+${fmt(expGain)}</div>
-                        <div className="text-[10px] text-slate-600 mt-0.5">Gain $</div>
+                        <div className="text-xs text-slate-500 mt-0.5">Gain $</div>
                       </div>
                     </div>
                     <div className="relative h-12">
@@ -334,17 +334,17 @@ export default function Analysis({ trades, settings }) {
                 <div className="flex items-center justify-between text-xs font-mono bg-deep rounded-xl px-3 py-2.5 border border-line">
                   <div className="text-center">
                     <div className="font-bold text-amber-400 tabular-nums">{'\u2212'}{d3.toFixed(0)}%</div>
-                    <div className="text-[10px] text-slate-600 mt-0.5">3 losses</div>
+                    <div className="text-xs text-slate-500 mt-0.5">3 losses</div>
                   </div>
                   <div className="w-px h-6 bg-line/50" />
                   <div className="text-center">
                     <div className="font-bold text-rose-400 tabular-nums">{'\u2212'}{d5.toFixed(0)}%</div>
-                    <div className="text-[10px] text-slate-600 mt-0.5">5 losses</div>
+                    <div className="text-xs text-slate-500 mt-0.5">5 losses</div>
                   </div>
                   <div className="w-px h-6 bg-line/50" />
                   <div className="text-center">
                     <div className={'font-bold tabular-nums ' + (ltw <= 3 ? 'text-rose-500' : ltw <= 10 ? 'text-amber-400' : 'text-emerald-400')}>{ltw >= 200 ? '200+' : ltw}</div>
-                    <div className="text-[10px] text-slate-600 mt-0.5">ruin horizon<Tip text="Consecutive losing trades before your account reaches ~$0. Higher is safer." /></div>
+                    <div className="text-xs text-slate-500 mt-0.5">ruin horizon<Tip text="Consecutive losing trades before your account reaches ~$0. Higher is safer." /></div>
                   </div>
                 </div>
 
@@ -401,7 +401,7 @@ export default function Analysis({ trades, settings }) {
                       <div key={i} className={'rounded-lg flex flex-col items-center justify-center p-3 border ' + x.bg}>
                         <div className={'text-xs font-medium mb-1 ' + x.c}>{x.l}</div>
                         <div className={'text-xl font-bold font-mono tabular-nums ' + x.c}>{'\u2212'}{(x.d.m * 100).toFixed(0)}%</div>
-                        <div className="text-xs text-slate-600 mt-0.5 font-mono tabular-nums">90th: {'\u2212'}{(x.d.p90 * 100).toFixed(0)}%</div>
+                        <div className="text-xs text-slate-500 mt-0.5 font-mono tabular-nums">90th: {'\u2212'}{(x.d.p90 * 100).toFixed(0)}%</div>
                       </div>
                     ))}
                   </div>
@@ -473,9 +473,9 @@ export default function Analysis({ trades, settings }) {
                         <div className="flex justify-between items-center mb-2"><span className="text-base font-bold text-white font-mono tracking-tight">{m.l}</span><span className="text-xs text-slate-600 font-mono tabular-nums">{m.progress.toFixed(1)}%</span></div>
                         <div className="h-1 bg-elevated rounded-full overflow-hidden mb-2"><div className="h-full bg-emerald-500/60 rounded-full" style={{ width: Math.max(0.5, m.progress) + '%' }} /></div>
                         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                          <div><span className="font-bold font-mono text-emerald-400 tabular-nums">{m.bestN}</span> <span className="text-slate-600">wins</span></div>
-                          <div><span className="font-bold font-mono text-slate-300 tabular-nums">{m.mcN.median != null ? '~' + m.mcN.median : '\u2014'}</span> <span className="text-slate-600">trades</span></div>
-                          <div><span className={'font-bold font-mono tabular-nums ' + (m.mcN.reached > 60 ? 'text-emerald-400' : m.mcN.reached > 30 ? 'text-amber-400' : 'text-rose-400')}>{m.mcN.reached.toFixed(0)}%</span> <span className="text-slate-600">reach</span></div>
+                          <div><span className="font-bold font-mono text-emerald-400 tabular-nums">{m.bestN}</span> <span className="text-slate-500">wins</span></div>
+                          <div><span className="font-bold font-mono text-slate-300 tabular-nums">{m.mcN.median != null ? '~' + m.mcN.median : '\u2014'}</span> <span className="text-slate-500">trades</span></div>
+                          <div><span className={'font-bold font-mono tabular-nums ' + (m.mcN.reached > 60 ? 'text-emerald-400' : m.mcN.reached > 30 ? 'text-amber-400' : 'text-rose-400')}>{m.mcN.reached.toFixed(0)}%</span> <span className="text-slate-500">reach</span></div>
                         </div>
                       </div>
                     ))}</div>
@@ -524,7 +524,7 @@ export default function Analysis({ trades, settings }) {
                   </>)}
                 </div>
 
-                <p className="text-xs text-slate-600 text-center font-mono">500 paths {'\u00D7'} 400 trades {'\u00B7'} Seed #{simSeed}</p>
+                <p className="text-xs text-slate-500 text-center font-mono">500 paths {'\u00D7'} 100 trades {'\u00B7'} Seed #{simSeed}</p>
               </div>
             )}
 
@@ -532,7 +532,7 @@ export default function Analysis({ trades, settings }) {
         </AnimatePresence>
       </div>
 
-      <p className="text-center text-slate-600 text-xs font-mono">{wr}% WR {'\u00B7'} {rr.toFixed(1)} RR {'\u00B7'} {'\u2154'} Power Decay</p>
+      <p className="text-center text-slate-500 text-xs font-mono">{wr}% WR {'\u00B7'} {rr.toFixed(1)} RR {'\u00B7'} {'\u2154'} Power Decay</p>
     </div>
   );
 }
