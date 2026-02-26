@@ -185,7 +185,7 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
       {/* Calendar Grid View */}
       {view === 'calendar' && trades.trades.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {trades.trades.map(t => {
+          {[...trades.trades].reverse().map(t => {
             const isWin = t.pnl >= 0;
             const rMult = t.riskDol > 0 ? Math.abs(t.pnl) / t.riskDol : 0;
             return (
@@ -194,10 +194,10 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 onClick={() => openEdit(t)}
-                className={'rounded-xl p-3 border-l-[3px] relative overflow-hidden cursor-pointer active:scale-[0.97] transition-transform ' +
+                className={'bg-surface rounded-xl p-3 border-l-[3px] border relative overflow-hidden cursor-pointer active:scale-[0.97] transition-all hover:ring-1 hover:ring-line ' +
                   (isWin
-                    ? 'bg-emerald-500/5 border-l-emerald-500 border border-emerald-500/10'
-                    : 'bg-rose-500/5 border-l-rose-500 border border-rose-500/10')}
+                    ? 'border-l-emerald-500 border-emerald-500/15'
+                    : 'border-l-rose-500 border-rose-500/15')}
               >
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-1.5 min-w-0">
