@@ -132,9 +132,9 @@ export default function Analysis({ trades, settings }) {
           const Ic = t.ic;
           const on = tab === t.id;
           return (
-            <button key={t.id} onClick={() => setTab(t.id)} className={'flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-semibold transition-colors whitespace-nowrap relative rounded-t-lg ' + (on ? 'text-emerald-400 bg-surface' : 'text-slate-500 hover:text-slate-300 hover:bg-surface/30')}>
+            <button key={t.id} onClick={() => setTab(t.id)} className={'flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-semibold transition-colors whitespace-nowrap relative rounded-t-lg ' + (on ? 'text-blue-400 bg-surface' : 'text-slate-500 hover:text-slate-300 hover:bg-surface/30')}>
               <Ic className="w-3.5 h-3.5" /> {t.l}
-              {on && <motion.div layoutId="analysisTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" transition={{ type: 'spring', stiffness: 500, damping: 35 }} />}
+              {on && <motion.div layoutId="analysisTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" transition={{ type: 'spring', stiffness: 500, damping: 35 }} />}
             </button>
           );
         })}
@@ -148,8 +148,8 @@ export default function Analysis({ trades, settings }) {
             {/* ═══════════ PERFORMANCE ═══════════ */}
             {tab === 'performance' && !hasTrades && (
               <div className="flex flex-col items-center py-10 px-4">
-                <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-4">
-                  <TrendingUp className="w-7 h-7 text-emerald-400/50" />
+                <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-4">
+                  <TrendingUp className="w-7 h-7 text-blue-400/50" />
                 </div>
                 <p className="text-sm font-semibold text-slate-400 mb-1">No performance data yet</p>
                 <p className="text-xs text-slate-500 text-center max-w-[260px] leading-relaxed">
@@ -354,7 +354,7 @@ export default function Analysis({ trades, settings }) {
                     </div>
                     <div className="flex justify-between text-xs text-slate-500">
                       <span>From ${fmt(realEq)}</span>
-                      <button onClick={() => { setProjWr(wr); setProjRr(rr); }} className="text-emerald-400/60 hover:text-emerald-400 transition-colors">
+                      <button onClick={() => { setProjWr(wr); setProjRr(rr); }} className="text-blue-400/60 hover:text-blue-400 transition-colors">
                         Reset to settings
                       </button>
                     </div>
@@ -408,8 +408,8 @@ export default function Analysis({ trades, settings }) {
                 {msF.length > 0 ? (
                   <>
                     {/* Next target */}
-                    <div className="bg-deep rounded-xl p-4 border border-emerald-500/20 ring-1 ring-emerald-500/10">
-                      <div className="flex items-center gap-2 mb-3"><Zap className="w-3.5 h-3.5 text-emerald-400" /><span className="text-xs text-emerald-400 font-semibold uppercase tracking-wider">Next Target</span></div>
+                    <div className="bg-deep rounded-xl p-4 border border-blue-500/20 ring-1 ring-blue-500/10">
+                      <div className="flex items-center gap-2 mb-3"><Zap className="w-3.5 h-3.5 text-blue-400" /><span className="text-xs text-blue-400 font-semibold uppercase tracking-wider">Next Target</span></div>
                       <div className="flex items-baseline gap-2 mb-3"><span className="text-2xl font-bold text-white font-mono tracking-tight">{msF[0].l}</span><span className="text-xs text-slate-500">from ${fmt(realEq)}</span></div>
                       <div className="flex items-center gap-3 mb-4">
                         <div className="flex-1 h-2 bg-elevated rounded-full overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" initial={{ width: 0 }} animate={{ width: Math.max(1, msF[0].progress) + '%' }} transition={{ duration: 0.8, ease: 'easeOut' }} /></div>

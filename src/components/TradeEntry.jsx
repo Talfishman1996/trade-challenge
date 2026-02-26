@@ -30,7 +30,7 @@ const Section = ({ title, open, onToggle, count, children }) => (
       onClick={onToggle}
       className="flex items-center justify-between w-full text-xs text-slate-500 font-medium mb-2"
     >
-      <span>{title}{count > 0 && <span className="text-emerald-400 ml-1">({count})</span>}</span>
+      <span>{title}{count > 0 && <span className="text-blue-400 ml-1">({count})</span>}</span>
       <ChevronDown className={'w-3.5 h-3.5 transition-transform ' + (open ? 'rotate-180' : '')} />
     </button>
     {open && (
@@ -341,7 +341,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                     value={amount}
                     onChange={handleAmountChange}
                     placeholder="0"
-                    className="w-full bg-deep border border-line rounded-xl text-xl font-bold font-mono text-white py-4 pl-14 pr-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all duration-150 tabular-nums placeholder:text-slate-700"
+                    className="w-full bg-deep border border-line rounded-xl text-xl font-bold font-mono text-white py-4 pl-14 pr-4 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all duration-150 tabular-nums placeholder:text-slate-700"
                   />
                 </div>
               </div>
@@ -354,7 +354,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                   value={ticker}
                   onChange={e => setTicker(e.target.value.toUpperCase())}
                   placeholder="e.g., AAPL, ES, BTC"
-                  className="w-full bg-deep border border-line rounded-xl text-sm font-mono font-bold text-white py-3 px-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all placeholder:text-slate-700 placeholder:font-normal"
+                  className="w-full bg-deep border border-line rounded-xl text-sm font-mono font-bold text-white py-3 px-4 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all placeholder:text-slate-700 placeholder:font-normal"
                 />
               </div>
 
@@ -367,7 +367,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                     <select
                       value={strategy}
                       onChange={e => setStrategy(e.target.value)}
-                      className="w-full bg-surface border border-line rounded-lg text-sm text-white py-2.5 px-3 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all [color-scheme:dark]"
+                      className="w-full bg-surface border border-line rounded-lg text-sm text-white py-2.5 px-3 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all [color-scheme:dark]"
                     >
                       <option value="">Select strategy...</option>
                       {STRATEGY_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
@@ -383,7 +383,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                         value={contracts}
                         onChange={e => setContracts(e.target.value.replace(/[^0-9]/g, ''))}
                         placeholder="0"
-                        className="w-full bg-surface border border-line rounded-lg text-sm font-mono text-white py-2.5 px-2.5 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all tabular-nums placeholder:text-slate-700"
+                        className="w-full bg-surface border border-line rounded-lg text-sm font-mono text-white py-2.5 px-2.5 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all tabular-nums placeholder:text-slate-700"
                       />
                     </div>
                     <div>
@@ -394,7 +394,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                         value={entryPrice}
                         onChange={handleDecimalInput(setEntryPrice)}
                         placeholder="0.00"
-                        className="w-full bg-surface border border-line rounded-lg text-sm font-mono text-white py-2.5 px-2.5 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all tabular-nums placeholder:text-slate-700"
+                        className="w-full bg-surface border border-line rounded-lg text-sm font-mono text-white py-2.5 px-2.5 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all tabular-nums placeholder:text-slate-700"
                       />
                     </div>
                     <div>
@@ -405,7 +405,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                         value={exitPrice}
                         onChange={handleDecimalInput(setExitPrice)}
                         placeholder="0.00"
-                        className="w-full bg-surface border border-line rounded-lg text-sm font-mono text-white py-2.5 px-2.5 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all tabular-nums placeholder:text-slate-700"
+                        className="w-full bg-surface border border-line rounded-lg text-sm font-mono text-white py-2.5 px-2.5 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all tabular-nums placeholder:text-slate-700"
                       />
                     </div>
                   </div>
@@ -434,13 +434,13 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                     value={openDate}
                     onChange={e => setOpenDate(e.target.value)}
                     max={tradeDate || localDate()}
-                    className="flex-1 bg-deep border border-line rounded-lg text-base text-white py-2.5 px-3 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all [color-scheme:dark]"
+                    className="flex-1 bg-deep border border-line rounded-lg text-base text-white py-2.5 px-3 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all [color-scheme:dark]"
                   />
                   <input
                     type="time"
                     value={entryTime}
                     onChange={e => setEntryTime(e.target.value)}
-                    className="w-24 bg-deep border border-line rounded-lg text-sm font-mono text-white py-2.5 px-2 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all [color-scheme:dark]"
+                    className="w-24 bg-deep border border-line rounded-lg text-sm font-mono text-white py-2.5 px-2 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all [color-scheme:dark]"
                   />
                 </div>
                 <div className="flex items-center gap-3">
@@ -454,13 +454,13 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                     onChange={e => setTradeDate(e.target.value)}
                     min={openDate || undefined}
                     max={localDate()}
-                    className="flex-1 bg-deep border border-line rounded-lg text-base text-white py-2.5 px-3 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all [color-scheme:dark]"
+                    className="flex-1 bg-deep border border-line rounded-lg text-base text-white py-2.5 px-3 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all [color-scheme:dark]"
                   />
                   <input
                     type="time"
                     value={exitTime}
                     onChange={e => setExitTime(e.target.value)}
-                    className="w-24 bg-deep border border-line rounded-lg text-sm font-mono text-white py-2.5 px-2 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all [color-scheme:dark]"
+                    className="w-24 bg-deep border border-line rounded-lg text-sm font-mono text-white py-2.5 px-2 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all [color-scheme:dark]"
                   />
                 </div>
                 {duration && (
@@ -523,7 +523,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                       value={mae}
                       onChange={handleDecimalInput(setMae)}
                       placeholder="0"
-                      className="w-full bg-surface border border-line rounded-lg text-sm font-mono text-white py-2.5 px-3 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all tabular-nums placeholder:text-slate-700"
+                      className="w-full bg-surface border border-line rounded-lg text-sm font-mono text-white py-2.5 px-3 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all tabular-nums placeholder:text-slate-700"
                     />
                   </div>
                   <div>
@@ -534,7 +534,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                       value={mfe}
                       onChange={handleDecimalInput(setMfe)}
                       placeholder="0"
-                      className="w-full bg-surface border border-line rounded-lg text-sm font-mono text-white py-2.5 px-3 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all tabular-nums placeholder:text-slate-700"
+                      className="w-full bg-surface border border-line rounded-lg text-sm font-mono text-white py-2.5 px-3 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all tabular-nums placeholder:text-slate-700"
                     />
                   </div>
                   <p className="text-[10px] text-slate-500 leading-relaxed">
@@ -553,7 +553,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                   onChange={e => setNotes(e.target.value)}
                   placeholder="What was the setup? What went right/wrong?"
                   rows={2}
-                  className="w-full bg-deep border border-line rounded-xl text-sm text-white py-3 px-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all placeholder:text-slate-700 resize-none"
+                  className="w-full bg-deep border border-line rounded-xl text-sm text-white py-3 px-4 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all placeholder:text-slate-700 resize-none"
                 />
               </div>
 
@@ -584,7 +584,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                 disabled={!amount || parseFloat(amount) <= 0}
                 className={'w-full py-4 rounded-xl font-bold text-base transition-all ' +
                   (amount && parseFloat(amount) > 0
-                    ? 'bg-emerald-500 text-white active:scale-[0.98] hover:bg-emerald-400'
+                    ? 'bg-blue-500 text-white active:scale-[0.98] hover:bg-blue-400'
                     : 'bg-elevated text-slate-600 cursor-not-allowed')}
               >
                 {isEditMode ? 'Save Changes' : 'Save Trade'}

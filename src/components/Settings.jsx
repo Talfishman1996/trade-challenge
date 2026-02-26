@@ -213,7 +213,7 @@ export default function Settings({ settings, trades, showToast }) {
             <button
               onClick={() => settings.setTiltLockEnabled(!settings.tiltLockEnabled)}
               className={'relative w-10 h-5 rounded-full transition-colors duration-200 ' +
-                (settings.tiltLockEnabled ? 'bg-emerald-500' : 'bg-elevated border border-line')}
+                (settings.tiltLockEnabled ? 'bg-blue-500' : 'bg-elevated border border-line')}
             >
               <div
                 className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-200"
@@ -277,7 +277,7 @@ export default function Settings({ settings, trades, showToast }) {
               inputMode="numeric"
               value={dailyLimitInput}
               onChange={handleDailyLimitChange}
-              className={'w-full bg-deep border border-line rounded-xl text-sm font-bold font-mono py-2.5 pl-8 pr-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all tabular-nums ' +
+              className={'w-full bg-deep border border-line rounded-xl text-sm font-bold font-mono py-2.5 pl-8 pr-4 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all tabular-nums ' +
                 (settings.dailyLossLimit > 0 ? 'text-red-400' : 'text-slate-500')}
             />
           </div>
@@ -301,7 +301,7 @@ export default function Settings({ settings, trades, showToast }) {
               inputMode="numeric"
               value={eqInput}
               onChange={handleEqChange}
-              className="w-full bg-deep border border-line rounded-xl text-xl font-bold font-mono text-white py-3 pl-10 pr-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all tabular-nums"
+              className="w-full bg-deep border border-line rounded-xl text-xl font-bold font-mono text-white py-3 pl-10 pr-4 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all tabular-nums"
             />
           </div>
           <p className="text-[10px] text-slate-500 mt-1.5">Only affects new calculations if no trades logged.</p>
@@ -310,7 +310,7 @@ export default function Settings({ settings, trades, showToast }) {
         <div className="border-t border-line/50 pt-4">
           <div className="flex justify-between items-center mb-2">
             <label className="text-sm text-slate-400">Win Rate</label>
-            <span className="text-sm text-emerald-400 font-bold font-mono bg-deep px-2 py-0.5 rounded-md border border-line tabular-nums">
+            <span className="text-sm text-blue-400 font-bold font-mono bg-deep px-2 py-0.5 rounded-md border border-line tabular-nums">
               {settings.winRate}%
             </span>
           </div>
@@ -332,7 +332,7 @@ export default function Settings({ settings, trades, showToast }) {
         <div>
           <div className="flex justify-between items-center mb-2">
             <label className="text-sm text-slate-400">Risk:Reward</label>
-            <span className="text-sm text-emerald-400 font-bold font-mono bg-deep px-2 py-0.5 rounded-md border border-line tabular-nums">
+            <span className="text-sm text-blue-400 font-bold font-mono bg-deep px-2 py-0.5 rounded-md border border-line tabular-nums">
               {settings.rewardRatio.toFixed(1)}:1
             </span>
           </div>
@@ -367,7 +367,7 @@ export default function Settings({ settings, trades, showToast }) {
           <button
             onClick={() => settings.setRMultipleDisplay(!settings.rMultipleDisplay)}
             className={'relative w-10 h-5 rounded-full transition-colors duration-200 ' +
-              (settings.rMultipleDisplay ? 'bg-emerald-500' : 'bg-elevated border border-line')}
+              (settings.rMultipleDisplay ? 'bg-blue-500' : 'bg-elevated border border-line')}
           >
             <div
               className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-200"
@@ -381,10 +381,10 @@ export default function Settings({ settings, trades, showToast }) {
       <div className="bg-surface rounded-2xl p-4 border border-line space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {syncConfig ? <Cloud className="w-4 h-4 text-emerald-400" /> : <CloudOff className="w-4 h-4 text-slate-600" />}
+            {syncConfig ? <Cloud className="w-4 h-4 text-blue-400" /> : <CloudOff className="w-4 h-4 text-slate-600" />}
             <div className="text-xs text-slate-500 font-medium">Cloud Sync</div>
           </div>
-          <span className={'text-xs font-mono ' + (syncConfig ? 'text-emerald-400/70' : 'text-slate-600')}>
+          <span className={'text-xs font-mono ' + (syncConfig ? 'text-blue-400/70' : 'text-slate-600')}>
             {syncConfig ? 'Auto-synced' : 'Offline'}
           </span>
         </div>
@@ -399,7 +399,7 @@ export default function Settings({ settings, trades, showToast }) {
               onClick={handleCopyLink}
               className="w-full flex items-center justify-center gap-2 py-2.5 bg-deep text-slate-400 text-xs font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? <Check className="w-3.5 h-3.5 text-blue-400" /> : <Copy className="w-3.5 h-3.5" />}
               {copied ? 'Link Copied!' : 'Copy Sync Link'}
             </button>
 
@@ -418,7 +418,7 @@ export default function Settings({ settings, trades, showToast }) {
               {syncing ? 'Syncing...' : 'Sync Now'}
             </button>
 
-            {syncMsg && <div className="text-xs text-emerald-400/70 text-center">{syncMsg}</div>}
+            {syncMsg && <div className="text-xs text-blue-400/70 text-center">{syncMsg}</div>}
 
             {/* Switch to different sync */}
             {showSwitchSync ? (
@@ -428,7 +428,7 @@ export default function Settings({ settings, trades, showToast }) {
                   value={switchInput}
                   onChange={e => { setSwitchInput(e.target.value); setSwitchStatus(''); }}
                   placeholder="Paste sync link from other device"
-                  className="w-full bg-deep border border-line rounded-xl text-xs text-white py-2.5 px-3 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all placeholder:text-slate-700"
+                  className="w-full bg-deep border border-line rounded-xl text-xs text-white py-2.5 px-3 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all placeholder:text-slate-700"
                 />
                 {switchStatus === 'error' && (
                   <p className="text-xs text-red-400">Invalid link or sync not found. Check and try again.</p>
@@ -442,7 +442,7 @@ export default function Settings({ settings, trades, showToast }) {
                     disabled={!switchInput.trim() || switchStatus === 'connecting'}
                     className={'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-xl transition-all ' +
                       (switchInput.trim() && switchStatus !== 'connecting'
-                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 active:scale-[0.98]'
+                        ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30 active:scale-[0.98]'
                         : 'bg-elevated text-slate-600 border border-line cursor-not-allowed')}
                   >
                     {switchStatus === 'connecting' ? <><Loader2 className="w-3 h-3 animate-spin" /> Connecting...</> : 'Connect'}
@@ -458,7 +458,7 @@ export default function Settings({ settings, trades, showToast }) {
             ) : (
               <button
                 onClick={() => setShowSwitchSync(true)}
-                className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] text-slate-500 hover:text-emerald-400 transition-colors"
+                className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] text-slate-500 hover:text-blue-400 transition-colors"
               >
                 <Link2 className="w-3 h-3" /> Connect to Different Sync
               </button>
@@ -473,12 +473,12 @@ export default function Settings({ settings, trades, showToast }) {
           </>
         ) : (
           <>
-            {syncMsg && <p className={'text-xs leading-relaxed ' + (offlineStatus === 'error' ? 'text-red-400' : 'text-emerald-400/70')}>{syncMsg}</p>}
+            {syncMsg && <p className={'text-xs leading-relaxed ' + (offlineStatus === 'error' ? 'text-red-400' : 'text-blue-400/70')}>{syncMsg}</p>}
 
             <button
               onClick={handleCreateSync}
               disabled={offlineStatus === 'creating'}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-500/15 text-emerald-400 text-xs font-medium rounded-xl border border-emerald-500/30 active:scale-[0.98] transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-500/15 text-blue-400 text-xs font-medium rounded-xl border border-blue-500/30 active:scale-[0.98] transition-all disabled:opacity-50"
             >
               {offlineStatus === 'creating' ? (
                 <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Creating sync...</>
@@ -494,7 +494,7 @@ export default function Settings({ settings, trades, showToast }) {
                   value={offlineInput}
                   onChange={e => { setOfflineInput(e.target.value); setOfflineStatus(''); setSyncMsg(''); }}
                   placeholder="Paste sync link from other device"
-                  className="w-full bg-deep border border-line rounded-xl text-xs text-white py-2.5 px-3 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all placeholder:text-slate-700"
+                  className="w-full bg-deep border border-line rounded-xl text-xs text-white py-2.5 px-3 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all placeholder:text-slate-700"
                 />
                 <div className="flex gap-2">
                   <button
@@ -502,7 +502,7 @@ export default function Settings({ settings, trades, showToast }) {
                     disabled={!offlineInput.trim() || offlineStatus === 'connecting'}
                     className={'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-xl transition-all ' +
                       (offlineInput.trim() && offlineStatus !== 'connecting'
-                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 active:scale-[0.98]'
+                        ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30 active:scale-[0.98]'
                         : 'bg-elevated text-slate-600 border border-line cursor-not-allowed')}
                   >
                     {offlineStatus === 'connecting' ? <><Loader2 className="w-3 h-3 animate-spin" /> Connecting...</> : 'Connect'}
@@ -518,7 +518,7 @@ export default function Settings({ settings, trades, showToast }) {
             ) : (
               <button
                 onClick={() => setShowOfflineConnect(true)}
-                className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] text-slate-500 hover:text-emerald-400 transition-colors"
+                className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] text-slate-500 hover:text-blue-400 transition-colors"
               >
                 <Link2 className="w-3 h-3" /> Connect to Existing Sync
               </button>
@@ -591,7 +591,7 @@ export default function Settings({ settings, trades, showToast }) {
       <div className="bg-surface rounded-2xl p-4 border border-line space-y-2">
         <div className="text-xs text-slate-500 font-medium">About</div>
         <div className="text-sm text-slate-400">
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-white font-bold tracking-widest">TRADEVAULT</span> <span className="text-slate-600">v3.0</span>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-white font-bold tracking-widest">TRADEVAULT</span> <span className="text-slate-600">v3.0</span>
         </div>
         <p className="text-xs text-slate-500 font-medium mt-0.5">$20K {'\u2192'} $10M</p>
         <p className="text-xs text-slate-500 leading-relaxed mt-1">

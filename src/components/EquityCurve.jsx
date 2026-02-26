@@ -97,7 +97,7 @@ export default function EquityCurve({ trades, height = 280 }) {
             key={m}
             onClick={() => setXMode(m)}
             className={'text-[10px] px-2 py-1 rounded-md font-medium transition-all ' +
-              (xMode === m ? 'bg-emerald-500/15 text-emerald-400' : 'text-slate-500 hover:text-slate-300')}
+              (xMode === m ? 'bg-blue-500/15 text-blue-400' : 'text-slate-500 hover:text-slate-300')}
           >
             {m === 'trades' ? 'By Trade' : 'By Date'}
           </button>

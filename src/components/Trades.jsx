@@ -93,7 +93,7 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
     >
       <span className="flex items-center gap-0.5">
         {children}
-        {sortCol === col && <span className="text-emerald-400">{sortDir === 'asc' ? '\u2191' : '\u2193'}</span>}
+        {sortCol === col && <span className="text-blue-400">{sortDir === 'asc' ? '\u2191' : '\u2193'}</span>}
       </span>
     </th>
   );
@@ -105,7 +105,7 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
         <h2 className="text-lg font-bold text-white">Trade History</h2>
         <button
           onClick={() => onOpenTradeEntry()}
-          className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500 text-white text-sm font-semibold rounded-xl active:scale-[0.97] hover:bg-emerald-400 transition-all shrink-0"
+          className="flex items-center gap-1.5 px-3 py-2 bg-blue-500 text-white text-sm font-semibold rounded-xl active:scale-[0.97] hover:bg-blue-400 transition-all shrink-0"
         >
           <Plus className="w-4 h-4" /> Log
         </button>
@@ -202,7 +202,7 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
             return (
               <button key={v.id} onClick={() => setView(v.id)}
                 className={'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold rounded-lg transition-all ' +
-                  (on ? 'bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30' : 'text-slate-500 hover:text-slate-300')}>
+                  (on ? 'bg-blue-500/15 text-blue-400 ring-1 ring-blue-500/30' : 'text-slate-500 hover:text-slate-300')}>
                 <Ic className="w-3.5 h-3.5" /> {v.l}
               </button>
             );
@@ -250,7 +250,7 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
                 {t.setupTags && t.setupTags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1.5">
                     {t.setupTags.slice(0, 2).map(tag => (
-                      <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400/70 font-medium">{tag}</span>
+                      <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400/70 font-medium">{tag}</span>
                     ))}
                     {t.setupTags.length > 2 && <span className="text-[9px] text-slate-600">+{t.setupTags.length - 2}</span>}
                   </div>
@@ -336,7 +336,7 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
           </p>
           <button
             onClick={() => onOpenTradeEntry()}
-            className="mt-5 flex items-center gap-1.5 px-5 py-2.5 bg-emerald-500 text-white text-sm font-semibold rounded-xl active:scale-[0.97] hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
+            className="mt-5 flex items-center gap-1.5 px-5 py-2.5 bg-blue-500 text-white text-sm font-semibold rounded-xl active:scale-[0.97] hover:bg-blue-400 transition-all shadow-lg shadow-blue-500/20"
           >
             <Plus className="w-4 h-4" /> Log First Trade
           </button>

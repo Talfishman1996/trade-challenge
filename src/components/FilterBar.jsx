@@ -99,7 +99,7 @@ export default function FilterBar({ trades, onFilter }) {
             onClick={() => toggleQuick(qf.id)}
             className={'px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all shrink-0 ' +
               (active.has(qf.id)
-                ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30'
+                ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/30'
                 : 'bg-elevated text-slate-500 hover:text-slate-300')}
           >
             {qf.label}
@@ -144,7 +144,7 @@ export default function FilterBar({ trades, onFilter }) {
               onClick={() => toggleTag(tag)}
               className={'px-2 py-1 rounded text-[10px] font-medium transition-all ' +
                 (tagFilter.has(tag)
-                  ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30'
+                  ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/30'
                   : 'bg-elevated text-slate-600 hover:text-slate-400')}
             >
               {tag}

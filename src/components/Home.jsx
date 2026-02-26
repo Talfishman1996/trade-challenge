@@ -238,7 +238,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
           </div>
           <button
             onClick={() => onOpenTradeEntry()}
-            className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-bold text-sm rounded-xl active:scale-[0.98] hover:from-emerald-500 hover:to-emerald-400 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
+            className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold text-sm rounded-xl active:scale-[0.98] hover:from-blue-500 hover:to-blue-400 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
           >
             <TrendingUp className="w-5 h-5" /> Log Your First Trade
           </button>

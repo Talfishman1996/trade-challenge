@@ -202,7 +202,7 @@ export default function App() {
       <style dangerouslySetInnerHTML={{ __html: [
         '.no-sb::-webkit-scrollbar{display:none}.no-sb{-ms-overflow-style:none;scrollbar-width:none}',
         '@keyframes gPulse{0%,100%{opacity:.3}50%{opacity:.65}}.gps-pulse{animation:gPulse 2.5s infinite}',
-        '@keyframes breathe{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,0)}50%{box-shadow:0 0 20px 4px rgba(16,185,129,.15)}}.card-breathe{animation:breathe 3s ease-in-out infinite}',
+        '@keyframes breathe{0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,0)}50%{box-shadow:0 0 20px 4px rgba(59,130,246,.15)}}.card-breathe{animation:breathe 3s ease-in-out infinite}',
         '@keyframes riseFloat{0%{transform:translateY(0) scale(1);opacity:.6}100%{transform:translateY(-40px) scale(.3);opacity:0}}.particle{position:absolute;width:3px;height:3px;border-radius:50%;animation:riseFloat 3s ease-out infinite}',
         '@keyframes trailPulse{0%,100%{stroke-opacity:.4}50%{stroke-opacity:.8}}.trail-pulse{animation:trailPulse 2s ease-in-out infinite}',
         '@keyframes ringPulse{0%{r:14;opacity:.5}100%{r:28;opacity:0}}.ring-pulse{animation:ringPulse 2s ease-out infinite}',
@@ -216,10 +216,10 @@ export default function App() {
           <div className="w-full max-w-sm space-y-6">
             {/* Branding */}
             <div className="text-center space-y-3">
-              <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mx-auto">
-                <Shield className="w-7 h-7 text-emerald-400" />
+              <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 mx-auto">
+                <Shield className="w-7 h-7 text-blue-400" />
               </div>
-              <h1 className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-white font-bold text-xl tracking-widest">TRADEVAULT</h1>
+              <h1 className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-white font-bold text-xl tracking-widest">TRADEVAULT</h1>
               <p className="text-sm text-slate-500">$20K → $10M Challenge</p>
             </div>
 
@@ -230,7 +230,7 @@ export default function App() {
               </p>
               <button
                 onClick={startFresh}
-                className="w-full flex items-center justify-center gap-2 py-3.5 bg-emerald-500 text-white text-sm font-bold rounded-xl active:scale-[0.98] hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
+                className="w-full flex items-center justify-center gap-2 py-3.5 bg-blue-500 text-white text-sm font-bold rounded-xl active:scale-[0.98] hover:bg-blue-400 transition-all shadow-lg shadow-blue-500/20"
               >
                 <Zap className="w-4 h-4" /> Get Started
               </button>
@@ -254,7 +254,7 @@ export default function App() {
                 value={syncGateInput}
                 onChange={e => { setSyncGateInput(e.target.value); setSyncGateStatus(''); }}
                 placeholder="Paste sync link from other device"
-                className="w-full bg-deep border border-line rounded-xl text-sm text-white py-3 px-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all placeholder:text-slate-700"
+                className="w-full bg-deep border border-line rounded-xl text-sm text-white py-3 px-4 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all placeholder:text-slate-700"
               />
               {syncGateStatus === 'error' && (
                 <p className="text-xs text-red-400">Could not find that sync. Check the link and try again.</p>
@@ -279,15 +279,15 @@ export default function App() {
       {/* Loading state while checking sync */}
       {syncGate === null && (
         <div className="fixed inset-0 z-[100] bg-deep flex items-center justify-center">
-          <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
+          <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
         </div>
       )}
 
       {/* Desktop Sidebar (md+) */}
       <aside className="hidden md:flex flex-col items-center fixed left-0 top-0 bottom-0 w-16 bg-surface border-r border-line z-50 py-5 gap-1">
         {/* Logo */}
-        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 mb-6">
-          <Shield className="w-5 h-5 text-emerald-400" />
+        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 mb-6">
+          <Shield className="w-5 h-5 text-blue-400" />
         </div>
 
         {/* Nav items */}
@@ -301,14 +301,14 @@ export default function App() {
               title={t.label}
               className={'relative flex items-center justify-center w-10 h-10 rounded-xl transition-all ' +
                 (active
-                  ? 'bg-emerald-500/10 text-emerald-400'
+                  ? 'bg-blue-500/10 text-blue-400'
                   : 'text-slate-500 hover:text-slate-300 hover:bg-elevated')}
             >
               <Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 1.5} />
               {active && (
                 <motion.div
                   layoutId="sideTab"
-                  className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-emerald-500 rounded-r-full"
+                  className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-blue-500 rounded-r-full"
                   transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                 />
               )}
@@ -317,7 +317,7 @@ export default function App() {
         })}
         <button
           onClick={() => openTradeEntry()}
-          className="mt-auto flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-500 text-white hover:bg-emerald-400 transition-all active:scale-95 shadow-lg shadow-emerald-500/25"
+          className="mt-auto flex items-center justify-center w-10 h-10 rounded-xl bg-blue-500 text-white hover:bg-blue-400 transition-all active:scale-95 shadow-lg shadow-blue-500/25"
           title="Log Trade"
         >
           <Plus className="w-5 h-5" strokeWidth={2.5} />
@@ -354,7 +354,7 @@ export default function App() {
               <React.Fragment key={t.id}>
                 {i === 2 && (
                   <button onClick={() => openTradeEntry()} className="relative -mt-5">
-                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/25 active:scale-95 transition-transform">
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/25 active:scale-95 transition-transform">
                       <Plus className="w-7 h-7 text-white" strokeWidth={2.5} />
                     </div>
                   </button>
@@ -362,14 +362,14 @@ export default function App() {
                 <button
                   onClick={() => setTab(t.id)}
                   className={'flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-colors min-w-[48px] ' +
-                    (active ? 'text-emerald-400' : 'text-slate-500 active:text-slate-300')}
+                    (active ? 'text-blue-400' : 'text-slate-500 active:text-slate-300')}
                 >
                   <Icon className={'w-5 h-5 transition-transform ' + (active ? 'scale-110' : '')} strokeWidth={active ? 2.5 : 1.5} />
                   <span className={'text-xs font-medium ' + (active ? 'font-semibold' : '')}>{t.label}</span>
                   {active && (
                     <motion.div
                       layoutId="bottomTab"
-                      className="absolute bottom-1 w-6 h-0.5 bg-emerald-500 rounded-full"
+                      className="absolute bottom-1 w-6 h-0.5 bg-blue-500 rounded-full"
                       transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                     />
                   )}
@@ -478,7 +478,7 @@ export default function App() {
             <div className={'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium shadow-xl backdrop-blur-sm ' +
               (toast.type === 'error'
                 ? 'bg-red-500/90 text-white'
-                : 'bg-emerald-500/90 text-white')}>
+                : 'bg-blue-500/90 text-white')}>
               {toast.type === 'error' ? <AlertTriangle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
               {toast.msg}
             </div>
