@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { TrendingUp, TrendingDown, Download, Upload, Trash2, Undo2, Redo2, Plus, List, CalendarDays, Pencil, X } from 'lucide-react';
+import React, { useState, useRef, useMemo } from 'react';
+import { TrendingUp, TrendingDown, Download, Upload, Trash2, Undo2, Redo2, Plus, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fmt } from '../math/format.js';
 import { getPhaseName, rN } from '../math/risk.js';
@@ -25,11 +25,10 @@ const calcDuration = (open, close) => {
   return `${days}d`;
 };
 
-export default function Trades({ trades, settings, onOpenTradeEntry }) {
+export default function Trades({ trades, settings, onOpenTradeEntry, showToast }) {
   const [showConfirm, setShowConfirm] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
-  const [view, setView] = useState('calendar');
   const fileRef = useRef(null);
 
   const handleExport = () => exportJSON(trades);
@@ -37,7 +36,7 @@ export default function Trades({ trades, settings, onOpenTradeEntry }) {
   const handleImport = e => {
     const file = e.target.files?.[0];
     if (!file) return;
-    importJSON(file, trades, msg => alert(msg));
+    importJSON(file, trades, msg => showToast?.(msg, 'error'));
     e.target.value = '';
   };
 
@@ -52,8 +51,26 @@ export default function Trades({ trades, settings, onOpenTradeEntry }) {
     setExpandedId(null);
   };
 
-  const eq = trades.currentEquity;
-  const list = [...trades.trades].reverse();
+  // Group trades by month (reverse chronological)
+  const monthGroups = useMemo(() => {
+    if (trades.trades.length === 0) return [];
+    const groups = {};
+    for (const t of trades.trades) {
+      const key = t.date.slice(0, 7);
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(t);
+    }
+    return Object.entries(groups)
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([key, monthTrades]) => ({
+        key,
+        label: new Date(key + '-15').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        trades: [...monthTrades].sort((a, b) => new Date(b.date) - new Date(a.date)),
+        pnl: monthTrades.reduce((s, t) => s + t.pnl, 0),
+        wins: monthTrades.filter(t => t.pnl > 0).length,
+        count: monthTrades.length,
+      }));
+  }, [trades.trades]);
 
   return (
     <div className="px-4 pt-4 md:pt-6 pb-6 max-w-lg md:max-w-3xl mx-auto space-y-4">
@@ -68,124 +85,78 @@ export default function Trades({ trades, settings, onOpenTradeEntry }) {
         </button>
       </div>
 
-      {/* Summary Stats (compact 3-stat row) */}
-      {trades.stats.totalTrades > 0 && view === 'list' && (
-        <div className="flex items-center justify-between px-1">
-          <div className="text-center">
-            <div className={'text-base font-bold font-mono tabular-nums ' + (trades.stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
-              {(trades.stats.totalPnl >= 0 ? '+$' : '-$') + fmt(Math.abs(trades.stats.totalPnl))}
+      {/* Stats Dashboard — always visible */}
+      {trades.stats.totalTrades > 0 && (
+        <div className="bg-surface rounded-2xl p-4 border border-line space-y-3">
+          {/* Win Rate with progress bar */}
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs text-slate-500 font-medium mb-1">Win Rate</div>
+              <div className={'text-2xl font-bold font-mono tabular-nums tracking-tight ' +
+                (trades.stats.winRate >= 60 ? 'text-emerald-400' : trades.stats.winRate >= 50 ? 'text-amber-400' : 'text-rose-400')}>
+                {trades.stats.winRate.toFixed(1)}%
+              </div>
             </div>
-            <div className="text-xs text-slate-500 mt-0.5">Total P&L</div>
-          </div>
-          <div className="w-px h-8 bg-line/50" />
-          <div className="text-center">
-            <div className={'text-base font-bold font-mono tabular-nums ' + (trades.stats.winRate >= 50 ? 'text-emerald-400' : 'text-rose-400')}>
-              {trades.stats.winRate.toFixed(0)}%
-            </div>
-            <div className="text-xs text-slate-500 mt-0.5">Win Rate</div>
-          </div>
-          <div className="w-px h-8 bg-line/50" />
-          <div className="text-center">
-            <div className={'text-base font-bold font-mono tabular-nums ' + (trades.stats.profitFactor >= 1 ? 'text-emerald-400' : 'text-rose-400')}>
-              {trades.stats.profitFactor === Infinity ? '\u221E' : trades.stats.profitFactor.toFixed(2)}
-            </div>
-            <div className="text-xs text-slate-500 mt-0.5">Profit Factor</div>
-          </div>
-        </div>
-      )}
-
-      {/* View Toggle */}
-      {trades.trades.length > 0 && (
-        <div className="flex gap-1 bg-surface rounded-xl p-1 border border-line">
-          {[
-            { id: 'calendar', l: 'Calendar', ic: CalendarDays },
-            { id: 'list', l: 'List', ic: List },
-          ].map(v => {
-            const Ic = v.ic;
-            const on = view === v.id;
-            return (
-              <button key={v.id} onClick={() => setView(v.id)}
-                className={'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold rounded-lg transition-all ' +
-                  (on ? 'bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30' : 'text-slate-500 hover:text-slate-300')}>
-                <Ic className="w-3.5 h-3.5" /> {v.l}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Trade Calendar Grid View */}
-      {view === 'calendar' && trades.trades.length > 0 && (
-        <div className="space-y-3">
-          {/* Win Rate header */}
-          <div className="bg-surface rounded-2xl p-4 border border-line">
-            <div className="flex items-center justify-between">
+            <div className="flex gap-4 text-center">
               <div>
-                <div className="text-xs text-slate-500 font-medium mb-1">Win Rate</div>
-                <div className={'text-3xl font-bold font-mono tabular-nums tracking-tight ' +
-                  (trades.stats.winRate >= 50 ? 'text-emerald-400' : 'text-rose-400')}>
-                  {trades.stats.winRate.toFixed(1)}%
-                </div>
+                <div className="text-lg font-bold font-mono text-emerald-400 tabular-nums">{trades.stats.wins}</div>
+                <div className="text-xs text-slate-500">wins</div>
               </div>
-              <div className="flex gap-4 text-center">
-                <div>
-                  <div className="text-lg font-bold font-mono text-emerald-400 tabular-nums">{trades.stats.wins}</div>
-                  <div className="text-xs text-slate-500">wins</div>
-                </div>
-                <div className="w-px bg-elevated" />
-                <div>
-                  <div className="text-lg font-bold font-mono text-rose-400 tabular-nums">{trades.stats.losses}</div>
-                  <div className="text-xs text-slate-500">losses</div>
-                </div>
+              <div className="w-px bg-elevated" />
+              <div>
+                <div className="text-lg font-bold font-mono text-rose-400 tabular-nums">{trades.stats.losses}</div>
+                <div className="text-xs text-slate-500">losses</div>
               </div>
-            </div>
-            <div className="flex mt-3 h-1.5 rounded-full overflow-hidden bg-elevated">
-              <div className="bg-emerald-500 rounded-l-full transition-all duration-500"
-                style={{ width: trades.stats.winRate + '%' }} />
-              <div className="bg-rose-500 rounded-r-full transition-all duration-500"
-                style={{ width: (100 - trades.stats.winRate) + '%' }} />
             </div>
           </div>
+          <div className="flex h-1.5 rounded-full overflow-hidden bg-elevated">
+            <div className="bg-emerald-500 rounded-l-full transition-all duration-500"
+              style={{ width: trades.stats.winRate + '%' }} />
+            <div className="bg-rose-500 rounded-r-full transition-all duration-500"
+              style={{ width: (100 - trades.stats.winRate) + '%' }} />
+          </div>
 
-          {/* Trade Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {trades.trades.map(t => {
-              const isWin = t.pnl >= 0;
-              const rMult = t.riskDol > 0 ? Math.abs(t.pnl) / t.riskDol : 0;
-              return (
-                <motion.div
-                  key={t.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  onClick={() => openEdit(t)}
-                  className={'rounded-xl p-3 border-l-[3px] relative overflow-hidden cursor-pointer active:scale-[0.97] transition-transform ' +
-                    (isWin
-                      ? 'bg-emerald-500/5 border-l-emerald-500 border border-emerald-500/10'
-                      : 'bg-rose-500/5 border-l-rose-500 border border-rose-500/10')}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-slate-500 font-semibold">#{t.id}</span>
-                      <DirBadge dir={t.direction} />
-                    </div>
-                    <span className="text-xs text-slate-500 font-mono leading-tight text-right">
-                      {t.openDate
-                        ? <>{fmtDate(t.openDate)}<span className="text-slate-700"> {'\u2192'} </span>{fmtDate(t.date)}{calcDuration(t.openDate, t.date) && <span className="text-slate-700 ml-0.5">({calcDuration(t.openDate, t.date)})</span>}</>
-                        : fmtDate(t.date)}
-                    </span>
-                  </div>
-                  <div className={'text-lg font-bold font-mono tabular-nums tracking-tight ' +
-                    (isWin ? 'text-emerald-400' : 'text-rose-400')}>
-                    {(isWin ? '+$' : '-$') + fmt(Math.abs(t.pnl))}
-                  </div>
-                  <div className={'text-xs font-mono font-semibold mt-0.5 ' +
-                    (isWin ? 'text-emerald-400/60' : 'text-rose-400/60')}>
-                    {t.riskDol > 0 ? (isWin ? '+' : '-') + rMult.toFixed(1) + 'R' : '--'}
-                  </div>
-                  <Pencil className="absolute top-2.5 right-2.5 w-3 h-3 text-slate-700" />
-                </motion.div>
-              );
-            })}
+          {/* 2x3 stats grid */}
+          <div className="grid grid-cols-3 gap-2 pt-1">
+            <div className="text-center">
+              <div className={'text-base font-bold font-mono tabular-nums ' + (trades.stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                {(trades.stats.totalPnl >= 0 ? '+$' : '-$') + fmt(Math.abs(trades.stats.totalPnl))}
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5">Total P&L</div>
+            </div>
+            <div className="text-center">
+              <div className={'text-base font-bold font-mono tabular-nums ' + (trades.stats.profitFactor >= 1 ? 'text-emerald-400' : 'text-rose-400')}>
+                {trades.stats.profitFactor === Infinity ? '\u221E' : trades.stats.profitFactor.toFixed(2)}
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5">Profit Factor</div>
+            </div>
+            <div className="text-center">
+              <div className={'text-base font-bold font-mono tabular-nums ' + (trades.stats.expectancy >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                {trades.stats.expectancy >= 0 ? '+$' : '-$'}{fmt(Math.abs(trades.stats.expectancy))}
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5">Expectancy</div>
+            </div>
+            <div className="text-center">
+              <div className={'text-base font-bold font-mono tabular-nums ' +
+                (trades.stats.streakType === 'win' ? 'text-emerald-400' : trades.stats.streakType === 'loss' ? 'text-rose-400' : 'text-slate-400')}>
+                {trades.stats.currentStreak > 0
+                  ? (trades.stats.streakType === 'win' ? '+' : '-') + trades.stats.currentStreak
+                  : '--'}
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5">Streak</div>
+            </div>
+            <div className="text-center">
+              <div className="text-base font-bold font-mono tabular-nums text-rose-400">
+                {trades.stats.maxDrawdownPct > 0 ? '-' + trades.stats.maxDrawdownPct.toFixed(1) + '%' : '--'}
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5">Max DD</div>
+            </div>
+            <div className="text-center">
+              <div className="text-base font-bold font-mono tabular-nums text-slate-300">
+                {trades.stats.totalTrades}
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5">Trades</div>
+            </div>
           </div>
         </div>
       )}
@@ -221,123 +192,142 @@ export default function Trades({ trades, settings, onOpenTradeEntry }) {
         </div>
       )}
 
-      {/* Trade List View */}
-      {view === 'list' && list.length > 0 && (
-        <div className="space-y-2">
-          <AnimatePresence>
-            {list.map(t => {
-              const isExpanded = expandedId === t.id;
-              const isDeleting = deleteConfirm === t.id;
-              return (
-                <motion.div
-                  key={t.id}
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className={'bg-surface rounded-xl border overflow-hidden transition-colors ' +
-                    (t.pnl >= 0 ? 'border-emerald-500/15' : 'border-rose-500/15') +
-                    (isExpanded ? ' ring-1 ring-slate-700' : '')}
-                >
-                  {/* Trade row - compact, tap to expand */}
-                  <div
-                    className="px-3 py-2.5 cursor-pointer active:bg-elevated/30 transition-colors"
-                    onClick={() => setExpandedId(isExpanded ? null : t.id)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-500 font-mono w-7">#{t.id}</span>
-                        <DirBadge dir={t.direction} />
-                        <span className="text-[11px] text-slate-600 font-mono">
-                          {t.openDate
-                            ? <>{fmtDate(t.openDate)}<span className="text-slate-700"> {'\u2192'} </span>{fmtDate(t.date)}{calcDuration(t.openDate, t.date) && <span className="text-slate-700"> ({calcDuration(t.openDate, t.date)})</span>}</>
-                            : fmtDate(t.date)}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <span className={'text-sm font-bold font-mono tabular-nums ' +
-                          (t.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
-                          {(t.pnl >= 0 ? '+$' : '-$') + fmt(Math.abs(t.pnl))}
-                        </span>
-                        <div className="text-xs text-slate-500 font-mono tabular-nums">${fmt(t.equityAfter)}</div>
-                      </div>
-                    </div>
-                  </div>
+      {/* Trade List — grouped by month */}
+      {monthGroups.length > 0 && (
+        <div className="space-y-5">
+          {monthGroups.map(group => (
+            <div key={group.key} className="space-y-2">
+              {/* Month header */}
+              <div className="flex items-center justify-between px-1">
+                <span className="text-sm font-semibold text-slate-400">{group.label}</span>
+                <div className="flex items-center gap-2.5">
+                  <span className={'text-xs font-bold font-mono tabular-nums ' + (group.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                    {(group.pnl >= 0 ? '+$' : '-$') + fmt(Math.abs(group.pnl))}
+                  </span>
+                  <span className="text-xs text-slate-600 font-mono">{group.count} trades</span>
+                </div>
+              </div>
 
-                  {/* Expanded action bar */}
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.15 }}
-                        className="border-t border-line/60"
+              {/* Trades in month */}
+              <AnimatePresence>
+                {group.trades.map(t => {
+                  const isExpanded = expandedId === t.id;
+                  const isDeleting = deleteConfirm === t.id;
+                  const isWin = t.pnl >= 0;
+                  return (
+                    <motion.div
+                      key={t.id}
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className={'bg-surface rounded-xl border-l-[3px] border overflow-hidden transition-colors ' +
+                        (isWin
+                          ? 'border-l-emerald-500 border-emerald-500/15'
+                          : 'border-l-rose-500 border-rose-500/15') +
+                        (isExpanded ? ' ring-1 ring-slate-700' : '')}
+                    >
+                      {/* Trade row */}
+                      <div
+                        className="px-3 py-2.5 cursor-pointer active:bg-elevated/30 transition-colors"
+                        onClick={() => setExpandedId(isExpanded ? null : t.id)}
                       >
-                        {/* Trade details */}
-                        <div className="px-3 pt-2.5 pb-1">
-                          <div className="grid grid-cols-4 gap-2 text-center text-xs">
-                            <div>
-                              <div className="text-slate-500">Side</div>
-                              <div className={'font-bold ' + (t.direction === 'short' ? 'text-violet-400' : 'text-blue-400')}>
-                                {t.direction === 'short' ? 'Short' : t.direction === 'long' ? 'Long' : '--'}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="text-slate-500">Risk</div>
-                              <div className="font-bold font-mono text-slate-300">{(t.riskPct * 100).toFixed(1)}%</div>
-                            </div>
-                            <div>
-                              <div className="text-slate-500">Phase</div>
-                              <div className="font-bold text-slate-300">{getPhaseName(t.phase)}</div>
-                            </div>
-                            <div>
-                              <div className="text-slate-500">R-Mult</div>
-                              <div className={'font-bold font-mono ' + (t.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
-                                {t.riskDol > 0 ? (t.pnl >= 0 ? '+' : '') + (t.pnl / t.riskDol).toFixed(1) + 'R' : '--'}
-                              </div>
-                            </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-xs text-slate-500 font-mono min-w-7 shrink-0">#{t.id}</span>
+                            <DirBadge dir={t.direction} />
+                            {t.ticker && <span className="text-xs text-slate-400 font-mono font-bold truncate">{t.ticker}</span>}
+                            <span className="text-xs text-slate-600 font-mono shrink-0">
+                              {t.openDate
+                                ? <>{fmtDate(t.openDate)}<span className="text-slate-700"> {'\u2192'} </span>{fmtDate(t.date)}{calcDuration(t.openDate, t.date) && <span className="text-slate-700"> ({calcDuration(t.openDate, t.date)})</span>}</>
+                                : fmtDate(t.date)}
+                            </span>
                           </div>
-                          {t.notes && <p className="text-xs text-slate-400 mt-2 italic">{t.notes}</p>}
+                          <div className="text-right shrink-0 ml-2">
+                            <span className={'text-sm font-bold font-mono tabular-nums ' +
+                              (isWin ? 'text-emerald-400' : 'text-rose-400')}>
+                              {(isWin ? '+$' : '-$') + fmt(Math.abs(t.pnl))}
+                            </span>
+                            <div className="text-xs text-slate-500 font-mono tabular-nums">${fmt(t.equityAfter)}</div>
+                          </div>
                         </div>
-                        {/* Actions */}
-                        {isDeleting ? (
-                          <div className="flex gap-2 p-3 pt-2">
-                            <button
-                              onClick={() => handleDelete(t.id)}
-                              className="flex-1 py-2 bg-rose-500/15 text-rose-400 text-xs font-semibold rounded-lg border border-rose-500/30 active:scale-[0.97] transition-all"
-                            >
-                              Confirm Delete
-                            </button>
-                            <button
-                              onClick={() => setDeleteConfirm(null)}
-                              className="flex-1 py-2 bg-elevated text-slate-400 text-xs font-medium rounded-lg active:scale-[0.97] transition-all"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex gap-2 p-3 pt-2">
-                            <button
-                              onClick={() => openEdit(t)}
-                              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-elevated text-slate-300 text-xs font-semibold rounded-lg hover:bg-line active:scale-[0.97] transition-all"
-                            >
-                              <Pencil className="w-3.5 h-3.5" /> Edit
-                            </button>
-                            <button
-                              onClick={() => setDeleteConfirm(t.id)}
-                              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-elevated text-rose-400 text-xs font-semibold rounded-lg hover:bg-rose-500/10 active:scale-[0.97] transition-all"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" /> Delete
-                            </button>
-                          </div>
+                      </div>
+
+                      {/* Expanded details */}
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.15 }}
+                            className="border-t border-line/60"
+                          >
+                            <div className="px-3 pt-2.5 pb-1">
+                              <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                                <div>
+                                  <div className="text-slate-500">Side</div>
+                                  <div className={'font-bold ' + (t.direction === 'short' ? 'text-violet-400' : 'text-blue-400')}>
+                                    {t.direction === 'short' ? 'Short' : t.direction === 'long' ? 'Long' : '--'}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-slate-500">Risk</div>
+                                  <div className="font-bold font-mono text-slate-300">{(t.riskPct * 100).toFixed(1)}%</div>
+                                </div>
+                                <div>
+                                  <div className="text-slate-500">Phase</div>
+                                  <div className="font-bold text-slate-300">{getPhaseName(t.phase)}</div>
+                                </div>
+                                <div>
+                                  <div className="text-slate-500">R-Mult</div>
+                                  <div className={'font-bold font-mono ' + (t.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                                    {t.riskDol > 0 ? (t.pnl >= 0 ? '+' : '') + (t.pnl / t.riskDol).toFixed(1) + 'R' : '--'}
+                                  </div>
+                                </div>
+                              </div>
+                              {t.notes && <p className="text-xs text-slate-400 mt-2 italic">{t.notes}</p>}
+                            </div>
+                            {/* Actions */}
+                            {isDeleting ? (
+                              <div className="flex gap-2 p-3 pt-2">
+                                <button
+                                  onClick={() => handleDelete(t.id)}
+                                  className="flex-1 py-2 bg-rose-500/15 text-rose-400 text-xs font-semibold rounded-lg border border-rose-500/30 active:scale-[0.97] transition-all"
+                                >
+                                  Confirm Delete
+                                </button>
+                                <button
+                                  onClick={() => setDeleteConfirm(null)}
+                                  className="flex-1 py-2 bg-elevated text-slate-400 text-xs font-medium rounded-lg active:scale-[0.97] transition-all"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex gap-2 p-3 pt-2">
+                                <button
+                                  onClick={() => openEdit(t)}
+                                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-elevated text-slate-300 text-xs font-semibold rounded-lg hover:bg-line active:scale-[0.97] transition-all"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" /> Edit
+                                </button>
+                                <button
+                                  onClick={() => setDeleteConfirm(t.id)}
+                                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-elevated text-rose-400 text-xs font-semibold rounded-lg hover:bg-rose-500/10 active:scale-[0.97] transition-all"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                                </button>
+                              </div>
+                            )}
+                          </motion.div>
                         )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+                      </AnimatePresence>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+          ))}
         </div>
       )}
 

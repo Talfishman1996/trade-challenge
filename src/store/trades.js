@@ -67,7 +67,7 @@ export const useTrades = (initialEquity = 20000) => {
   };
 
   // Add a new trade
-  const addTrade = useCallback((pnl, notes = '', date = null, openDate = null, direction = 'long') => {
+  const addTrade = useCallback((pnl, notes = '', date = null, openDate = null, direction = 'long', ticker = '') => {
     undoStackRef.current = []; setUndoStackLen(0);
     const eq = data.trades.length > 0
       ? data.trades[data.trades.length - 1].equityAfter
@@ -81,6 +81,7 @@ export const useTrades = (initialEquity = 20000) => {
       openDate: openDate || null,
       pnl,
       direction: direction || 'long',
+      ticker: ticker || '',
       equityBefore: eq,
       equityAfter,
       riskPct: rN(eq),
@@ -101,7 +102,7 @@ export const useTrades = (initialEquity = 20000) => {
   }, [data, initialEquity, persist]);
 
   // Edit an existing trade
-  const editTrade = useCallback((id, { pnl, notes, date, openDate, direction }) => {
+  const editTrade = useCallback((id, { pnl, notes, date, openDate, direction, ticker }) => {
     undoStackRef.current = []; setUndoStackLen(0);
     const idx = data.trades.findIndex(t => t.id === id);
     if (idx === -1) return;
@@ -112,6 +113,7 @@ export const useTrades = (initialEquity = 20000) => {
     if (date !== undefined) updated[idx].date = date;
     if (openDate !== undefined) updated[idx].openDate = openDate;
     if (direction !== undefined) updated[idx].direction = direction;
+    if (ticker !== undefined) updated[idx].ticker = ticker;
     const baseEq = data.initialEquity || initialEquity;
     const recalced = recalcChain(updated, idx, baseEq);
     persist({ ...data, trades: recalced });

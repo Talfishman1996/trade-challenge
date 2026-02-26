@@ -6,6 +6,8 @@ const DEFAULTS = {
   winRate: 60,
   rewardRatio: 1.5,
   initialEquity: 20000,
+  drawdownAlertPct: 20,
+  maxRiskPct: 0,
 };
 
 const load = () => {
@@ -35,5 +37,7 @@ export const useSettings = () => {
     setWinRate: v => set('winRate', v),
     setRewardRatio: v => set('rewardRatio', v),
     setInitialEquity: v => set('initialEquity', v),
+    setDrawdownAlertPct: v => set('drawdownAlertPct', v),
+    setMaxRiskPct: v => set('maxRiskPct', v),
   };
 };

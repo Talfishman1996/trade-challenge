@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, Component } from 'react';
-import { Home as HomeIcon, List, BarChart3, Settings as SettingsIcon, AlertTriangle, Shield, Plus, Link2, Zap, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback, Component } from 'react';
+import { Home as HomeIcon, List, BarChart3, Settings as SettingsIcon, AlertTriangle, Shield, Plus, Link2, Zap, Loader2, CheckCircle2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSettings } from '../store/settings.js';
 import { useTrades } from '../store/trades.js';
@@ -47,6 +47,13 @@ export default function App() {
   const [syncGate, setSyncGate] = useState(null); // null = checking, 'ready' = proceed, 'setup' = show gate
   const [syncGateInput, setSyncGateInput] = useState('');
   const [syncGateStatus, setSyncGateStatus] = useState(''); // '', 'connecting', 'error', 'creating'
+  const [toast, setToast] = useState(null);
+  const toastTimer = useRef(null);
+  const showToast = useCallback((msg, type = 'success') => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ msg, type });
+    toastTimer.current = setTimeout(() => setToast(null), 2500);
+  }, []);
 
   // Stable ref to latest syncFromCloud — survives across re-renders
   const syncRef = trades.syncRef;
@@ -162,6 +169,14 @@ export default function App() {
     setShowTradeEntry(false);
     setEditTradeData(null);
   };
+  const handleTradeSave = (...args) => {
+    trades.addTrade(...args);
+    showToast('Trade logged');
+  };
+  const handleTradeEdit = (id, changes) => {
+    trades.editTrade(id, changes);
+    showToast('Trade updated');
+  };
 
   return (
     <div className="min-h-screen bg-deep text-slate-200 flex flex-col md:flex-row">
@@ -189,36 +204,16 @@ export default function App() {
               <p className="text-sm text-slate-500">$20K → $10M Challenge</p>
             </div>
 
-            {/* Connect option */}
-            <div className="bg-surface rounded-2xl p-5 border border-line space-y-3">
-              <div className="flex items-center gap-2">
-                <Link2 className="w-4 h-4 text-emerald-400" />
-                <span className="text-sm font-medium text-white">Connect to Existing Sync</span>
-              </div>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Already using TradeVault on another device? Paste the sync link from Settings on that device.
+            {/* Primary: Get Started */}
+            <div className="space-y-2">
+              <p className="text-xs text-slate-500 text-center leading-relaxed">
+                Your trades sync across devices automatically. No account needed.
               </p>
-              <input
-                type="text"
-                value={syncGateInput}
-                onChange={e => { setSyncGateInput(e.target.value); setSyncGateStatus(''); }}
-                placeholder="Paste sync link or blob ID"
-                className="w-full bg-deep border border-line rounded-xl text-sm text-white py-3 px-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all placeholder:text-slate-700"
-              />
-              {syncGateStatus === 'error' && (
-                <p className="text-xs text-red-400">Could not find that sync. Check the link and try again.</p>
-              )}
               <button
-                onClick={() => connectToSync(syncGateInput)}
-                disabled={!syncGateInput.trim() || syncGateStatus === 'connecting'}
-                className={'w-full py-3 rounded-xl font-bold text-sm transition-all ' +
-                  (syncGateInput.trim() && syncGateStatus !== 'connecting'
-                    ? 'bg-emerald-500 text-white active:scale-[0.98] hover:bg-emerald-400'
-                    : 'bg-elevated text-slate-600 cursor-not-allowed')}
+                onClick={startFresh}
+                className="w-full flex items-center justify-center gap-2 py-3.5 bg-emerald-500 text-white text-sm font-bold rounded-xl active:scale-[0.98] hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
               >
-                {syncGateStatus === 'connecting' ? (
-                  <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Connecting...</span>
-                ) : 'Connect'}
+                <Zap className="w-4 h-4" /> Get Started
               </button>
             </div>
 
@@ -229,13 +224,35 @@ export default function App() {
               <div className="flex-1 h-px bg-line" />
             </div>
 
-            {/* Start fresh option */}
-            <button
-              onClick={startFresh}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-surface text-slate-400 text-sm font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
-            >
-              <Zap className="w-4 h-4" /> Start Fresh
-            </button>
+            {/* Secondary: Connect to existing */}
+            <div className="bg-surface rounded-2xl p-4 border border-line space-y-3">
+              <div className="flex items-center gap-2">
+                <Link2 className="w-4 h-4 text-slate-500" />
+                <span className="text-sm font-medium text-slate-400">Already have a sync?</span>
+              </div>
+              <input
+                type="text"
+                value={syncGateInput}
+                onChange={e => { setSyncGateInput(e.target.value); setSyncGateStatus(''); }}
+                placeholder="Paste sync link from other device"
+                className="w-full bg-deep border border-line rounded-xl text-sm text-white py-3 px-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all placeholder:text-slate-700"
+              />
+              {syncGateStatus === 'error' && (
+                <p className="text-xs text-red-400">Could not find that sync. Check the link and try again.</p>
+              )}
+              <button
+                onClick={() => connectToSync(syncGateInput)}
+                disabled={!syncGateInput.trim() || syncGateStatus === 'connecting'}
+                className={'w-full py-2.5 rounded-xl font-semibold text-sm transition-all ' +
+                  (syncGateInput.trim() && syncGateStatus !== 'connecting'
+                    ? 'bg-elevated text-slate-300 border border-line active:scale-[0.98] hover:bg-line'
+                    : 'bg-elevated text-slate-600 border border-line cursor-not-allowed')}
+              >
+                {syncGateStatus === 'connecting' ? (
+                  <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Connecting...</span>
+                ) : 'Connect'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -300,9 +317,9 @@ export default function App() {
           >
             <ErrorBoundary key={tab}>
               {tab === 'home' && <Home trades={trades} settings={settings} onOpenTradeEntry={openTradeEntry} />}
-              {tab === 'trades' && <Trades trades={trades} settings={settings} onOpenTradeEntry={openTradeEntry} />}
+              {tab === 'trades' && <Trades trades={trades} settings={settings} onOpenTradeEntry={openTradeEntry} showToast={showToast} />}
               {tab === 'analysis' && <Analysis trades={trades} settings={settings} />}
-              {tab === 'settings' && <Settings settings={settings} trades={trades} />}
+              {tab === 'settings' && <Settings settings={settings} trades={trades} showToast={showToast} />}
             </ErrorBoundary>
           </motion.div>
         </AnimatePresence>
@@ -348,8 +365,8 @@ export default function App() {
       <TradeEntry
         open={showTradeEntry}
         onClose={closeTradeEntry}
-        onSave={trades.addTrade}
-        onEdit={trades.editTrade}
+        onSave={handleTradeSave}
+        onEdit={handleTradeEdit}
         editData={editTradeData}
         currentEquity={trades.currentEquity}
         nextRisk={trades.nextRisk}
@@ -359,6 +376,27 @@ export default function App() {
       <AnimatePresence>
         {trades.celebration && (
           <Celebration milestone={trades.celebration} onDismiss={trades.clearCelebration} />
+        )}
+      </AnimatePresence>
+
+      {/* Toast */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[70]"
+          >
+            <div className={'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium shadow-xl backdrop-blur-sm ' +
+              (toast.type === 'error'
+                ? 'bg-red-500/90 text-white'
+                : 'bg-emerald-500/90 text-white')}>
+              {toast.type === 'error' ? <AlertTriangle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+              {toast.msg}
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

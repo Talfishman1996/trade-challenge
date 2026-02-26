@@ -24,6 +24,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
   const [direction, setDirection] = useState('long');
   const [isWin, setIsWin] = useState(true);
   const [amount, setAmount] = useState('');
+  const [ticker, setTicker] = useState('');
   const [notes, setNotes] = useState('');
   const [tradeDate, setTradeDate] = useState('');
   const [openDate, setOpenDate] = useState('');
@@ -35,12 +36,14 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
         setDirection(editData.direction || 'long');
         setIsWin(editData.pnl >= 0);
         setAmount(String(Math.abs(editData.pnl)));
+        setTicker(editData.ticker || '');
         setNotes(editData.notes || '');
         setTradeDate(editData.date ? editData.date.slice(0, 10) : localDate());
         setOpenDate(editData.openDate ? editData.openDate.slice(0, 10) : '');
       } else {
         setDirection('long');
         setAmount('');
+        setTicker('');
         setNotes('');
         setIsWin(true);
         setTradeDate(localDate());
@@ -58,10 +61,10 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
 
     if (isEditMode && onEdit) {
       const dateISO = tradeDate ? new Date(tradeDate + 'T12:00:00').toISOString() : undefined;
-      onEdit(editData.id, { pnl, notes, date: dateISO, openDate: openDateISO, direction });
+      onEdit(editData.id, { pnl, notes, date: dateISO, openDate: openDateISO, direction, ticker });
     } else {
       const dateISO = tradeDate ? new Date(tradeDate + 'T12:00:00').toISOString() : null;
-      onSave(pnl, notes, dateISO, openDateISO, direction);
+      onSave(pnl, notes, dateISO, openDateISO, direction, ticker);
     }
     onClose();
   };
@@ -94,6 +97,10 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+            drag="y"
+            dragConstraints={{ top: 0 }}
+            dragElastic={0.2}
+            onDragEnd={(_, info) => { if (info.offset.y > 120) onClose(); }}
             className="fixed bottom-0 inset-x-0 z-[60] bg-surface border-t border-line rounded-t-3xl max-h-[85vh] flex flex-col"
           >
             <div className="flex-1 overflow-y-auto min-h-0">
@@ -175,6 +182,18 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                     className="w-full bg-deep border border-line rounded-xl text-xl font-bold font-mono text-white py-4 pl-14 pr-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all duration-150 tabular-nums placeholder:text-slate-700"
                   />
                 </div>
+              </div>
+
+              {/* Ticker */}
+              <div className="mb-5">
+                <label className="text-xs text-slate-500 font-medium mb-2 block">Ticker (optional)</label>
+                <input
+                  type="text"
+                  value={ticker}
+                  onChange={e => setTicker(e.target.value.toUpperCase())}
+                  placeholder="e.g., AAPL, ES, BTC"
+                  className="w-full bg-deep border border-line rounded-xl text-sm font-mono font-bold text-white py-3 px-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all placeholder:text-slate-700 placeholder:font-normal"
+                />
               </div>
 
               {/* Notes */}

@@ -36,7 +36,7 @@ function RiskGauge({ riskPct, riskDol }) {
 export default function Home({ trades, settings, onOpenTradeEntry }) {
   const [showCurve, setShowCurve] = useState(false);
   const [showPhaseInfo, setShowPhaseInfo] = useState(false);
-  const [dismissAlert, setDismissAlert] = useState(false);
+  const [dismissAlert, setDismissAlert] = useState(() => sessionStorage.getItem('dd-dismiss') === '1');
   const [exploreEq, setExploreEq] = useState(20000);
 
   const eq = trades.currentEquity;
@@ -46,9 +46,6 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
   const rColor = rSev === 'safe' ? 'text-amber-400' : rSev === 'elevated' ? 'text-orange-400' : 'text-red-500';
   const hasTrades = trades.stats.totalTrades > 0;
   const inProfit = trades.stats.totalPnl >= 0;
-  const heroInnerGlow = !hasTrades ? 'transparent'
-    : inProfit ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)';
-  const shimmerHighlight = inProfit ? '#a5f3fc' : '#fca5a5';
 
   const nextMilestone = trades.milestones.find(m => !m.achieved);
 
@@ -143,34 +140,10 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
 
         {/* Card body */}
         <div className="relative rounded-2xl p-6 overflow-hidden" style={{ background: '#0D1117' }}>
-          {/* Topographic contour pattern */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 300 120" preserveAspectRatio="xMidYMid slice" style={{ opacity: 0.035 }}>
-            <path d="M-10,95 Q40,70 100,82 T200,72 T310,62" fill="none" stroke="white" strokeWidth="0.8" />
-            <path d="M-10,75 Q55,52 115,65 T215,55 T310,46" fill="none" stroke="white" strokeWidth="0.8" />
-            <path d="M-10,55 Q60,37 125,48 T225,38 T310,30" fill="none" stroke="white" strokeWidth="0.8" />
-            <path d="M-10,35 Q48,20 105,28 T205,20 T310,14" fill="none" stroke="white" strokeWidth="0.8" />
-          </svg>
-
-          {/* Breathing inner glow */}
-          <div className="absolute inset-0 pointer-events-none rounded-2xl"
-            style={{
-              background: `radial-gradient(ellipse at 50% 0%, ${heroInnerGlow} 0%, transparent 65%)`,
-              animation: 'glow-breathe 4s ease-in-out infinite',
-            }} />
-
           <div className="relative text-center">
             <div className="text-xs text-slate-500 uppercase tracking-[0.2em] font-medium mb-2">Portfolio Value</div>
 
-            {/* The number — with shimmer sweep */}
-            <div className="text-5xl font-bold font-mono tabular-nums tracking-tight"
-              style={{
-                background: `linear-gradient(110deg, #ffffff 35%, ${shimmerHighlight} 50%, #ffffff 65%)`,
-                backgroundSize: '200% 100%',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                animation: 'text-shimmer 5s ease-in-out infinite',
-              }}>
+            <div className="text-5xl font-bold font-mono tabular-nums tracking-tight text-white">
               ${fmt(eq)}
             </div>
 
@@ -206,7 +179,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
               {' '}Max historical: {'\u2212'}{trades.stats.maxDrawdownPct.toFixed(1)}%.
             </div>
           </div>
-          <button onClick={() => setDismissAlert(true)} className="p-2 -m-2 text-slate-600 hover:text-slate-400 transition-colors shrink-0">
+          <button onClick={() => { setDismissAlert(true); sessionStorage.setItem('dd-dismiss', '1'); }} className="p-2 -m-2 text-slate-600 hover:text-slate-400 transition-colors shrink-0">
             <X className="w-3.5 h-3.5" />
           </button>
         </motion.div>

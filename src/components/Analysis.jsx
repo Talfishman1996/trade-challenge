@@ -22,8 +22,8 @@ import EquityCurve from './EquityCurve.jsx';
 
 const TABS = [
   { id: 'performance', l: 'Performance', ic: TrendingUp },
-  { id: 'risk', l: 'Risk Model', ic: Shield },
-  { id: 'simulation', l: 'Simulation', ic: Rocket },
+  { id: 'scenarios', l: 'Scenarios', ic: Shield },
+  { id: 'projections', l: 'Projections', ic: Rocket },
 ];
 
 function SectionDivider({ title, subtitle }) {
@@ -44,6 +44,7 @@ export default function Analysis({ trades, settings }) {
   const [tab, setTab] = useState('performance');
   const [simSeed, setSimSeed] = useState(555);
   const [explorerEq, setExplorerEq] = useState(realEq);
+  const [showCompare, setShowCompare] = useState(false);
 
   const eq = useReal ? realEq : simEq;
   const wr = settings.winRate;
@@ -165,17 +166,6 @@ export default function Analysis({ trades, settings }) {
         )}
       </div>
 
-      {/* Metric Cards */}
-      <div className="grid grid-cols-2 gap-2">
-        <MetricCard label="Active Risk %" tip="Position size as % of equity. Green means at or below Kelly optimal (33%)." barColor={riskSeverity(rp) === 'safe' ? 'bg-emerald-500' : riskSeverity(rp) === 'elevated' ? 'bg-amber-500' : 'bg-rose-500'}>
-          <div className={'text-xl font-bold font-mono tracking-tight tabular-nums ' + (riskSeverity(rp) === 'safe' ? 'text-emerald-400' : riskSeverity(rp) === 'elevated' ? 'text-amber-400' : 'text-rose-400')}>{rp.toFixed(1)}%</div>
-          <div className={'text-xs mt-1 font-medium ' + (kellyMult > 1.05 ? 'text-amber-500/80' : 'text-emerald-400/80')}>
-            {kellyPct > 0 ? (kellyMult > 1.05 ? '\u26A0 ' + kellyMult.toFixed(2) + '\u00D7 Kelly' : '\u2713 ' + kellyMult.toFixed(2) + '\u00D7 Kelly') : '\u2620 No edge'}
-          </div>
-        </MetricCard>
-        <MetricCard label="Capital at Risk" tip="Maximum dollar loss on a single trade at current risk level." barColor={riskSeverity(rp) === 'safe' ? 'bg-emerald-500' : riskSeverity(rp) === 'elevated' ? 'bg-amber-500' : 'bg-rose-500'} sub="max single-trade loss" value={{ text: fmt(rd), className: riskSeverity(rp) === 'safe' ? 'text-emerald-400' : riskSeverity(rp) === 'elevated' ? 'text-amber-400' : 'text-rose-400' }} />
-      </div>
-
       {/* 3 Analysis Tabs */}
       <div className="flex gap-1 pb-px border-b border-line/80">
         {TABS.map(t => {
@@ -281,9 +271,20 @@ export default function Analysis({ trades, settings }) {
               </div>
             )}
 
-            {/* ═══════════════ RISK MODEL TAB ═══════════════ */}
-            {tab === 'risk' && (
+            {/* ═══════════════ SCENARIOS TAB ═══════════════ */}
+            {tab === 'scenarios' && (
               <div className="space-y-0">
+                {/* Risk Metrics */}
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <MetricCard label="Active Risk %" tip="Position size as % of equity. Green means at or below Kelly optimal (33%)." barColor={riskSeverity(rp) === 'safe' ? 'bg-emerald-500' : riskSeverity(rp) === 'elevated' ? 'bg-amber-500' : 'bg-rose-500'}>
+                    <div className={'text-xl font-bold font-mono tracking-tight tabular-nums ' + (riskSeverity(rp) === 'safe' ? 'text-emerald-400' : riskSeverity(rp) === 'elevated' ? 'text-amber-400' : 'text-rose-400')}>{rp.toFixed(1)}%</div>
+                    <div className={'text-xs mt-1 font-medium ' + (kellyMult > 1.05 ? 'text-amber-500/80' : 'text-emerald-400/80')}>
+                      {kellyPct > 0 ? (kellyMult > 1.05 ? '\u26A0 ' + kellyMult.toFixed(2) + '\u00D7 Kelly' : '\u2713 ' + kellyMult.toFixed(2) + '\u00D7 Kelly') : '\u2620 No edge'}
+                    </div>
+                  </MetricCard>
+                  <MetricCard label="Capital at Risk" tip="Maximum dollar loss on a single trade at current risk level." barColor={riskSeverity(rp) === 'safe' ? 'bg-emerald-500' : riskSeverity(rp) === 'elevated' ? 'bg-amber-500' : 'bg-rose-500'} sub="max single-trade loss" value={{ text: fmt(rd), className: riskSeverity(rp) === 'safe' ? 'text-emerald-400' : riskSeverity(rp) === 'elevated' ? 'text-amber-400' : 'text-rose-400' }} />
+                </div>
+
                 {/* Risk Explorer */}
                 <div>
                   <h3 className="text-base font-bold text-white">Risk Explorer</h3>
@@ -407,35 +408,55 @@ export default function Analysis({ trades, settings }) {
                   </div>
                 </div>
 
-                {/* Compare */}
-                <SectionDivider title="Model Comparison" subtitle="Three risk frameworks side by side." />
-                <div className="space-y-3">
-                  <div className="h-48">
-                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                      <LineChart data={curveData} margin={cm}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                        <XAxis dataKey="lx" type="number" domain={[LOG_MIN, LOG_MAX]} ticks={LXT} tickFormatter={v => fmt(unlg(v))} stroke="#475569" tick={AX} axisLine={false} tickLine={false} dy={10} />
-                        <YAxis tickFormatter={v => v + '%'} stroke="#475569" tick={AX} domain={[0, 100]} axisLine={false} tickLine={false} />
-                        <RTooltip contentStyle={TT} formatter={(v, nm) => [v.toFixed(1) + '%', { fixed: 'Fixed 33%', old: '\u2153 Power', cur: '\u2154 Power' }[nm]]} labelFormatter={v => fmt(unlg(v))} isAnimationActive={false} cursor={{ stroke: '#475569', strokeDasharray: '4 4' }} />
-                        <ReferenceLine x={lg(dEq)} stroke="#475569" strokeDasharray="4 4" strokeOpacity={0.5} />
-                        <Line type="monotone" dataKey="fixed" stroke="#f59e0b" strokeWidth={2} dot={false} strokeDasharray="6 4" isAnimationActive={false} />
-                        <Line type="monotone" dataKey="old" stroke="#3b82f6" strokeWidth={2} dot={false} isAnimationActive={false} />
-                        <Line type="monotone" dataKey="cur" stroke="#10b981" strokeWidth={2.5} dot={false} isAnimationActive={false} activeDot={{ r: 4, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <ChartLegend />
+                {/* Compare — collapsible */}
+                <div className="pt-5 mt-5 border-t border-line/60">
+                  <button onClick={() => setShowCompare(v => !v)} className="flex items-center justify-between w-full group">
+                    <div>
+                      <h3 className="text-sm font-bold text-white text-left">Model Comparison</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">Three risk frameworks side by side.</p>
+                    </div>
+                    <ChevronDown className={'w-4 h-4 text-slate-500 transition-transform duration-200 ' + (showCompare ? 'rotate-180' : '')} />
+                  </button>
+                  <AnimatePresence>
+                    {showCompare && (
+                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+                        <div className="space-y-3 pt-3">
+                          <div className="h-48">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                              <LineChart data={curveData} margin={cm}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                                <XAxis dataKey="lx" type="number" domain={[LOG_MIN, LOG_MAX]} ticks={LXT} tickFormatter={v => fmt(unlg(v))} stroke="#475569" tick={AX} axisLine={false} tickLine={false} dy={10} />
+                                <YAxis tickFormatter={v => v + '%'} stroke="#475569" tick={AX} domain={[0, 100]} axisLine={false} tickLine={false} />
+                                <RTooltip contentStyle={TT} formatter={(v, nm) => [v.toFixed(1) + '%', { fixed: 'Fixed 33%', old: '\u2153 Power', cur: '\u2154 Power' }[nm]]} labelFormatter={v => fmt(unlg(v))} isAnimationActive={false} cursor={{ stroke: '#475569', strokeDasharray: '4 4' }} />
+                                <ReferenceLine x={lg(dEq)} stroke="#475569" strokeDasharray="4 4" strokeOpacity={0.5} />
+                                <Line type="monotone" dataKey="fixed" stroke="#f59e0b" strokeWidth={2} dot={false} strokeDasharray="6 4" isAnimationActive={false} />
+                                <Line type="monotone" dataKey="old" stroke="#3b82f6" strokeWidth={2} dot={false} isAnimationActive={false} />
+                                <Line type="monotone" dataKey="cur" stroke="#10b981" strokeWidth={2.5} dot={false} isAnimationActive={false} activeDot={{ r: 4, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <ChartLegend />
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             )}
 
-            {/* ═══════════════ SIMULATION TAB ═══════════════ */}
-            {tab === 'simulation' && (
+            {/* ═══════════════ PROJECTIONS TAB ═══════════════ */}
+            {tab === 'projections' && (
               <div className="space-y-4">
                 {/* GPS Journey */}
-                {dEq < 110000 && (
+                {dEq < 110000 ? (
                   <div className="flex justify-center">
                     <GPSJourney equity={dEq} compact={false} />
+                  </div>
+                ) : (
+                  <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4 text-center">
+                    <div className="text-2xl mb-2">{'\uD83C\uDFD4\uFE0F'}</div>
+                    <div className="text-sm font-bold text-emerald-400 mb-1">Beyond the Map</div>
+                    <p className="text-xs text-slate-500">Portfolio at ${fmt(dEq)} has surpassed the GPS range. The decay model is protecting your gains.</p>
                   </div>
                 )}
 

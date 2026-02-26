@@ -3,7 +3,7 @@ import { Download, Upload, Trash2, FileSpreadsheet, Cloud, CloudOff, RefreshCw, 
 import { getSyncConfig, clearSyncConfig, saveSyncConfig, extractBlobId, pullFromBlobId, createBlob } from '../sync.js';
 import { exportJSON, exportCSV, importJSON } from '../utils/dataIO.js';
 
-export default function Settings({ settings, trades }) {
+export default function Settings({ settings, trades, showToast }) {
   const [showConfirm, setShowConfirm] = useState(null);
   const [eqInput, setEqInput] = useState(String(settings.initialEquity));
   const fileRef = useRef(null);
@@ -33,7 +33,7 @@ export default function Settings({ settings, trades }) {
   const handleImport = e => {
     const file = e.target.files?.[0];
     if (!file) return;
-    importJSON(file, trades, msg => alert(msg));
+    importJSON(file, trades, msg => showToast?.(msg, 'error'));
     e.target.value = '';
   };
 
@@ -158,9 +158,65 @@ export default function Settings({ settings, trades }) {
         <p className="text-xs text-slate-500">Your challenge starting balance. Only affects new calculations if no trades logged.</p>
       </div>
 
-      {/* Analysis Defaults */}
+      {/* Risk Controls */}
       <div className="bg-surface rounded-2xl p-4 border border-line space-y-4">
-        <div className="text-xs text-slate-500 font-medium">Analysis Defaults</div>
+        <div>
+          <div className="text-xs text-slate-500 font-medium">Risk Controls</div>
+          <p className="text-xs text-slate-600 mt-1">Alerts and overrides for risk management.</p>
+        </div>
+
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <label className="text-sm text-slate-400">Drawdown Alert</label>
+            <span className="text-sm text-amber-400 font-bold font-mono bg-deep px-2 py-0.5 rounded-md border border-line tabular-nums">
+              {settings.drawdownAlertPct}%
+            </span>
+          </div>
+          <input
+            type="range"
+            min={5}
+            max={50}
+            step={5}
+            value={settings.drawdownAlertPct}
+            onChange={e => settings.setDrawdownAlertPct(+e.target.value)}
+            className="w-full"
+          />
+          <div className="flex justify-between text-xs text-slate-600 mt-1">
+            <span>5%</span>
+            <span>50%</span>
+          </div>
+        </div>
+
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <label className="text-sm text-slate-400">Max Risk Override</label>
+            <span className={'text-sm font-bold font-mono bg-deep px-2 py-0.5 rounded-md border border-line tabular-nums ' +
+              (settings.maxRiskPct === 0 ? 'text-slate-500' : 'text-red-400')}>
+              {settings.maxRiskPct === 0 ? 'Off' : settings.maxRiskPct + '%'}
+            </span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={20}
+            step={1}
+            value={settings.maxRiskPct}
+            onChange={e => settings.setMaxRiskPct(+e.target.value)}
+            className="w-full"
+          />
+          <div className="flex justify-between text-xs text-slate-600 mt-1">
+            <span>Off</span>
+            <span>20%</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Simulation Parameters */}
+      <div className="bg-surface rounded-2xl p-4 border border-line space-y-4">
+        <div>
+          <div className="text-xs text-slate-500 font-medium">Simulation Parameters</div>
+          <p className="text-xs text-slate-600 mt-1">Defaults for Monte Carlo projections and scenarios.</p>
+        </div>
 
         <div>
           <div className="flex justify-between items-center mb-2">
@@ -178,6 +234,10 @@ export default function Settings({ settings, trades }) {
             onChange={e => settings.setWinRate(+e.target.value)}
             className="w-full"
           />
+          <div className="flex justify-between text-xs text-slate-600 mt-1">
+            <span>40%</span>
+            <span>75%</span>
+          </div>
         </div>
 
         <div>
@@ -196,6 +256,10 @@ export default function Settings({ settings, trades }) {
             onChange={e => settings.setRewardRatio(+e.target.value / 10)}
             className="w-full"
           />
+          <div className="flex justify-between text-xs text-slate-600 mt-1">
+            <span>1.0:1</span>
+            <span>4.0:1</span>
+          </div>
         </div>
       </div>
 
