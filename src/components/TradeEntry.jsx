@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, TrendingUp, TrendingDown, Calendar, ArrowUpRight, ArrowDownRight, Clock, ChevronDown } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, Calendar, ArrowUpRight, ArrowDownRight, Clock, ChevronDown, ImagePlus, Trash2 } from 'lucide-react';
 import { fmt } from '../math/format.js';
 import TagPicker from './TagPicker.jsx';
-import { SETUP_TAGS, EMOTION_TAGS, MISTAKE_TAGS } from '../store/tags.js';
+import { SETUP_TAGS, EMOTION_TAGS, MISTAKE_TAGS, STRATEGY_OPTIONS } from '../store/tags.js';
+import { compressImage, saveImage, getImage, deleteImage } from '../utils/imageDB.js';
 
 const localDate = () => {
   const d = new Date();
@@ -21,20 +22,93 @@ const calcDuration = (open, close) => {
   return `${days} days`;
 };
 
+// Collapsible section wrapper
+const Section = ({ title, open, onToggle, count, children }) => (
+  <div className="mb-4">
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex items-center justify-between w-full text-xs text-slate-500 font-medium mb-2"
+    >
+      <span>{title}{count > 0 && <span className="text-emerald-400 ml-1">({count})</span>}</span>
+      <ChevronDown className={'w-3.5 h-3.5 transition-transform ' + (open ? 'rotate-180' : '')} />
+    </button>
+    {open && (
+      <div className="bg-deep rounded-xl border border-line p-3">
+        {children}
+      </div>
+    )}
+  </div>
+);
+
 export default function TradeEntry({ open, onClose, onSave, onEdit, editData, currentEquity, nextRisk }) {
   const isEditMode = !!editData;
+
+  // Core fields
   const [direction, setDirection] = useState('long');
   const [isWin, setIsWin] = useState(true);
   const [amount, setAmount] = useState('');
   const [ticker, setTicker] = useState('');
-  const [notes, setNotes] = useState('');
-  const [tradeDate, setTradeDate] = useState('');
-  const [openDate, setOpenDate] = useState('');
+
+  // Strategy fields
+  const [strategy, setStrategy] = useState('');
+  const [contracts, setContracts] = useState('');
+  const [entryPrice, setEntryPrice] = useState('');
+  const [exitPrice, setExitPrice] = useState('');
+
+  // Tag fields
   const [setupTags, setSetupTags] = useState([]);
   const [emotionTags, setEmotionTags] = useState([]);
   const [mistakes, setMistakes] = useState([]);
+
+  // Timing fields
+  const [tradeDate, setTradeDate] = useState('');
+  const [openDate, setOpenDate] = useState('');
+  const [entryTime, setEntryTime] = useState('');
+  const [exitTime, setExitTime] = useState('');
+
+  // Media
+  const [imageKeys, setImageKeys] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
+
+  // Advanced
+  const [mae, setMae] = useState('');
+  const [mfe, setMfe] = useState('');
+
+  // Notes
+  const [notes, setNotes] = useState('');
+
+  // Section toggles
+  const [strategyOpen, setStrategyOpen] = useState(false);
   const [tagsOpen, setTagsOpen] = useState(false);
+  const [mediaOpen, setMediaOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+
   const inputRef = useRef(null);
+  const imageInputRef = useRef(null);
+
+  // Load image previews from IndexedDB
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    const loadPreviews = async () => {
+      const urls = [];
+      for (const key of imageKeys) {
+        const url = await getImage(key);
+        if (url && !cancelled) urls.push({ key, url });
+      }
+      if (!cancelled) setImagePreviews(urls);
+    };
+    loadPreviews();
+    return () => { cancelled = true; };
+  }, [open, imageKeys]);
+
+  // Cleanup blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      imagePreviews.forEach(p => URL.revokeObjectURL(p.url));
+    };
+  }, [imagePreviews]);
 
   useEffect(() => {
     if (open) {
@@ -43,26 +117,52 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
         setIsWin(editData.pnl >= 0);
         setAmount(String(Math.abs(editData.pnl)));
         setTicker(editData.ticker || '');
-        setNotes(editData.notes || '');
-        setTradeDate(editData.date ? editData.date.slice(0, 10) : localDate());
-        setOpenDate(editData.openDate ? editData.openDate.slice(0, 10) : '');
+        setStrategy(editData.strategy || '');
+        setContracts(editData.contracts ? String(editData.contracts) : '');
+        setEntryPrice(editData.entryPrice ? String(editData.entryPrice) : '');
+        setExitPrice(editData.exitPrice ? String(editData.exitPrice) : '');
         setSetupTags(editData.setupTags || []);
         setEmotionTags(editData.emotionTags || []);
         setMistakes(editData.mistakes || []);
-        const hasTags = (editData.setupTags?.length || editData.emotionTags?.length || editData.mistakes?.length);
-        setTagsOpen(!!hasTags);
+        setTradeDate(editData.date ? editData.date.slice(0, 10) : localDate());
+        setOpenDate(editData.openDate ? editData.openDate.slice(0, 10) : '');
+        setEntryTime(editData.entryTime || '');
+        setExitTime(editData.exitTime || '');
+        setImageKeys(editData.images || []);
+        setMae(editData.mae != null ? String(editData.mae) : '');
+        setMfe(editData.mfe != null ? String(editData.mfe) : '');
+        setNotes(editData.notes || '');
+
+        // Auto-open sections with data
+        setStrategyOpen(!!(editData.strategy || editData.contracts || editData.entryPrice || editData.exitPrice));
+        setTagsOpen(!!(editData.setupTags?.length || editData.emotionTags?.length || editData.mistakes?.length));
+        setMediaOpen(!!(editData.images?.length));
+        setAdvancedOpen(!!(editData.mae != null || editData.mfe != null));
       } else {
         setDirection('long');
+        setIsWin(true);
         setAmount('');
         setTicker('');
-        setNotes('');
-        setIsWin(true);
-        setTradeDate(localDate());
-        setOpenDate('');
+        setStrategy('');
+        setContracts('');
+        setEntryPrice('');
+        setExitPrice('');
         setSetupTags([]);
         setEmotionTags([]);
         setMistakes([]);
+        setTradeDate(localDate());
+        setOpenDate('');
+        setEntryTime('');
+        setExitTime('');
+        setImageKeys([]);
+        setImagePreviews([]);
+        setMae('');
+        setMfe('');
+        setNotes('');
+        setStrategyOpen(false);
         setTagsOpen(false);
+        setMediaOpen(false);
+        setAdvancedOpen(false);
       }
       setTimeout(() => inputRef.current?.focus(), 300);
     }
@@ -74,14 +174,25 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
     const pnl = isWin ? num : -num;
     const openDateISO = openDate ? new Date(openDate + 'T12:00:00').toISOString() : null;
 
-    const tagFields = { setupTags, emotionTags, mistakes };
+    const tradeFields = {
+      pnl, direction, ticker, notes,
+      setupTags, emotionTags, mistakes,
+      strategy,
+      contracts: contracts ? parseFloat(contracts) : 0,
+      entryPrice: entryPrice ? parseFloat(entryPrice) : 0,
+      exitPrice: exitPrice ? parseFloat(exitPrice) : 0,
+      entryTime, exitTime,
+      images: imageKeys,
+      mae: mae ? parseFloat(mae) : null,
+      mfe: mfe ? parseFloat(mfe) : null,
+    };
 
     if (isEditMode && onEdit) {
       const dateISO = tradeDate ? new Date(tradeDate + 'T12:00:00').toISOString() : undefined;
-      onEdit(editData.id, { pnl, notes, date: dateISO, openDate: openDateISO, direction, ticker, ...tagFields });
+      onEdit(editData.id, { ...tradeFields, date: dateISO, openDate: openDateISO });
     } else {
       const dateISO = tradeDate ? new Date(tradeDate + 'T12:00:00').toISOString() : null;
-      onSave({ pnl, notes, date: dateISO, openDate: openDateISO, direction, ticker, ...tagFields });
+      onSave({ ...tradeFields, date: dateISO, openDate: openDateISO });
     }
     onClose();
   };
@@ -93,7 +204,39 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
     setAmount(val);
   };
 
+  const handleDecimalInput = (setter) => (e) => {
+    const raw = e.target.value.replace(/[^0-9.]/g, '');
+    const parts = raw.split('.');
+    setter(parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : raw);
+  };
+
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    for (const file of files) {
+      const compressed = await compressImage(file, 200);
+      if (compressed) {
+        const key = `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        await saveImage(key, compressed);
+        setImageKeys(prev => [...prev, key]);
+      }
+    }
+    e.target.value = '';
+  };
+
+  const removeImage = async (key) => {
+    await deleteImage(key);
+    setImageKeys(prev => prev.filter(k => k !== key));
+    setImagePreviews(prev => {
+      const p = prev.find(x => x.key === key);
+      if (p) URL.revokeObjectURL(p.url);
+      return prev.filter(x => x.key !== key);
+    });
+  };
+
   const duration = calcDuration(openDate, tradeDate);
+
+  const tagCount = setupTags.length + emotionTags.length + mistakes.length;
+  const strategyCount = [strategy, contracts, entryPrice, exitPrice].filter(Boolean).length;
 
   return (
     <AnimatePresence>
@@ -118,7 +261,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
             dragConstraints={{ top: 0 }}
             dragElastic={0.2}
             onDragEnd={(_, info) => { if (info.offset.y > 120) onClose(); }}
-            className="fixed bottom-0 inset-x-0 z-[60] bg-surface border-t border-line rounded-t-3xl max-h-[85vh] flex flex-col"
+            className="fixed bottom-0 inset-x-0 z-[60] bg-surface border-t border-line rounded-t-3xl max-h-[90vh] flex flex-col"
           >
             <div className="flex-1 overflow-y-auto min-h-0">
             <div className="p-5 pb-3 max-w-lg mx-auto">
@@ -138,7 +281,9 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                 </button>
               </div>
 
-              {/* Win/Loss — primary toggle */}
+              {/* === CORE SECTION (always open) === */}
+
+              {/* Win/Loss toggle */}
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <button
                   onClick={() => setIsWin(true)}
@@ -160,7 +305,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                 </button>
               </div>
 
-              {/* Long/Short — toggle pill */}
+              {/* Direction toggle */}
               <div className="flex bg-deep rounded-xl border border-line p-0.5 mb-5">
                 <button
                   onClick={() => setDirection('long')}
@@ -182,8 +327,8 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                 </button>
               </div>
 
-              {/* Amount input */}
-              <div className="mb-5">
+              {/* P&L Amount */}
+              <div className="mb-4">
                 <label className="text-xs text-slate-500 font-medium mb-2 block">P&L Amount</label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-slate-600">
@@ -203,7 +348,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
 
               {/* Ticker */}
               <div className="mb-5">
-                <label className="text-xs text-slate-500 font-medium mb-2 block">Ticker (optional)</label>
+                <label className="text-xs text-slate-500 font-medium mb-2 block">Ticker</label>
                 <input
                   type="text"
                   value={ticker}
@@ -213,39 +358,72 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                 />
               </div>
 
-              {/* Notes */}
-              <div className="mb-5">
-                <label className="text-xs text-slate-500 font-medium mb-2 block">Notes (optional)</label>
-                <input
-                  type="text"
-                  value={notes}
-                  onChange={e => setNotes(e.target.value)}
-                  placeholder="e.g., AAPL breakout"
-                  className="w-full bg-deep border border-line rounded-xl text-sm text-white py-3 px-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all placeholder:text-slate-700"
-                />
-              </div>
-
-              {/* Tags — collapsible section */}
-              <div className="mb-5">
-                <button
-                  type="button"
-                  onClick={() => setTagsOpen(!tagsOpen)}
-                  className="flex items-center justify-between w-full text-xs text-slate-500 font-medium mb-2"
-                >
-                  <span>Tags {(setupTags.length + emotionTags.length + mistakes.length) > 0 && <span className="text-emerald-400 ml-1">({setupTags.length + emotionTags.length + mistakes.length})</span>}</span>
-                  <ChevronDown className={'w-3.5 h-3.5 transition-transform ' + (tagsOpen ? 'rotate-180' : '')} />
-                </button>
-                {tagsOpen && (
-                  <div className="space-y-4 bg-deep rounded-xl border border-line p-3">
-                    <TagPicker tags={SETUP_TAGS} selected={setupTags} onChange={setSetupTags} color="emerald" label="Setup" />
-                    <TagPicker tags={EMOTION_TAGS} selected={emotionTags} onChange={setEmotionTags} color="amber" label="Emotion" />
-                    <TagPicker tags={MISTAKE_TAGS} selected={mistakes} onChange={setMistakes} color="rose" label="Mistakes" />
+              {/* === STRATEGY SECTION (collapsible) === */}
+              <Section title="Strategy & Sizing" open={strategyOpen} onToggle={() => setStrategyOpen(!strategyOpen)} count={strategyCount}>
+                <div className="space-y-3">
+                  {/* Strategy dropdown */}
+                  <div>
+                    <label className="text-[10px] text-slate-600 font-medium mb-1 block">Strategy</label>
+                    <select
+                      value={strategy}
+                      onChange={e => setStrategy(e.target.value)}
+                      className="w-full bg-surface border border-line rounded-lg text-sm text-white py-2.5 px-3 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all [color-scheme:dark]"
+                    >
+                      <option value="">Select strategy...</option>
+                      {STRATEGY_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
                   </div>
-                )}
-              </div>
+                  {/* Contracts + Entry/Exit Price — 2-column grid */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-[10px] text-slate-600 font-medium mb-1 block">Size</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={contracts}
+                        onChange={e => setContracts(e.target.value.replace(/[^0-9]/g, ''))}
+                        placeholder="0"
+                        className="w-full bg-surface border border-line rounded-lg text-sm font-mono text-white py-2.5 px-2.5 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all tabular-nums placeholder:text-slate-700"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-600 font-medium mb-1 block">Entry $</label>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={entryPrice}
+                        onChange={handleDecimalInput(setEntryPrice)}
+                        placeholder="0.00"
+                        className="w-full bg-surface border border-line rounded-lg text-sm font-mono text-white py-2.5 px-2.5 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all tabular-nums placeholder:text-slate-700"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-600 font-medium mb-1 block">Exit $</label>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={exitPrice}
+                        onChange={handleDecimalInput(setExitPrice)}
+                        placeholder="0.00"
+                        className="w-full bg-surface border border-line rounded-lg text-sm font-mono text-white py-2.5 px-2.5 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all tabular-nums placeholder:text-slate-700"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </Section>
 
-              {/* Dates — clean horizontal rows */}
-              <div className="mb-6 space-y-2">
+              {/* === TAGS SECTION (collapsible) === */}
+              <Section title="Tags" open={tagsOpen} onToggle={() => setTagsOpen(!tagsOpen)} count={tagCount}>
+                <div className="space-y-4">
+                  <TagPicker tags={SETUP_TAGS} selected={setupTags} onChange={setSetupTags} color="emerald" label="Setup" />
+                  <TagPicker tags={EMOTION_TAGS} selected={emotionTags} onChange={setEmotionTags} color="amber" label="Emotion" />
+                  <TagPicker tags={MISTAKE_TAGS} selected={mistakes} onChange={setMistakes} color="rose" label="Mistakes" />
+                </div>
+              </Section>
+
+              {/* === TIMING SECTION (always visible) === */}
+              <div className="mb-4 space-y-2">
+                <div className="text-xs text-slate-500 font-medium">Timing</div>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1.5 w-16 shrink-0">
                     <Calendar className="w-3.5 h-3.5 text-slate-600" />
@@ -257,6 +435,12 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                     onChange={e => setOpenDate(e.target.value)}
                     max={tradeDate || localDate()}
                     className="flex-1 bg-deep border border-line rounded-lg text-base text-white py-2.5 px-3 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all [color-scheme:dark]"
+                  />
+                  <input
+                    type="time"
+                    value={entryTime}
+                    onChange={e => setEntryTime(e.target.value)}
+                    className="w-24 bg-deep border border-line rounded-lg text-sm font-mono text-white py-2.5 px-2 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all [color-scheme:dark]"
                   />
                 </div>
                 <div className="flex items-center gap-3">
@@ -272,6 +456,12 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                     max={localDate()}
                     className="flex-1 bg-deep border border-line rounded-lg text-base text-white py-2.5 px-3 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all [color-scheme:dark]"
                   />
+                  <input
+                    type="time"
+                    value={exitTime}
+                    onChange={e => setExitTime(e.target.value)}
+                    className="w-24 bg-deep border border-line rounded-lg text-sm font-mono text-white py-2.5 px-2 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all [color-scheme:dark]"
+                  />
                 </div>
                 {duration && (
                   <div className="flex items-center justify-end gap-1 text-[11px] text-slate-500 font-mono">
@@ -280,9 +470,96 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                 )}
               </div>
 
+              {/* === MEDIA SECTION (collapsible) === */}
+              <Section title="Chart Screenshots" open={mediaOpen} onToggle={() => setMediaOpen(!mediaOpen)} count={imageKeys.length}>
+                <div className="space-y-3">
+                  {/* Image previews */}
+                  {imagePreviews.length > 0 && (
+                    <div className="flex gap-2 flex-wrap">
+                      {imagePreviews.map(p => (
+                        <div key={p.key} className="relative w-20 h-20 rounded-lg overflow-hidden border border-line group">
+                          <img src={p.url} alt="" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(p.key)}
+                            className="absolute top-0.5 right-0.5 p-1 bg-black/70 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="w-3 h-3 text-rose-400" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {/* Upload button */}
+                  <button
+                    type="button"
+                    onClick={() => imageInputRef.current?.click()}
+                    className="flex items-center justify-center gap-2 w-full py-3 bg-surface border border-dashed border-line rounded-lg text-xs text-slate-400 hover:text-slate-300 hover:border-slate-500 transition-all"
+                  >
+                    <ImagePlus className="w-4 h-4" />
+                    {imageKeys.length > 0 ? 'Add More' : 'Add Chart Screenshot'}
+                  </button>
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    capture="environment"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                  />
+                  <p className="text-[10px] text-slate-600">Images auto-compressed to &lt;200KB JPEG</p>
+                </div>
+              </Section>
+
+              {/* === ADVANCED SECTION (collapsible) === */}
+              <Section title="Advanced Risk" open={advancedOpen} onToggle={() => setAdvancedOpen(!advancedOpen)} count={[mae, mfe].filter(Boolean).length}>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[10px] text-slate-600 font-medium mb-1 block">MAE — Worst drawdown during trade ($)</label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={mae}
+                      onChange={handleDecimalInput(setMae)}
+                      placeholder="0"
+                      className="w-full bg-surface border border-line rounded-lg text-sm font-mono text-white py-2.5 px-3 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all tabular-nums placeholder:text-slate-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-600 font-medium mb-1 block">MFE — Best unrealized gain during trade ($)</label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={mfe}
+                      onChange={handleDecimalInput(setMfe)}
+                      placeholder="0"
+                      className="w-full bg-surface border border-line rounded-lg text-sm font-mono text-white py-2.5 px-3 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all tabular-nums placeholder:text-slate-700"
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-600 leading-relaxed">
+                    MAE = maximum adverse excursion (how bad it got before recovery).
+                    MFE = maximum favorable excursion (best unrealized profit before exit).
+                    Both help identify if you're cutting winners short or letting losers run.
+                  </p>
+                </div>
+              </Section>
+
+              {/* === NOTES (always visible) === */}
+              <div className="mb-4">
+                <label className="text-xs text-slate-500 font-medium mb-2 block">Notes</label>
+                <textarea
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  placeholder="What was the setup? What went right/wrong?"
+                  rows={2}
+                  className="w-full bg-deep border border-line rounded-xl text-sm text-white py-3 px-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all placeholder:text-slate-700 resize-none"
+                />
+              </div>
+
               {/* Current context (new trades only) */}
               {!isEditMode && (
-                <div className="flex gap-3 mb-6 text-xs font-mono">
+                <div className="flex gap-3 mb-4 text-xs font-mono">
                   <div className="flex-1 bg-deep rounded-lg p-3 border border-line text-center">
                     <div className="text-slate-500 mb-1">Current</div>
                     <div className="text-white font-bold">${fmt(currentEquity)}</div>
