@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { TrendingUp, TrendingDown, Download, Upload, Trash2, Undo2, Redo2, Plus, List, CalendarDays, Pencil } from 'lucide-react';
+import { TrendingUp, TrendingDown, Download, Upload, Trash2, Undo2, Redo2, Plus, List, CalendarDays, Pencil, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fmt } from '../math/format.js';
 import { getPhaseName, rN } from '../math/risk.js';
@@ -219,6 +219,15 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
                   (isWin ? 'text-emerald-400/60' : 'text-rose-400/60')}>
                   {t.riskDol > 0 ? (isWin ? '+' : '-') + rMult.toFixed(1) + 'R' : '--'}
                 </div>
+                {/* Setup tags (first 2) */}
+                {t.setupTags && t.setupTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {t.setupTags.slice(0, 2).map(tag => (
+                      <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400/70 font-medium">{tag}</span>
+                    ))}
+                    {t.setupTags.length > 2 && <span className="text-[9px] text-slate-600">+{t.setupTags.length - 2}</span>}
+                  </div>
+                )}
                 <Pencil className="absolute top-2.5 right-2.5 w-3 h-3 text-slate-700" />
               </motion.div>
             );
@@ -307,12 +316,18 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
                                 : fmtDate(t.date)}
                             </span>
                           </div>
-                          <div className="text-right shrink-0 ml-2">
-                            <span className={'text-sm font-bold font-mono tabular-nums ' +
-                              (isWin ? 'text-emerald-400' : 'text-rose-400')}>
-                              {(isWin ? '+$' : '-$') + fmt(Math.abs(t.pnl))}
-                            </span>
-                            <div className="text-xs text-slate-500 font-mono tabular-nums">${fmt(t.equityAfter)}</div>
+                          <div className="flex items-center gap-2 shrink-0 ml-2">
+                            {/* Tag indicator */}
+                            {((t.setupTags?.length || 0) + (t.emotionTags?.length || 0) + (t.mistakes?.length || 0)) > 0 && (
+                              <Tag className="w-3 h-3 text-slate-600" />
+                            )}
+                            <div className="text-right">
+                              <span className={'text-sm font-bold font-mono tabular-nums ' +
+                                (isWin ? 'text-emerald-400' : 'text-rose-400')}>
+                                {(isWin ? '+$' : '-$') + fmt(Math.abs(t.pnl))}
+                              </span>
+                              <div className="text-xs text-slate-500 font-mono tabular-nums">${fmt(t.equityAfter)}</div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -351,6 +366,20 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
                                 </div>
                               </div>
                               {t.notes && <p className="text-xs text-slate-400 mt-2 italic">{t.notes}</p>}
+                              {/* Tags display */}
+                              {((t.setupTags?.length || 0) + (t.emotionTags?.length || 0) + (t.mistakes?.length || 0)) > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                  {(t.setupTags || []).map(tag => (
+                                    <span key={'s-' + tag} className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-medium">{tag}</span>
+                                  ))}
+                                  {(t.emotionTags || []).map(tag => (
+                                    <span key={'e-' + tag} className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-medium">{tag}</span>
+                                  ))}
+                                  {(t.mistakes || []).map(tag => (
+                                    <span key={'m-' + tag} className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-400 font-medium">{tag}</span>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                             {/* Actions */}
                             {isDeleting ? (

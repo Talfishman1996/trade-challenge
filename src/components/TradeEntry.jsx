@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, TrendingUp, TrendingDown, Calendar, ArrowUpRight, ArrowDownRight, Clock } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, Calendar, ArrowUpRight, ArrowDownRight, Clock, ChevronDown } from 'lucide-react';
 import { fmt } from '../math/format.js';
+import TagPicker from './TagPicker.jsx';
+import { SETUP_TAGS, EMOTION_TAGS, MISTAKE_TAGS } from '../store/tags.js';
 
 const localDate = () => {
   const d = new Date();
@@ -28,6 +30,10 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
   const [notes, setNotes] = useState('');
   const [tradeDate, setTradeDate] = useState('');
   const [openDate, setOpenDate] = useState('');
+  const [setupTags, setSetupTags] = useState([]);
+  const [emotionTags, setEmotionTags] = useState([]);
+  const [mistakes, setMistakes] = useState([]);
+  const [tagsOpen, setTagsOpen] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -40,6 +46,11 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
         setNotes(editData.notes || '');
         setTradeDate(editData.date ? editData.date.slice(0, 10) : localDate());
         setOpenDate(editData.openDate ? editData.openDate.slice(0, 10) : '');
+        setSetupTags(editData.setupTags || []);
+        setEmotionTags(editData.emotionTags || []);
+        setMistakes(editData.mistakes || []);
+        const hasTags = (editData.setupTags?.length || editData.emotionTags?.length || editData.mistakes?.length);
+        setTagsOpen(!!hasTags);
       } else {
         setDirection('long');
         setAmount('');
@@ -48,6 +59,10 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
         setIsWin(true);
         setTradeDate(localDate());
         setOpenDate('');
+        setSetupTags([]);
+        setEmotionTags([]);
+        setMistakes([]);
+        setTagsOpen(false);
       }
       setTimeout(() => inputRef.current?.focus(), 300);
     }
@@ -59,12 +74,14 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
     const pnl = isWin ? num : -num;
     const openDateISO = openDate ? new Date(openDate + 'T12:00:00').toISOString() : null;
 
+    const tagFields = { setupTags, emotionTags, mistakes };
+
     if (isEditMode && onEdit) {
       const dateISO = tradeDate ? new Date(tradeDate + 'T12:00:00').toISOString() : undefined;
-      onEdit(editData.id, { pnl, notes, date: dateISO, openDate: openDateISO, direction, ticker });
+      onEdit(editData.id, { pnl, notes, date: dateISO, openDate: openDateISO, direction, ticker, ...tagFields });
     } else {
       const dateISO = tradeDate ? new Date(tradeDate + 'T12:00:00').toISOString() : null;
-      onSave({ pnl, notes, date: dateISO, openDate: openDateISO, direction, ticker });
+      onSave({ pnl, notes, date: dateISO, openDate: openDateISO, direction, ticker, ...tagFields });
     }
     onClose();
   };
@@ -206,6 +223,25 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                   placeholder="e.g., AAPL breakout"
                   className="w-full bg-deep border border-line rounded-xl text-sm text-white py-3 px-4 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all placeholder:text-slate-700"
                 />
+              </div>
+
+              {/* Tags — collapsible section */}
+              <div className="mb-5">
+                <button
+                  type="button"
+                  onClick={() => setTagsOpen(!tagsOpen)}
+                  className="flex items-center justify-between w-full text-xs text-slate-500 font-medium mb-2"
+                >
+                  <span>Tags {(setupTags.length + emotionTags.length + mistakes.length) > 0 && <span className="text-emerald-400 ml-1">({setupTags.length + emotionTags.length + mistakes.length})</span>}</span>
+                  <ChevronDown className={'w-3.5 h-3.5 transition-transform ' + (tagsOpen ? 'rotate-180' : '')} />
+                </button>
+                {tagsOpen && (
+                  <div className="space-y-4 bg-deep rounded-xl border border-line p-3">
+                    <TagPicker tags={SETUP_TAGS} selected={setupTags} onChange={setSetupTags} color="emerald" label="Setup" />
+                    <TagPicker tags={EMOTION_TAGS} selected={emotionTags} onChange={setEmotionTags} color="amber" label="Emotion" />
+                    <TagPicker tags={MISTAKE_TAGS} selected={mistakes} onChange={setMistakes} color="rose" label="Mistakes" />
+                  </div>
+                )}
               </div>
 
               {/* Dates — clean horizontal rows */}
