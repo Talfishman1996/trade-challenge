@@ -1,9 +1,10 @@
-import React, { useState, useRef, useMemo } from 'react';
-import { TrendingUp, TrendingDown, Download, Upload, Trash2, Undo2, Redo2, Plus, List, CalendarDays, Pencil, Tag } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { TrendingUp, TrendingDown, Undo2, Redo2, Plus, List, LayoutGrid, TableProperties, Pencil, Tag, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fmt } from '../math/format.js';
-import { getPhaseName, rN } from '../math/risk.js';
-import { exportJSON, importJSON } from '../utils/dataIO.js';
+import { getPhaseName } from '../math/risk.js';
+import FilterBar from './FilterBar.jsx';
+
 const fmtDate = d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
 const DirBadge = ({ dir }) => {
@@ -26,20 +27,15 @@ const calcDuration = (open, close) => {
 };
 
 export default function Trades({ trades, settings, onOpenTradeEntry, showToast }) {
-  const [showConfirm, setShowConfirm] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
-  const [view, setView] = useState('calendar');
-  const fileRef = useRef(null);
+  const [view, setView] = useState('grid');
+  const [filteredTrades, setFilteredTrades] = useState(null);
+  const [sortCol, setSortCol] = useState(null);
+  const [sortDir, setSortDir] = useState('desc');
 
-  const handleExport = () => exportJSON(trades);
-
-  const handleImport = e => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    importJSON(file, trades, msg => showToast?.(msg, 'error'));
-    e.target.value = '';
-  };
+  // Use filtered trades if filters active, otherwise all trades
+  const displayTrades = filteredTrades || trades.trades;
 
   const openEdit = (trade) => {
     onOpenTradeEntry(trade);
@@ -52,11 +48,43 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
     setExpandedId(null);
   };
 
+  const handleFilter = (filtered) => {
+    setFilteredTrades(filtered === trades.trades ? null : filtered);
+  };
+
+  // Table sorting
+  const sortedTableTrades = useMemo(() => {
+    const arr = [...displayTrades].reverse(); // newest first by default
+    if (!sortCol) return arr;
+    return arr.sort((a, b) => {
+      let va, vb;
+      switch (sortCol) {
+        case 'date': va = a.date; vb = b.date; break;
+        case 'ticker': va = a.ticker || ''; vb = b.ticker || ''; break;
+        case 'pnl': va = a.pnl; vb = b.pnl; break;
+        case 'rMult': va = a.riskDol > 0 ? a.pnl / a.riskDol : 0; vb = b.riskDol > 0 ? b.pnl / b.riskDol : 0; break;
+        case 'strategy': va = a.strategy || ''; vb = b.strategy || ''; break;
+        default: return 0;
+      }
+      const cmp = typeof va === 'string' ? va.localeCompare(vb) : va - vb;
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [displayTrades, sortCol, sortDir]);
+
+  const toggleSort = (col) => {
+    if (sortCol === col) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortCol(col);
+      setSortDir('desc');
+    }
+  };
+
   // Group trades by month (reverse chronological) for list view
   const monthGroups = useMemo(() => {
-    if (trades.trades.length === 0) return [];
+    if (displayTrades.length === 0) return [];
     const groups = {};
-    for (const t of trades.trades) {
+    for (const t of displayTrades) {
       const key = t.date.slice(0, 7);
       if (!groups[key]) groups[key] = [];
       groups[key].push(t);
@@ -71,7 +99,19 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
         wins: monthTrades.filter(t => t.pnl > 0).length,
         count: monthTrades.length,
       }));
-  }, [trades.trades]);
+  }, [displayTrades]);
+
+  const SortHeader = ({ col, children, className = '' }) => (
+    <th
+      onClick={() => toggleSort(col)}
+      className={'cursor-pointer select-none hover:text-slate-300 transition-colors ' + className}
+    >
+      <span className="flex items-center gap-0.5">
+        {children}
+        {sortCol === col && <span className="text-emerald-400">{sortDir === 'asc' ? '\u2191' : '\u2193'}</span>}
+      </span>
+    </th>
+  );
 
   return (
     <div className="px-4 pt-4 md:pt-6 pb-6 max-w-lg md:max-w-3xl mx-auto space-y-4">
@@ -86,10 +126,9 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
         </button>
       </div>
 
-      {/* Stats Dashboard — always visible */}
+      {/* Stats Dashboard */}
       {trades.stats.totalTrades > 0 && (
         <div className="bg-surface rounded-2xl p-4 border border-line space-y-3">
-          {/* Win Rate with progress bar */}
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xs text-slate-500 font-medium mb-1">Win Rate</div>
@@ -117,7 +156,6 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
               style={{ width: (100 - trades.stats.winRate) + '%' }} />
           </div>
 
-          {/* 2x3 stats grid */}
           <div className="grid grid-cols-3 gap-2 pt-1">
             <div className="text-center">
               <div className={'text-base font-bold font-mono tabular-nums ' + (trades.stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
@@ -162,12 +200,18 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
         </div>
       )}
 
-      {/* View Toggle */}
+      {/* Filter Bar */}
+      {trades.trades.length > 0 && (
+        <FilterBar trades={trades.trades} onFilter={handleFilter} />
+      )}
+
+      {/* View Toggle — Grid / List / Table */}
       {trades.trades.length > 0 && (
         <div className="flex gap-1 bg-surface rounded-xl p-1 border border-line">
           {[
-            { id: 'calendar', l: 'Calendar', ic: CalendarDays },
+            { id: 'grid', l: 'Grid', ic: LayoutGrid },
             { id: 'list', l: 'List', ic: List },
+            { id: 'table', l: 'Table', ic: TableProperties },
           ].map(v => {
             const Ic = v.ic;
             const on = view === v.id;
@@ -182,10 +226,10 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
         </div>
       )}
 
-      {/* Calendar Grid View */}
-      {view === 'calendar' && trades.trades.length > 0 && (
+      {/* ===== GRID VIEW ===== */}
+      {view === 'grid' && displayTrades.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {[...trades.trades].reverse().map(t => {
+          {[...displayTrades].reverse().map(t => {
             const isWin = t.pnl >= 0;
             const rMult = t.riskDol > 0 ? Math.abs(t.pnl) / t.riskDol : 0;
             return (
@@ -219,7 +263,6 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
                   (isWin ? 'text-emerald-400/60' : 'text-rose-400/60')}>
                   {t.riskDol > 0 ? (isWin ? '+' : '-') + rMult.toFixed(1) + 'R' : '--'}
                 </div>
-                {/* Setup tags (first 2) */}
                 {t.setupTags && t.setupTags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1.5">
                     {t.setupTags.slice(0, 2).map(tag => (
@@ -235,44 +278,72 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
         </div>
       )}
 
-      {/* Empty state */}
-      {trades.trades.length === 0 && (
-        <div className="flex flex-col items-center py-12 px-4">
-          {/* Ghost equity curve */}
-          <svg className="w-48 h-20 mb-4" viewBox="0 0 200 80" fill="none">
-            <defs>
-              <linearGradient id="ghostFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#10b981" stopOpacity=".08" />
-                <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-            <path d="M0,70 Q30,65 60,55 T120,35 T180,18 L200,12" stroke="#10b981" strokeWidth="2"
-              strokeDasharray="6 4" strokeLinecap="round" opacity=".4" />
-            <path d="M0,70 Q30,65 60,55 T120,35 T180,18 L200,12 V80 H0 Z" fill="url(#ghostFill)" />
-            <circle cx="200" cy="12" r="3" fill="#10b981" opacity=".3">
-              <animate attributeName="opacity" values=".3;.7;.3" dur="2s" repeatCount="indefinite" />
-            </circle>
-          </svg>
-          <p className="text-sm font-semibold text-slate-400 mb-1">Your trading journal starts here</p>
-          <p className="text-xs text-slate-600 text-center max-w-[240px]">
-            Log your first trade to begin tracking equity, risk, and performance.
-          </p>
-          <button
-            onClick={() => onOpenTradeEntry()}
-            className="mt-5 flex items-center gap-1.5 px-5 py-2.5 bg-emerald-500 text-white text-sm font-semibold rounded-xl active:scale-[0.97] hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
-          >
-            <Plus className="w-4 h-4" /> Log First Trade
-          </button>
+      {/* ===== TABLE VIEW ===== */}
+      {view === 'table' && displayTrades.length > 0 && (
+        <div className="overflow-x-auto rounded-xl border border-line no-sb">
+          <table className="w-full text-xs font-mono">
+            <thead>
+              <tr className="bg-surface text-slate-500 text-left border-b border-line">
+                <th className="px-3 py-2.5 font-medium sticky left-0 bg-surface z-10">#</th>
+                <SortHeader col="date" className="px-3 py-2.5 font-medium whitespace-nowrap">Date</SortHeader>
+                <SortHeader col="ticker" className="px-3 py-2.5 font-medium">Ticker</SortHeader>
+                <th className="px-3 py-2.5 font-medium">Side</th>
+                <SortHeader col="strategy" className="px-3 py-2.5 font-medium whitespace-nowrap">Strategy</SortHeader>
+                <SortHeader col="pnl" className="px-3 py-2.5 font-medium text-right">P&L</SortHeader>
+                <SortHeader col="rMult" className="px-3 py-2.5 font-medium text-right">R-Mult</SortHeader>
+                <th className="px-3 py-2.5 font-medium text-right">Equity</th>
+                <th className="px-3 py-2.5 font-medium">Tags</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedTableTrades.map((t, i) => {
+                const isWin = t.pnl >= 0;
+                const rMult = t.riskDol > 0 ? t.pnl / t.riskDol : 0;
+                return (
+                  <tr
+                    key={t.id}
+                    onClick={() => openEdit(t)}
+                    className={'cursor-pointer hover:bg-elevated/50 transition-colors border-b border-line/40 ' +
+                      (i % 2 === 0 ? 'bg-deep' : 'bg-surface/30')}
+                    style={{ height: '48px' }}
+                  >
+                    <td className="px-3 py-2 text-slate-500 sticky left-0 bg-inherit z-10">{t.id}</td>
+                    <td className="px-3 py-2 text-slate-400 whitespace-nowrap">{new Date(t.date).toISOString().slice(0, 10)}</td>
+                    <td className="px-3 py-2 text-slate-300 font-bold">{t.ticker || '--'}</td>
+                    <td className="px-3 py-2"><DirBadge dir={t.direction} /></td>
+                    <td className="px-3 py-2 text-slate-500 whitespace-nowrap">{t.strategy || '--'}</td>
+                    <td className={'px-3 py-2 text-right font-bold tabular-nums ' + (isWin ? 'text-emerald-400' : 'text-rose-400')}>
+                      {(isWin ? '+$' : '-$') + fmt(Math.abs(t.pnl))}
+                    </td>
+                    <td className={'px-3 py-2 text-right font-bold tabular-nums ' + (isWin ? 'text-emerald-400' : 'text-rose-400')}>
+                      {t.riskDol > 0 ? (isWin ? '+' : '') + rMult.toFixed(1) + 'R' : '--'}
+                    </td>
+                    <td className="px-3 py-2 text-right text-slate-400 tabular-nums">${fmt(t.equityAfter)}</td>
+                    <td className="px-3 py-2">
+                      {t.setupTags && t.setupTags.length > 0 && (
+                        <div className="flex gap-1">
+                          {t.setupTags.slice(0, 1).map(tag => (
+                            <span key={tag} className="text-[9px] px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-400/70 whitespace-nowrap">{tag}</span>
+                          ))}
+                          {t.setupTags.length > 1 && <span className="text-[9px] text-slate-600">+{t.setupTags.length - 1}</span>}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
-      {/* List View — grouped by month */}
+      {/* ===== LIST VIEW ===== */}
       {view === 'list' && monthGroups.length > 0 && (
         <div className="space-y-5">
           {monthGroups.map(group => (
             <div key={group.key} className="space-y-2">
-              {/* Month header */}
-              <div className="flex items-center justify-between px-1">
+              {/* Sticky month header */}
+              <div className="flex items-center justify-between px-1 sticky top-0 bg-deep/95 backdrop-blur-sm z-10 py-1.5 -mx-1 px-1">
                 <span className="text-sm font-semibold text-slate-400">{group.label}</span>
                 <div className="flex items-center gap-2.5">
                   <span className={'text-xs font-bold font-mono tabular-nums ' + (group.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
@@ -282,7 +353,6 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
                 </div>
               </div>
 
-              {/* Trades in month */}
               <AnimatePresence>
                 {group.trades.map(t => {
                   const isExpanded = expandedId === t.id;
@@ -300,7 +370,6 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
                           : 'border-l-rose-500 border-rose-500/15') +
                         (isExpanded ? ' ring-1 ring-slate-700' : '')}
                     >
-                      {/* Trade row */}
                       <div
                         className="px-3 py-2.5 cursor-pointer active:bg-elevated/30 transition-colors"
                         onClick={() => setExpandedId(isExpanded ? null : t.id)}
@@ -317,7 +386,6 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
                             </span>
                           </div>
                           <div className="flex items-center gap-2 shrink-0 ml-2">
-                            {/* Tag indicator */}
                             {((t.setupTags?.length || 0) + (t.emotionTags?.length || 0) + (t.mistakes?.length || 0)) > 0 && (
                               <Tag className="w-3 h-3 text-slate-600" />
                             )}
@@ -332,7 +400,6 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
                         </div>
                       </div>
 
-                      {/* Expanded details */}
                       <AnimatePresence>
                         {isExpanded && (
                           <motion.div
@@ -365,6 +432,13 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
                                   </div>
                                 </div>
                               </div>
+                              {/* Strategy info if present */}
+                              {t.strategy && (
+                                <div className="flex gap-3 mt-2 text-xs">
+                                  <span className="text-slate-500">Strategy: <span className="text-slate-300">{t.strategy}</span></span>
+                                  {t.contracts > 0 && <span className="text-slate-500">Size: <span className="text-slate-300 font-mono">{t.contracts}</span></span>}
+                                </div>
+                              )}
                               {t.notes && <p className="text-xs text-slate-400 mt-2 italic">{t.notes}</p>}
                               {/* Tags display */}
                               {((t.setupTags?.length || 0) + (t.emotionTags?.length || 0) + (t.mistakes?.length || 0)) > 0 && (
@@ -381,7 +455,6 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
                                 </div>
                               )}
                             </div>
-                            {/* Actions */}
                             {isDeleting ? (
                               <div className="flex gap-2 p-3 pt-2">
                                 <button
@@ -425,68 +498,66 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
         </div>
       )}
 
-      {/* Actions — Undo/Redo + secondary tools */}
-      {(trades.trades.length > 0 || trades.canRedo) && (
-        <div className="pt-3 space-y-3">
-          {/* Primary: Undo / Redo */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => trades.undoLastTrade()}
-              disabled={trades.trades.length === 0}
-              className={'flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium rounded-xl border active:scale-[0.98] transition-all ' +
-                (trades.trades.length > 0
-                  ? 'bg-surface text-slate-400 border-line hover:bg-elevated'
-                  : 'bg-surface/50 text-slate-600 border-line/50 cursor-not-allowed')}
-            >
-              <Undo2 className="w-4 h-4" /> Undo
-            </button>
-            <button
-              onClick={() => trades.redoLastTrade()}
-              disabled={!trades.canRedo}
-              className={'flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium rounded-xl border active:scale-[0.98] transition-all ' +
-                (trades.canRedo
-                  ? 'bg-surface text-slate-400 border-line hover:bg-elevated'
-                  : 'bg-surface/50 text-slate-600 border-line/50 cursor-not-allowed')}
-            >
-              <Redo2 className="w-4 h-4" /> Redo
-            </button>
-          </div>
+      {/* Empty state */}
+      {displayTrades.length === 0 && trades.trades.length === 0 && (
+        <div className="flex flex-col items-center py-12 px-4">
+          <svg className="w-48 h-20 mb-4" viewBox="0 0 200 80" fill="none">
+            <defs>
+              <linearGradient id="ghostFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#10b981" stopOpacity=".08" />
+                <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <path d="M0,70 Q30,65 60,55 T120,35 T180,18 L200,12" stroke="#10b981" strokeWidth="2"
+              strokeDasharray="6 4" strokeLinecap="round" opacity=".4" />
+            <path d="M0,70 Q30,65 60,55 T120,35 T180,18 L200,12 V80 H0 Z" fill="url(#ghostFill)" />
+            <circle cx="200" cy="12" r="3" fill="#10b981" opacity=".3">
+              <animate attributeName="opacity" values=".3;.7;.3" dur="2s" repeatCount="indefinite" />
+            </circle>
+          </svg>
+          <p className="text-sm font-semibold text-slate-400 mb-1">Your trading journal starts here</p>
+          <p className="text-xs text-slate-600 text-center max-w-[240px]">
+            Log your first trade to begin tracking equity, risk, and performance.
+          </p>
+          <button
+            onClick={() => onOpenTradeEntry()}
+            className="mt-5 flex items-center gap-1.5 px-5 py-2.5 bg-emerald-500 text-white text-sm font-semibold rounded-xl active:scale-[0.97] hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
+          >
+            <Plus className="w-4 h-4" /> Log First Trade
+          </button>
+        </div>
+      )}
 
-          {/* Secondary: Export · Import · Clear — compact text links */}
-          {trades.trades.length > 0 && (
-            <>
-              <div className="flex items-center justify-center gap-4">
-                <button onClick={handleExport}
-                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors">
-                  <Download className="w-3.5 h-3.5" /> Export
-                </button>
-                <span className="text-slate-600">|</span>
-                <button onClick={() => fileRef.current?.click()}
-                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors">
-                  <Upload className="w-3.5 h-3.5" /> Import
-                </button>
-                <span className="text-slate-600">|</span>
-                {showConfirm === 'clear' ? (
-                  <span className="flex items-center gap-2">
-                    <button onClick={() => { trades.clearTrades(); setShowConfirm(null); }}
-                      className="text-xs text-red-400 font-semibold hover:text-red-300 transition-colors">
-                      Confirm
-                    </button>
-                    <button onClick={() => setShowConfirm(null)}
-                      className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
-                      Cancel
-                    </button>
-                  </span>
-                ) : (
-                  <button onClick={() => setShowConfirm('clear')}
-                    className="flex items-center gap-1.5 text-xs text-red-500/50 hover:text-red-400 transition-colors">
-                    <Trash2 className="w-3.5 h-3.5" /> Clear
-                  </button>
-                )}
-                <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
-              </div>
-            </>
-          )}
+      {/* Filter empty state */}
+      {displayTrades.length === 0 && trades.trades.length > 0 && (
+        <div className="text-center py-8">
+          <p className="text-sm text-slate-500">No trades match filters</p>
+        </div>
+      )}
+
+      {/* Undo / Redo — compact */}
+      {(trades.trades.length > 0 || trades.canRedo) && (
+        <div className="flex gap-2 pt-2">
+          <button
+            onClick={() => trades.undoLastTrade()}
+            disabled={trades.trades.length === 0}
+            className={'flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium rounded-xl border active:scale-[0.98] transition-all ' +
+              (trades.trades.length > 0
+                ? 'bg-surface text-slate-400 border-line hover:bg-elevated'
+                : 'bg-surface/50 text-slate-600 border-line/50 cursor-not-allowed')}
+          >
+            <Undo2 className="w-4 h-4" /> Undo
+          </button>
+          <button
+            onClick={() => trades.redoLastTrade()}
+            disabled={!trades.canRedo}
+            className={'flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium rounded-xl border active:scale-[0.98] transition-all ' +
+              (trades.canRedo
+                ? 'bg-surface text-slate-400 border-line hover:bg-elevated'
+                : 'bg-surface/50 text-slate-600 border-line/50 cursor-not-allowed')}
+          >
+            <Redo2 className="w-4 h-4" /> Redo
+          </button>
         </div>
       )}
 
