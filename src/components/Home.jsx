@@ -81,23 +81,23 @@ function getPlayerPosition(eq) {
    ─────────────────────────────────────────── */
 
 const ClimberSVG = ({ x, y }) => (
-  <g transform={`translate(${x - 14}, ${y - 36}) scale(1.8)`}>
+  <g transform={`translate(${x - 10}, ${y - 28}) scale(1.3)`}>
+    {/* Green glow behind climber */}
+    <circle cx="8" cy="10" r="8" fill="#00e5cc" opacity="0.08" />
     {/* Head */}
-    <circle cx="8" cy="3" r="2.5" fill="#00e5cc" opacity="0.95" />
+    <circle cx="8" cy="3" r="2.2" fill="#00e5cc" opacity="0.95" />
     {/* Body */}
-    <line x1="8" y1="5.5" x2="8" y2="13" stroke="#00e5cc" strokeWidth="1.6" strokeLinecap="round" opacity="0.95" />
+    <line x1="8" y1="5.2" x2="8" y2="12" stroke="#00e5cc" strokeWidth="1.5" strokeLinecap="round" opacity="0.95" />
     {/* Left leg — planted */}
-    <line x1="8" y1="13" x2="5" y2="18" stroke="#00e5cc" strokeWidth="1.4" strokeLinecap="round" opacity="0.95" />
+    <line x1="8" y1="12" x2="5.5" y2="16.5" stroke="#00e5cc" strokeWidth="1.3" strokeLinecap="round" opacity="0.95" />
     {/* Right leg — stepping up */}
-    <line x1="8" y1="13" x2="11" y2="17" stroke="#00e5cc" strokeWidth="1.4" strokeLinecap="round" opacity="0.95" />
+    <line x1="8" y1="12" x2="10.5" y2="15.5" stroke="#00e5cc" strokeWidth="1.3" strokeLinecap="round" opacity="0.95" />
     {/* Left arm — holding ice axe up */}
-    <line x1="8" y1="7" x2="4" y2="4" stroke="#00e5cc" strokeWidth="1.3" strokeLinecap="round" opacity="0.95" />
+    <line x1="8" y1="7" x2="4.5" y2="4.5" stroke="#00e5cc" strokeWidth="1.2" strokeLinecap="round" opacity="0.95" />
     {/* Right arm — reaching */}
-    <line x1="8" y1="7" x2="12" y2="9" stroke="#00e5cc" strokeWidth="1.3" strokeLinecap="round" opacity="0.95" />
+    <line x1="8" y1="7" x2="11.5" y2="8.5" stroke="#00e5cc" strokeWidth="1.2" strokeLinecap="round" opacity="0.95" />
     {/* Ice axe */}
-    <line x1="4" y1="4" x2="2" y2="1" stroke="#00e5cc" strokeWidth="1.1" strokeLinecap="round" opacity="0.8" />
-    {/* Backpack bump */}
-    <ellipse cx="9.5" cy="9" rx="2" ry="2.5" fill="#00e5cc" opacity="0.2" />
+    <line x1="4.5" y1="4.5" x2="2.5" y2="1.5" stroke="#00e5cc" strokeWidth="1" strokeLinecap="round" opacity="0.8" />
   </g>
 );
 
@@ -163,8 +163,17 @@ function MountainTrail({ summitData, eq }) {
       style={{ pointerEvents: 'none' }}
     >
       <defs>
-        {/* Amber glow for completed trail */}
-        <filter id="trailGlowAmber" x="-30%" y="-30%" width="160%" height="160%">
+        {/* Amber glow for completed trail — reduced */}
+        <filter id="trailGlowAmber" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+
+        {/* Player campfire glow — reduced */}
+        <filter id="campfireGlow" x="-100%" y="-100%" width="300%" height="300%">
           <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
@@ -172,18 +181,9 @@ function MountainTrail({ summitData, eq }) {
           </feMerge>
         </filter>
 
-        {/* Player campfire glow */}
-        <filter id="campfireGlow" x="-200%" y="-200%" width="500%" height="500%">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-
-        {/* Gold shimmer for summit — enlarged glow */}
-        <filter id="goldGlow" x="-80%" y="-80%" width="260%" height="260%">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
+        {/* Gold shimmer for summit — reduced glow */}
+        <filter id="goldGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
@@ -205,17 +205,17 @@ function MountainTrail({ summitData, eq }) {
           <stop offset="100%" stopColor="#FFB830" />
         </linearGradient>
 
-        {/* Radial glow for campfire at player pos */}
+        {/* Radial glow for player pos — green tinted, subtle */}
         <radialGradient id="campfireRadial" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#FFB830" stopOpacity="0.5" />
-          <stop offset="60%" stopColor="#FF9500" stopOpacity="0.15" />
-          <stop offset="100%" stopColor="#FF9500" stopOpacity="0" />
+          <stop offset="0%" stopColor="#00e5cc" stopOpacity="0.25" />
+          <stop offset="60%" stopColor="#00e5cc" stopOpacity="0.08" />
+          <stop offset="100%" stopColor="#00e5cc" stopOpacity="0" />
         </radialGradient>
 
-        {/* Summit radiance gradient */}
+        {/* Summit radiance gradient — subdued */}
         <radialGradient id="summitRadiance" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#ffd700" stopOpacity="0.5" />
-          <stop offset="50%" stopColor="#FFB830" stopOpacity="0.12" />
+          <stop offset="0%" stopColor="#ffd700" stopOpacity="0.3" />
+          <stop offset="50%" stopColor="#FFB830" stopOpacity="0.08" />
           <stop offset="100%" stopColor="#FFB830" stopOpacity="0" />
         </radialGradient>
       </defs>
@@ -225,8 +225,8 @@ function MountainTrail({ summitData, eq }) {
         d={TRAIL_PATH}
         fill="none"
         stroke="#00e5cc"
-        strokeWidth={12}
-        strokeOpacity={0.05}
+        strokeWidth={7}
+        strokeOpacity={0.04}
         strokeLinecap="round"
         strokeLinejoin="round"
         filter="url(#tealPulse)"
@@ -237,8 +237,8 @@ function MountainTrail({ summitData, eq }) {
         d={TRAIL_PATH}
         fill="none"
         stroke="#12E7D6"
-        strokeWidth={4}
-        strokeOpacity={0.18}
+        strokeWidth={2.5}
+        strokeOpacity={0.16}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -248,19 +248,19 @@ function MountainTrail({ summitData, eq }) {
         d={TRAIL_PATH}
         fill="none"
         stroke="#C8FFF8"
-        strokeWidth={1.5}
-        strokeOpacity={0.10}
+        strokeWidth={1}
+        strokeOpacity={0.08}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
 
-      {/* ─── COMPLETED TRAIL outer glow (warm amber, wide) ─── */}
+      {/* ─── COMPLETED TRAIL outer glow (warm amber, reduced) ─── */}
       <motion.path
         d={TRAIL_PATH}
         fill="none"
         stroke="#FFB830"
-        strokeWidth={12}
-        strokeOpacity={0.14}
+        strokeWidth={7}
+        strokeOpacity={0.10}
         strokeLinecap="round"
         strokeLinejoin="round"
         filter="url(#trailGlowAmber)"
@@ -274,7 +274,7 @@ function MountainTrail({ summitData, eq }) {
         d={TRAIL_PATH}
         fill="none"
         stroke="url(#trailAmber)"
-        strokeWidth={4.5}
+        strokeWidth={3}
         strokeLinecap="round"
         strokeLinejoin="round"
         initial={{ pathLength: 0 }}
@@ -287,8 +287,8 @@ function MountainTrail({ summitData, eq }) {
         d={TRAIL_PATH}
         fill="none"
         stroke="#FFE38A"
-        strokeWidth={1.5}
-        strokeOpacity={0.7}
+        strokeWidth={1}
+        strokeOpacity={0.5}
         strokeLinecap="round"
         strokeLinejoin="round"
         initial={{ pathLength: 0 }}
@@ -302,7 +302,7 @@ function MountainTrail({ summitData, eq }) {
         const achieved = mData?.achieved;
         const isNext = mData?.isNext;
         const delay = 0.4 + i * 0.18;
-        const pillX = ms.labelSide === 'right' ? ms.x + 16 : ms.x - 16;
+        const pillX = ms.labelSide === 'right' ? ms.x + 14 : ms.x - 14;
         const anchor = ms.labelSide === 'right' ? 'start' : 'end';
 
         return (
@@ -313,99 +313,89 @@ function MountainTrail({ summitData, eq }) {
             transition={{ delay, duration: 0.5, ease: 'backOut' }}
             style={{ transformOrigin: `${ms.x}px ${ms.y}px` }}
           >
-            {/* ── Next milestone: teal beacon pulse ── */}
+            {/* ── Next milestone: subtle teal pulse ── */}
             {isNext && (
               <>
                 <circle
-                  cx={ms.x} cy={ms.y} r={10}
-                  fill="none" stroke="#00e5cc" strokeWidth={1.5}
-                  opacity={0.4}
+                  cx={ms.x} cy={ms.y} r={8}
+                  fill="none" stroke="#00e5cc" strokeWidth={1}
+                  opacity={0.3}
                   className="ring-pulse"
                 />
                 <circle
-                  cx={ms.x} cy={ms.y} r={6}
-                  fill="#00e5cc" opacity={0.15}
+                  cx={ms.x} cy={ms.y} r={4}
+                  fill="#00e5cc" opacity={0.1}
                   filter="url(#tealPulse)"
                 />
               </>
             )}
 
-            {/* ── Marker dot (larger for visibility) ── */}
+            {/* ── Marker dot (proportional) ── */}
             <circle
               cx={ms.x} cy={ms.y}
-              r={achieved ? 8 : isNext ? 7 : 5}
+              r={achieved ? 5 : isNext ? 5 : 3.5}
               fill={achieved ? '#FFD700' : isNext ? '#00e5cc' : 'none'}
               stroke={achieved ? '#FFD700' : isNext ? '#00e5cc' : '#7a8a9c'}
-              strokeWidth={achieved ? 0 : isNext ? 1.5 : 1.2}
-              opacity={achieved ? 1 : isNext ? 0.9 : 0.55}
+              strokeWidth={achieved ? 0 : isNext ? 1.2 : 1}
+              opacity={achieved ? 0.9 : isNext ? 0.85 : 0.4}
             />
 
-            {/* ── Achieved: campfire flame icon (larger, offset left) ── */}
-            {achieved && <CampfireIcon x={ms.x - 10} y={ms.y - 2} size={13} />}
-
-            {/* ── Achieved: golden checkmark ── */}
+            {/* ── Achieved: small golden check inside dot ── */}
             {achieved && (
               <text
-                x={ms.x} y={ms.y + 1.5}
+                x={ms.x} y={ms.y + 1}
                 textAnchor="middle" dominantBaseline="central"
-                fill="#0a0e14" fontSize={5.5} fontWeight={800}
+                fill="#0a0e14" fontSize={4.5} fontWeight={800}
               >✓</text>
             )}
 
-            {/* ── Frosted pill label ── */}
-            <g>
-              {/* Pill background — translucent, refined */}
+            {/* ── Compact pill label ── */}
+            <g opacity={!achieved && !isNext ? 0.45 : 1}>
+              {/* Pill background — higher contrast */}
               <rect
-                x={ms.labelSide === 'right' ? ms.x + 14 : ms.x - 88}
-                y={ms.y - 17}
-                width={74}
-                height={34}
-                rx={8}
-                fill={achieved ? 'rgba(30,20,0,0.72)' : isNext ? 'rgba(0,20,18,0.72)' : 'rgba(40,46,56,0.65)'}
-                stroke={achieved ? 'rgba(255,215,0,0.22)' : isNext ? 'rgba(0,229,204,0.25)' : 'rgba(148,163,184,0.12)'}
-                strokeWidth={0.8}
+                x={ms.labelSide === 'right' ? ms.x + 12 : ms.x - 76}
+                y={ms.y - 14}
+                width={64}
+                height={28}
+                rx={7}
+                fill={achieved ? 'rgba(30,20,0,0.78)' : isNext ? 'rgba(0,20,18,0.78)' : 'rgba(14,19,29,0.75)'}
+                stroke={achieved ? 'rgba(255,215,0,0.25)' : isNext ? 'rgba(0,229,204,0.30)' : 'rgba(148,163,184,0.10)'}
+                strokeWidth={0.7}
               />
               {/* Dollar label */}
               <text
-                x={pillX} y={ms.y - 3}
+                x={pillX} y={ms.y - 2}
                 textAnchor={anchor}
-                fill={achieved ? '#FFD700' : isNext ? '#00e5cc' : '#8896a8'}
-                opacity={achieved ? 1 : isNext ? 0.95 : 0.6}
-                fontSize={14}
+                fill={achieved ? '#FFD700' : isNext ? '#00e5cc' : 'rgba(255,255,255,0.7)'}
+                opacity={achieved ? 1 : isNext ? 0.95 : 0.8}
+                fontSize={12}
                 fontFamily="'JetBrains Mono', monospace"
                 fontWeight={700}
               >{ms.label}</text>
               {/* Camp name */}
               <text
-                x={pillX} y={ms.y + 10}
+                x={pillX} y={ms.y + 9}
                 textAnchor={anchor}
-                fill={achieved ? '#d4a560' : isNext ? 'rgba(255,255,255,0.65)' : '#8896a8'}
-                opacity={achieved ? 0.8 : isNext ? 0.65 : 0.4}
-                fontSize={9}
+                fill={achieved ? '#d4a560' : isNext ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.45)'}
+                opacity={achieved ? 0.8 : isNext ? 0.65 : 0.6}
+                fontSize={8}
                 fontFamily="'JetBrains Mono', monospace"
                 fontWeight={500}
-                letterSpacing="0.5"
+                letterSpacing="0.3"
               >{ms.camp}</text>
             </g>
 
-            {/* ── Future: lock indicator ── */}
-            {!achieved && !isNext && (
-              <text
-                x={ms.x} y={ms.y + 1}
-                textAnchor="middle" dominantBaseline="central"
-                fill="#7a8a9c" fontSize={5} opacity={0.5}
-              >🔒</text>
-            )}
+            {/* ── Future: subtle ring only (no lock icon clutter) ── */}
           </motion.g>
         );
       })}
 
-      {/* ─── SUMMIT RADIANCE — warm glow behind temple ─── */}
-      <circle cx={SUMMIT.x} cy={SUMMIT.y + 24} r={55}
-        fill="none" stroke="#ffd700" strokeWidth={1.5} opacity={0.06}
+      {/* ─── SUMMIT RADIANCE — subtle glow behind temple ─── */}
+      <circle cx={SUMMIT.x} cy={SUMMIT.y + 24} r={40}
+        fill="none" stroke="#ffd700" strokeWidth={1} opacity={0.04}
         filter="url(#goldGlow)" />
-      <circle cx={SUMMIT.x} cy={SUMMIT.y + 24} r={32}
-        fill="url(#summitRadiance)" opacity={0.2} />
+      <circle cx={SUMMIT.x} cy={SUMMIT.y + 24} r={24}
+        fill="url(#summitRadiance)" opacity={0.12} />
 
       {/* ─── $10M SUMMIT — floating golden text above temple ─── */}
       <motion.g
@@ -413,16 +403,17 @@ function MountainTrail({ summitData, eq }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1.5, duration: 1, ease: 'easeOut' }}
       >
-        {/* $10M label — large, bold, golden */}
+        {/* $10M label — refined, proportional golden */}
         <text
-          x={SUMMIT.x} y={SUMMIT.y + 6}
+          x={SUMMIT.x} y={SUMMIT.y + 4}
           textAnchor="middle"
           fill="#ffd700"
-          fontSize={44}
+          fontSize={28}
           fontFamily="'JetBrains Mono', monospace"
-          fontWeight={800}
-          letterSpacing="5"
+          fontWeight={700}
+          letterSpacing="2"
           filter="url(#goldGlow)"
+          opacity={0.9}
           className="summit-shimmer"
         >$10M</text>
       </motion.g>
@@ -433,30 +424,27 @@ function MountainTrail({ summitData, eq }) {
         animate={{ opacity: 1 }}
         transition={{ delay: 2, duration: 0.6 }}
       >
-        {/* Campfire ambient glow behind climber */}
+        {/* Subtle green glow behind climber */}
         <motion.circle
           cx={player.x} cy={player.y}
-          r={18}
+          r={12}
           fill="url(#campfireRadial)"
-          animate={{ r: [18, 24, 18], opacity: [0.35, 0.55, 0.35] }}
+          animate={{ r: [12, 16, 12], opacity: [0.2, 0.35, 0.2] }}
           transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
         />
 
-        {/* Outer teal beacon ring */}
+        {/* Outer teal beacon ring — subtle */}
         <motion.circle
           cx={player.x} cy={player.y}
-          r={10}
+          r={8}
           fill="none"
           stroke="#00e5cc"
-          strokeWidth={0.8}
-          animate={{ r: [10, 16, 10], opacity: [0.25, 0.08, 0.25] }}
+          strokeWidth={0.6}
+          animate={{ r: [8, 13, 8], opacity: [0.2, 0.06, 0.2] }}
           transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
         />
 
-        {/* Campfire at player's feet */}
-        <CampfireIcon x={player.x} y={player.y + 4} size={12} />
-
-        {/* Climber silhouette */}
+        {/* Climber silhouette (campfire removed to reduce clutter) */}
         <ClimberSVG x={player.x} y={player.y} />
       </motion.g>
     </svg>
@@ -578,8 +566,8 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
       {/* ── CSS keyframes for summit shimmer & ring pulse ── */}
       <style>{`
         @keyframes summitShimmer {
-          0%, 100% { opacity: 0.65; filter: url(#goldGlow) drop-shadow(0 0 6px #ffd70066); }
-          50% { opacity: 1; filter: url(#goldGlow) drop-shadow(0 0 16px #ffd700cc); }
+          0%, 100% { opacity: 0.75; filter: url(#goldGlow) drop-shadow(0 0 4px #ffd70044); }
+          50% { opacity: 0.95; filter: url(#goldGlow) drop-shadow(0 0 8px #ffd70088); }
         }
         .summit-shimmer { animation: summitShimmer 3s ease-in-out infinite; }
         @keyframes ringPulseKf {
@@ -633,7 +621,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
         <div
           className="absolute inset-0"
           style={{
-            background: 'linear-gradient(to bottom, rgba(10,14,20,0.02) 0%, rgba(10,14,20,0.06) 32%, rgba(10,14,20,0.22) 68%, #0a0e14 100%)',
+            background: 'linear-gradient(to bottom, rgba(10,14,20,0.05) 0%, rgba(10,14,20,0.10) 30%, rgba(10,14,20,0.35) 65%, rgba(10,14,20,0.85) 85%, #0a0e14 100%)',
           }}
         />
 
@@ -668,17 +656,22 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
           <MountainTrail summitData={summitData} eq={eq} />
         </div>
 
-        {/* ── Portfolio Value — overlaid at gradient transition zone ── */}
-        <div className="absolute bottom-0 left-0 right-0 z-20 text-center pb-6 px-4">
+        {/* ── Portfolio Value — overlaid at gradient transition zone, above trail ── */}
+        <div className="absolute bottom-0 left-0 right-0 z-20 text-center pb-8 px-4">
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2, ease: [0.23, 1, 0.32, 1] }}
-            style={{ background: 'radial-gradient(ellipse at 50% 60%, rgba(10,14,20,0.65) 0%, transparent 70%)' }}
+            style={{
+              position: 'relative',
+              zIndex: 25,
+              background: 'radial-gradient(ellipse at 50% 55%, rgba(10,14,20,0.82) 0%, rgba(10,14,20,0.5) 45%, transparent 70%)',
+              padding: '12px 0 4px',
+            }}
           >
             <div
-              className="text-sm text-slate-400 uppercase tracking-[0.3em] font-medium font-mono mb-1.5"
-              style={{ textShadow: '0 1px 6px rgba(0,0,0,0.9), 0 0 20px rgba(10,14,20,0.8)' }}
+              className="text-xs text-slate-400 uppercase tracking-[0.2em] font-medium font-mono mb-2"
+              style={{ textShadow: '0 1px 6px rgba(0,0,0,0.9), 0 0 20px rgba(10,14,20,0.8)', color: 'rgba(255,255,255,0.6)' }}
             >
               Portfolio Value
             </div>
@@ -689,12 +682,13 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
               ${fmt(eq)}
             </div>
             {hasTrades ? (
-              <div className="flex items-center justify-center gap-2 mt-1.5">
+              <div className="flex items-center justify-center gap-3 mt-2">
                 <span className={'text-sm font-semibold font-mono tabular-nums ' + (inProfit ? 'text-emerald-400' : 'text-red-500')}>
                   {inProfit ? '+$' : '-$'}{fmt(Math.abs(trades.stats.totalPnl))}
                 </span>
-                <span className={'text-xs font-mono tabular-nums px-1.5 py-0.5 rounded ' + (inProfit ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-500')}>
-                  {inProfit ? '+' : ''}{((eq - trades.initialEquity) / trades.initialEquity * 100).toFixed(1)}%
+                <span className="w-px h-3 bg-white/20" />
+                <span className={'text-xs font-mono tabular-nums px-2 py-0.5 rounded ' + (inProfit ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-500')}>
+                  {inProfit ? '+' : ''}{((eq - trades.initialEquity) / trades.initialEquity * 100).toFixed(0)}%
                 </span>
               </div>
             ) : (
@@ -707,12 +701,12 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
       {/* ═══════════════════════════════════════
           DARK UI SECTION — Below mountain
           ═══════════════════════════════════════ */}
-      <div className="relative z-30 px-4 pb-8 pt-2 space-y-5 max-w-lg md:max-w-3xl mx-auto">
+      <div className="relative z-30 px-4 pb-8 pt-4 space-y-6 max-w-lg md:max-w-3xl mx-auto">
 
         {/* ── LOG TRADE Button ── */}
         <motion.button
           onClick={() => onOpenTradeEntry()}
-          className="w-full py-3.5 bg-[#30D158] text-[#0a0e14] font-bold text-base rounded-2xl active:scale-[0.96] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#30D158]/25 uppercase tracking-wider"
+          className="w-full py-4 bg-[#30D158] text-[#0a0e14] font-bold text-base rounded-2xl active:scale-[0.96] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#30D158]/25 uppercase tracking-wider"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.3 }}
@@ -746,12 +740,12 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
         {trades.stats.totalTrades === 0 ? (
           /* ═══ EMPTY STATE — single onboarding block ═══ */
           <>
-            {/* Muted stat placeholders */}
-            <div className="grid grid-cols-4 gap-2 opacity-40">
+            {/* Muted stat placeholders — equal grid */}
+            <div className="grid gap-2.5 opacity-40" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
               {[{l:'Trades',v:'0'},{l:'Win Rate',v:'--'},{l:'Streak',v:'--'},{l:'30 Days',v:'--'}].map((s,i) => (
-                <div key={i} className="bg-surface/80 rounded-xl p-3 text-center border border-line/50">
-                  <div className="text-base font-bold font-mono text-white">{s.v}</div>
-                  <div className="text-xs text-slate-600 mt-0.5">{s.l}</div>
+                <div key={i} className="bg-surface/80 rounded-xl text-center border border-white/[0.06]" style={{ padding: '10px 4px', minHeight: '68px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <div className="text-sm font-bold font-mono text-white/50" style={{ fontVariantNumeric: 'tabular-nums' }}>{s.v}</div>
+                  <div className="text-[10px] text-slate-600 mt-1">{s.l}</div>
                 </div>
               ))}
             </div>
@@ -870,18 +864,19 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
           </>
         ) : (
         <>
-          {/* Stat pills row */}
+          {/* Stat pills row — equal-width grid */}
           <motion.div
-            className="grid grid-cols-4 gap-2"
+            className="grid gap-2.5"
+            style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.4 }}
           >
             {stats.map((s, i) => (
-              <div key={i} className="bg-surface/80 backdrop-blur-sm rounded-xl p-3 text-center border border-line">
-                <div className={'text-base font-bold font-mono tabular-nums ' + s.c}
-                  style={s.glow ? { textShadow: '0 0 12px rgba(252, 211, 77, 0.5)' } : undefined}>{s.v}</div>
-                <div className="text-xs text-slate-500 mt-0.5">{s.l}</div>
+              <div key={i} className="bg-surface/80 backdrop-blur-sm rounded-xl text-center border border-white/[0.08]" style={{ padding: '10px 4px', minHeight: '68px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div className={'text-sm font-bold font-mono ' + s.c}
+                  style={{ fontVariantNumeric: 'tabular-nums', ...(s.glow ? { textShadow: '0 0 12px rgba(252, 211, 77, 0.5)' } : {}) }}>{s.v}</div>
+                <div className="text-[10px] text-slate-500 mt-1">{s.l}</div>
               </div>
             ))}
           </motion.div>
