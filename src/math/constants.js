@@ -1,1 +1,84 @@
-Ly8gQ29yZSBtb2RlbCBjb25zdGFudHMKZXhwb3J0IGNvbnN0IEUwID0gODc1MDA7CmV4cG9ydCBjb25zdCBLMCA9IDAuMzM7CmV4cG9ydCBjb25zdCBTTUlOID0gMjAwMDA7CmV4cG9ydCBjb25zdCBTTUFYID0gMTAwMDAwMDA7CmV4cG9ydCBjb25zdCBMT0dfTUlOID0gTWF0aC5sb2cxMChTTUlOKTsKZXhwb3J0IGNvbnN0IExPR19NQVggPSBNYXRoLmxvZzEwKFNNQVgpOwoKLy8gQ2hhcnQgWC1heGlzIGxvZyB0aWNrcwpleHBvcnQgY29uc3QgTFhUID0gWzIwZTMsIDEwMGUzLCAyNTBlMywgNTAwZTMsIDFlNiwgMi41ZTYsIDVlNiwgMTBlNl0ubWFwKAogIHYgPT4gTWF0aC5sb2cxMChNYXRoLm1heCh2LCAxKSkKKTsKCi8vIFF1aWNrLXNlbGVjdCBlcXVpdHkgcHJlc2V0cwpleHBvcnQgY29uc3QgUUsgPSBbCiAgeyB2OiAyMDAwMCwgbDogJyQyMEsnIH0sCiAgeyB2OiA4NzUwMCwgbDogJyQ4Ny41SycgfSwKICB7IHY6IDI1MDAwMCwgbDogJyQyNTBLJyB9LAogIHsgdjogMTAwMDAwMCwgbDogJyQxTScgfSwKICB7IHY6IDUwMDAwMDAsIGw6ICckNU0nIH0sCiAgeyB2OiAxMDAwMDAwMCwgbDogJyQxME0nIH0sCl07CgovLyBGdWxsIG1hcCBlcXVpdHkgbGV2ZWxzCmV4cG9ydCBjb25zdCBGTSA9IFsKICB7IHY6IDIwMDAwLCBsOiAnJDIwSycsIHBoOiAncHJlJyB9LAogIHsgdjogNTAwMDAsIGw6ICckNTBLJywgcGg6ICdwcmUnIH0sCiAgeyB2OiA4NzUwMCwgbDogJyQ4Ny41SycsIHBoOiAnYW5jaG9yJyB9LAogIHsgdjogMTAwMDAwLCBsOiAnJDEwMEsnLCBwaDogJ21vZGVsJyB9LAogIHsgdjogMjUwMDAwLCBsOiAnJDI1MEsnLCBwaDogJ21vZGVsJyB9LAogIHsgdjogNTAwMDAwLCBsOiAnJDUwMEsnLCBwaDogJ21vZGVsJyB9LAogIHsgdjogMTAwMDAwMCwgbDogJyQxTScsIHBoOiAnbW9kZWwnIH0sCiAgeyB2OiAzMDAwMDAwLCBsOiAnJDNNJywgcGg6ICdtb2RlbCcgfSwKICB7IHY6IDUwMDAwMDAsIGw6ICckNU0nLCBwaDogJ21vZGVsJyB9LAogIHsgdjogMTAwMDAwMDAsIGw6ICckMTBNJywgcGg6ICdtb2RlbCcgfSwKXTsKCi8vIE1pbGVzdG9uZSB0YXJnZXRzCmV4cG9ydCBjb25zdCBNSUxFUyA9IFsKICB7IHY6IDEwMDAwMCwgbDogJyQxMDBLJyB9LAogIHsgdjogMjUwMDAwLCBsOiAnJDI1MEsnIH0sCiAgeyB2OiA1MDAwMDAsIGw6ICckNTAwSycgfSwKICB7IHY6IDEwMDAwMDAsIGw6ICckMU0nIH0sCiAgeyB2OiA1MDAwMDAwLCBsOiAnJDVNJyB9LAogIHsgdjogMTAwMDAwMDAsIGw6ICckMTBNJyB9LApdOwoKLy8gR1BTIGZ1bm5lbCB6b25lcwpleHBvcnQgY29uc3QgR1BTX1ogPSBbCiAgeyBlcTogMjAwMDAsIGw6ICckMjBLJywgczogJzEtTG9zcyBXaXBlJywgYzogJyNlZjQ0NDQnLCB0YzogJ3RleHQtcm9zZS00MDAnIH0sCiAgeyBlcTogNTAwMDAsIGw6ICckNTBLJywgczogJ0RhbmdlciBab25lJywgYzogJyNlYWIzMDgnLCB0YzogJ3RleHQtYW1iZXItNDAwJyB9LAogIHsgZXE6IDg3NTAwLCBsOiAnJDg3LjVLJywgczogJ0Jhc2VjYW1wJywgYzogJyMxMGI5ODEnLCB0YzogJ3RleHQtZW1lcmFsZC00MDAnIH0sCiAgeyBlcTogMTAwMDAwLCBsOiAnJDEwMEsnLCBzOiAnR29hbCcsIGM6ICcjMjJjNTVlJywgdGM6ICd0ZXh0LWVtZXJhbGQtMzAwJyB9LApdOwoKLy8gQ2hhcnQgc3R5bGVzCmV4cG9ydCBjb25zdCBUVCA9IHsKICBiYWNrZ3JvdW5kQ29sb3I6ICcjMEQxMTE3JywKICBib3JkZXI6ICcxcHggc29saWQgIzJEMzc0OCcsCiAgYm9yZGVyUmFkaXVzOiAxMiwKICBmb250U2l6ZTogMTIsCiAgcGFkZGluZzogJzEwcHggMTRweCcsCiAgY29sb3I6ICcjZjFmNWY5JywKICBmb250RmFtaWx5OiAiJ0pldEJyYWlucyBNb25vJywgdWktbW9ub3NwYWNlLCBtb25vc3BhY2UiLAp9OwoKZXhwb3J0IGNvbnN0IEFYID0gewogIGZvbnRTaXplOiAxMCwKICBmaWxsOiAnIzY0NzQ4YicsCiAgZm9udEZhbWlseTogIidKZXRCcmFpbnMgTW9ubycsIHVpLW1vbm9zcGFjZSwgbW9ub3NwYWNlIiwKfTsKCmV4cG9ydCBjb25zdCBDSEFSVF9NQVJHSU4gPSB7IHRvcDogMTAsIHJpZ2h0OiAxMCwgbGVmdDogLTIwLCBib3R0b206IDAgfTsKCi8vIEFuYWx5c2lzIHRhYiBkZWZpbml0aW9ucyAoaWNvbnMgcmVzb2x2ZWQgaW4gY29tcG9uZW50KQpleHBvcnQgY29uc3QgVEFCX0lEUyA9IFsnbWlsZXN0b25lcycsICdmdWxsbWFwJywgJ2N1cnZlcycsICdzdHJlc3MnLCAnZ3Jvd3RoJywgJ2NvbXBhcmUnXTsKZXhwb3J0IGNvbnN0IFRBQl9MQUJFTFMgPSB7CiAgbWlsZXN0b25lczogJ01pbGVzdG9uZXMnLAogIGZ1bGxtYXA6ICdEYXRhIE1hdHJpeCcsCiAgY3VydmVzOiAnUmlzayBDdXJ2ZXMnLAogIHN0cmVzczogJ1N0cmVzcyBUZXN0JywKICBncm93dGg6ICdQcm9qZWN0aW9ucycsCiAgY29tcGFyZTogJ0NvbXBhcmUnLAp9Owo=
+// Core model constants
+export const E0 = 87500;
+export const K0 = 0.33;
+export const SMIN = 20000;
+export const SMAX = 10000000;
+export const LOG_MIN = Math.log10(SMIN);
+export const LOG_MAX = Math.log10(SMAX);
+
+// Chart X-axis log ticks
+export const LXT = [20e3, 100e3, 250e3, 500e3, 1e6, 2.5e6, 5e6, 10e6].map(
+  v => Math.log10(Math.max(v, 1))
+);
+
+// Quick-select equity presets
+export const QK = [
+  { v: 20000, l: '$20K' },
+  { v: 87500, l: '$87.5K' },
+  { v: 250000, l: '$250K' },
+  { v: 1000000, l: '$1M' },
+  { v: 5000000, l: '$5M' },
+  { v: 10000000, l: '$10M' },
+];
+
+// Full map equity levels
+export const FM = [
+  { v: 20000, l: '$20K', ph: 'pre' },
+  { v: 50000, l: '$50K', ph: 'pre' },
+  { v: 87500, l: '$87.5K', ph: 'anchor' },
+  { v: 100000, l: '$100K', ph: 'model' },
+  { v: 250000, l: '$250K', ph: 'model' },
+  { v: 500000, l: '$500K', ph: 'model' },
+  { v: 1000000, l: '$1M', ph: 'model' },
+  { v: 3000000, l: '$3M', ph: 'model' },
+  { v: 5000000, l: '$5M', ph: 'model' },
+  { v: 10000000, l: '$10M', ph: 'model' },
+];
+
+// Milestone targets
+export const MILES = [
+  { v: 100000, l: '$100K' },
+  { v: 250000, l: '$250K' },
+  { v: 500000, l: '$500K' },
+  { v: 1000000, l: '$1M' },
+  { v: 5000000, l: '$5M' },
+  { v: 10000000, l: '$10M' },
+];
+
+// GPS funnel zones
+export const GPS_Z = [
+  { eq: 20000, l: '$20K', s: '1-Loss Wipe', c: '#ef4444', tc: 'text-rose-400' },
+  { eq: 50000, l: '$50K', s: 'Danger Zone', c: '#eab308', tc: 'text-amber-400' },
+  { eq: 87500, l: '$87.5K', s: 'Basecamp', c: '#10b981', tc: 'text-emerald-400' },
+  { eq: 100000, l: '$100K', s: 'Goal', c: '#22c55e', tc: 'text-emerald-300' },
+];
+
+// Chart styles
+export const TT = {
+  backgroundColor: '#0D1117',
+  border: '1px solid #2D3748',
+  borderRadius: 12,
+  fontSize: 12,
+  padding: '10px 14px',
+  color: '#f1f5f9',
+  fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+};
+
+export const AX = {
+  fontSize: 10,
+  fill: '#64748b',
+  fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+};
+
+export const CHART_MARGIN = { top: 10, right: 10, left: -20, bottom: 0 };
+
+// Analysis tab definitions (icons resolved in component)
+export const TAB_IDS = ['milestones', 'fullmap', 'curves', 'stress', 'growth', 'compare'];
+export const TAB_LABELS = {
+  milestones: 'Milestones',
+  fullmap: 'Data Matrix',
+  curves: 'Risk Curves',
+  stress: 'Stress Test',
+  growth: 'Projections',
+  compare: 'Compare',
+};
