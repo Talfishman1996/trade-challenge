@@ -1,13 +1,13 @@
 import { SMIN, LOG_MIN, LOG_MAX } from './constants.js';
 
 export const fmt = v => {
-  if (!isFinite(v)) return '\u2014';
+  if (!isFinite(v)) return '—';
   if (v < 1) return '0';
   const a = Math.abs(v);
   if (a >= 1e12) return `${+(v / 1e12).toFixed(1)}T`;
   if (a >= 1e9) return `${+(v / 1e9).toFixed(1)}B`;
-  if (a >= 1e6) return `${+(v / 1e6).toFixed(2)}M`;
-  if (a >= 1e3) return `${+(v / 1e3).toFixed(a % 1000 === 0 ? 0 : 1)}K`;
+  if (a >= 1e6) return `${+(v / 1e6).toFixed(v % 1e6 === 0 ? 0 : 2)}M`;
+  if (a >= 1e3) return `${+(v / 1e3).toFixed(v % 1e3 === 0 ? 0 : 1)}K`;
   return `${v.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
 };
 
