@@ -10,7 +10,7 @@ import EquityCurve from './EquityCurve.jsx';
    Constants & Trail Data
    ─────────────────────────────────────────── */
 
-const MOUNTAIN_BG = import.meta.env.BASE_URL + 'mountain-bg.png';
+const MOUNTAIN_BG = import.meta.env.BASE_URL + 'mountain-bg.jpg';
 
 // Camp names for milestones
 const CAMP_NAMES = ['Base Camp', 'Camp I', 'Camp II', 'Camp III', 'High Camp', 'Summit'];
