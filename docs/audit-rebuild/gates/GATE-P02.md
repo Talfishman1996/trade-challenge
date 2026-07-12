@@ -52,7 +52,7 @@ absent, and every P2 report states that no substantive review was generated.
 
 ## Checkpoint Record
 
-Scope/content commit: pending
+Scope/content commit: `986e9c6b108e8ae64d751ecd698d934431a4edd5`
 
 Gate tag: `AUDIT-P02-GATE-PASSED-2026-07-12`
 

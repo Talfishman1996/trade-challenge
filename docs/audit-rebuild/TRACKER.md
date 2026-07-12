@@ -178,7 +178,7 @@ gate actually passed.
 |---|---|---|---|---|---|
 | G0 | `GATE_PASSED` | `gates/GATE-P00.md` | `43dd70f` | `AUDIT-P00-GATE-PASSED-2026-07-12` | none |
 | G1 | `GATE_PASSED` | `gates/GATE-P01.md` | `f2dc485` | `AUDIT-P01-GATE-PASSED-2026-07-12` | none |
-| G2 | `GATE_PASSED` | `gates/GATE-P02.md` | pending content commit | `AUDIT-P02-GATE-PASSED-2026-07-12` | none |
+| G2 | `GATE_PASSED` | `gates/GATE-P02.md` | `986e9c6` | `AUDIT-P02-GATE-PASSED-2026-07-12` | none |
 | G3 | `IN_PROGRESS` | pending | none | none | none |
 | G4 | `NOT_STARTED` | none | none | none | none |
 | G5 | `NOT_STARTED` | none | none | none | none |
@@ -201,7 +201,7 @@ gate actually passed.
 | `AUDIT-P00-GATE-PASSED-2026-07-12` | Safe audit activation boundary | `43dd70f` plus gate validation record | yes |
 | `AUDIT-P01-GATE-PASSED-2026-07-12` | Frozen forensic current-state baseline | `f2dc485` plus gate validation record | yes |
 | Remote G1 checkpoint branch | GitHub forensic-baseline recovery | `ef6af8c` / `5cb20aa` | yes by convention |
-| `AUDIT-P02-GATE-PASSED-2026-07-12` | Owner-approved removal of external-advisor dependency | pending validation commit | yes |
+| `AUDIT-P02-GATE-PASSED-2026-07-12` | Owner-approved removal of external-advisor dependency | `986e9c6` plus validation record | yes |
 
 ## Active Blockers
 
