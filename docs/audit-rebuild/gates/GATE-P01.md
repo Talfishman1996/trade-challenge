@@ -143,9 +143,10 @@ unrepresented current-state domain.
 
 ## Checkpoint Record
 
-Evidence content commit: pending first G1 commit
+Evidence content commit: `f2dc485b5e2632ec1aa2b83fa6629a8eea84a414`
 
-Gate tag: pending validation commit
+Gate tag: `AUDIT-P01-GATE-PASSED-2026-07-12`
 
-Next phase authorization: P2 may start only after the content commit, tracker
-validation commit, immutable G1 tag, and recovery snapshot are recorded.
+Next phase authorization: P2.1 neutral-packet construction may start after the
+tracker validation commit and immutable G1 tag are recorded. Fable execution remains
+prohibited until P2.2 passes its contamination audit.
