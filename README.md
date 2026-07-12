@@ -1,8 +1,6 @@
 # TradeVault
 
-Mobile-first trading risk dashboard with adaptive position sizing. Personal tool for tracking the $20K to $10M equity challenge.
-
-**Live:** [talfishman1996.github.io/trade-challenge](https://talfishman1996.github.io/trade-challenge/)
+Mobile-first trading risk dashboard with 2/3 Power Decay sizing and fixed 1:1 risk/reward. Personal tool for tracking the $20K to $10M equity challenge.
 
 ## Stack
 
@@ -11,13 +9,13 @@ Mobile-first trading risk dashboard with adaptive position sizing. Personal tool
 - Recharts (charts/visualizations)
 - Framer Motion (animations)
 - Lucide React (icons)
-- localStorage for persistence (no backend except optional cloud sync)
+- localStorage for persistence, plus optional Cloudflare Worker sync
 
 ## Quick Start
 
 ```bash
 npm install
-npm run dev       # http://localhost:5173/trade-challenge/
+npm run dev       # http://localhost:5173/
 npm run build     # Production build -> dist/
 ```
 
@@ -30,7 +28,7 @@ src/
   sync.js                   # Cloud sync (Cloudflare Workers KV)
   math/
     constants.js            # Model constants, milestones, chart config
-    risk.js                 # 2/3 Power Decay model (core math)
+    risk.js                 # 2/3 Power Decay model + fixed RR target (core math)
     format.js               # Number formatting utilities
     monte-carlo.js          # Monte Carlo simulation engine
     analytics.js            # Trade analytics (streaks, R-multiples, etc.)
@@ -57,33 +55,29 @@ src/
     MetricCard.jsx          # Reusable stat card component
     Celebration.jsx         # Milestone achievement animation
     TagPicker.jsx           # Multi-select tag picker
-    shared/                 # Shared component utilities
 worker/
   src/index.js              # Cloudflare Worker (sync API)
   wrangler.toml             # Worker config
-.github/
-  workflows/                # GitHub Pages deploy on push to master
 ```
 
-## Core Math Model: 2/3 Power Decay
+## Core Math Model: 2/3 Power Decay + 1:1 RR
 
-The position sizing engine uses a piecewise risk function `rN(equity)`:
+The position sizing engine still uses the original piecewise risk function `rN(equity)`. Only the reward ratio is fixed to `1.0:1`.
 
-| Equity Range | Risk % | Behavior |
-|-------------|--------|----------|
-| $0 - $20K | 100% | All-in (survival mode) |
-| $20K - $50K | 100% -> 50% | Linear decrease |
-| $50K - $87.5K | 50% -> 33% | Linear decrease to anchor |
-| $87.5K+ | 33% * (87500/E)^(2/3) | Power decay |
+| Equity Range | Risk % | 1:1 Outcome Behavior |
+|-------------|--------|----------------------|
+| $0 - $20K | 100% | A win can double the account; a loss can wipe to the app floor |
+| $20K - $50K | 100% -> 50% | Win and loss both use the same decay-sized 1R |
+| $50K - $87.5K | 50% -> 33% | Linear decrease to anchor risk |
+| $87.5K+ | 33% * (87500/E)^(2/3) | Risk decays smoothly as equity grows |
 
 **Key constants:**
 - Anchor equity (E0): $87,500 (risk = 33% here)
+- Reward ratio: 1.0:1
 - Start: $20,000
 - Target: $10,000,000
 
-**At scale:** Risk decays smoothly -- e.g., ~8.5% at $500K, ~4.4% at $1M, ~1.4% at $5M.
-
-The model balances aggressive growth at low equity with capital preservation at high equity, using a continuous curve (no cliff edges).
+The model keeps aggressive growth at low equity and capital preservation at high equity, while making each win/loss symmetric around the active decay-sized 1R amount.
 
 ## Features
 
@@ -110,17 +104,21 @@ The model balances aggressive growth at low equity with capital preservation at 
 - **Compare:** Side-by-side model comparison
 
 ### Settings
-- Adjustable risk parameters (anchor, base risk, reward ratio)
+- Fixed 1:1 risk/reward display over the decay sizing engine
 - R-multiple toggle
 - Cloud sync management
 - Data import/export (JSON)
 - Clear data with confirmation
 
 ### Cloud Sync
-- Cloudflare Workers + KV backend
-- Auto-sync on trade entry, mount, and 60s interval
-- Share via URL hash (`#sync=KEY_ID`)
-- Timestamp-based conflict resolution
+- Cloudflare Pages frontend + Cloudflare Worker sync backend
+- Always-on shared sync vault for this internal app
+- Auto-sync on save/edit, focus return, and adaptive background intervals
+- Draft autosave while typing and edit autosave while modifying trades
+- Merge-aware reconciliation for local/cloud datasets
+- Visible sync status and recent sync activity
+- Legacy sync-link migration into the current shared vault
+- Last-write timestamps plus record-level merge handling
 
 ## Design
 
@@ -132,7 +130,27 @@ The model balances aggressive growth at low equity with capital preservation at 
 
 ## Deployment
 
-Auto-deploys to GitHub Pages on push to `master` via GitHub Actions. Vite base path is `/trade-challenge/`.
+The frontend now builds with `/` as the default base path, which is appropriate for Cloudflare Pages and other root-host deployments.
+
+If you need the old GitHub Pages subpath behavior, build with:
+
+```bash
+VITE_BASE_PATH=/trade-challenge/ npm run build
+```
+
+### Cloudflare handoff
+
+```bash
+npm run build
+npm run deploy:cloudflare
+npm run deploy:worker
+```
+
+- `deploy:cloudflare` uploads the frontend `dist/` build to Cloudflare Pages.
+- `deploy:worker` deploys the sync worker defined in `worker/wrangler.toml`.
+- Both commands require an authenticated Wrangler session.
+- Current canonical live frontend: `https://tradevault-b7t.pages.dev`
+- Current live sync worker: `https://tradevault-sync.talfishmanbusiness.workers.dev`
 
 ## License
 

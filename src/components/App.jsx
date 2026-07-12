@@ -1,15 +1,14 @@
-import React, { useState, useEffect, useRef, useCallback, Component } from 'react';
-import { Home as HomeIcon, List, BarChart3, Settings as SettingsIcon, AlertTriangle, Shield, Plus, Link2, Zap, Loader2, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback, Component, Suspense } from 'react';
+import { Home as HomeIcon, List, BarChart3, Settings as SettingsIcon, AlertTriangle, Shield, Plus, Loader2, CheckCircle2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSettings } from '../store/settings.js';
 import { useTrades } from '../store/trades.js';
-import { createBlob, getSyncConfig, saveSyncConfig, clearSyncConfig, pullFromBlobId, extractBlobId } from '../sync.js';
+import { DEFAULT_SYNC_ID, ensurePrimarySyncConfig, getSyncConfig, pullFromBlobId, pushToBlobId, saveSyncConfig } from '../sync.js';
+import { mergeDatasets, normalizeDataset, readStoredDataset, writeStoredDataset, todayLocalDate } from '../utils/tradeData.js';
+import { recordSyncActivity, readSyncActivity } from '../utils/syncActivity.js';
 import Home from './Home.jsx';
-import Trades from './Trades.jsx';
-import Analysis from './Analysis.jsx';
-import Settings from './Settings.jsx';
-import Celebration from './Celebration.jsx';
-import TradeEntry from './TradeEntry.jsx';
+import SyncStatusPill from './SyncStatusPill.jsx';
+import { describeSyncResult } from '../utils/syncStatus.js';
 
 class ErrorBoundary extends Component {
   state = { error: null };
@@ -31,6 +30,12 @@ class ErrorBoundary extends Component {
   }
 }
 
+const Trades = React.lazy(() => import('./Trades.jsx'));
+const Analysis = React.lazy(() => import('./Analysis.jsx'));
+const Settings = React.lazy(() => import('./Settings.jsx'));
+const Celebration = React.lazy(() => import('./Celebration.jsx'));
+const TradeEntry = React.lazy(() => import('./TradeEntry.jsx'));
+
 const TABS = [
   { id: 'home', label: 'Home', icon: HomeIcon },
   { id: 'trades', label: 'Trades', icon: List },
@@ -38,132 +43,203 @@ const TABS = [
   { id: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
 
+const buildRapidEntrySeed = (trade) => {
+  if (!trade) return null;
+  return {
+    direction: trade.direction || 'long',
+    isWin: trade.pnl >= 0,
+    ticker: trade.ticker || '',
+    strategy: trade.strategy || '',
+    contracts: trade.contracts ? String(trade.contracts) : '',
+    setupTags: trade.setupTags || [],
+    emotionTags: [],
+    mistakes: [],
+    tradeDate: todayLocalDate(),
+    openDate: '',
+    entryTime: '',
+    exitTime: '',
+    amount: '',
+    entryPrice: '',
+    exitPrice: '',
+    imageKeys: [],
+    mae: '',
+    mfe: '',
+    notes: '',
+  };
+};
+
+const ViewLoader = ({ compact = false }) => (
+  <div className={'flex items-center justify-center ' + (compact ? 'py-8' : 'min-h-[40vh]')}>
+    <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+  </div>
+);
+
 export default function App() {
   const [tab, setTab] = useState('home');
   const settings = useSettings();
   const trades = useTrades(settings.initialEquity);
   const [showTradeEntry, setShowTradeEntry] = useState(false);
   const [editTradeData, setEditTradeData] = useState(null);
-  const [syncGate, setSyncGate] = useState(null); // null = checking, 'ready' = proceed, 'setup' = show gate
-  const [syncGateInput, setSyncGateInput] = useState('');
-  const [syncGateStatus, setSyncGateStatus] = useState(''); // '', 'connecting', 'error', 'creating'
+  const [tradeEntrySeed, setTradeEntrySeed] = useState(null);
   const [riskGate, setRiskGate] = useState(null);
   const [toast, setToast] = useState(null);
+  const [syncInfo, setSyncInfo] = useState(() => ensurePrimarySyncConfig());
+  const [syncPillStatus, setSyncPillStatus] = useState(() => (navigator.onLine ? 'ready' : 'offline'));
+  const [syncActivity, setSyncActivity] = useState(() => readSyncActivity());
+  const [isForeground, setIsForeground] = useState(() => document.visibilityState === 'visible' && document.hasFocus());
   const toastTimer = useRef(null);
   const showToast = useCallback((msg, type = 'success') => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast({ msg, type });
     toastTimer.current = setTimeout(() => setToast(null), 2500);
   }, []);
+  const refreshSyncInfo = useCallback(() => {
+    const next = ensurePrimarySyncConfig();
+    setSyncInfo(next);
+    return next;
+  }, []);
+  const pushSyncActivity = useCallback((status, source, message) => {
+    setSyncActivity(recordSyncActivity({ status, source, message }));
+  }, []);
 
   // Stable ref to latest syncFromCloud — survives across re-renders
   const syncRef = trades.syncRef;
 
-  // Connect to an existing sync (used by gate and settings)
-  const connectToSync = async (input) => {
-    const blobId = extractBlobId(input);
-    if (!blobId) { setSyncGateStatus('error'); return 'invalid'; }
-    setSyncGateStatus('connecting');
-    try {
-      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000));
-      const cloud = await Promise.race([pullFromBlobId(blobId), timeout]);
-      if (!cloud || !Array.isArray(cloud.trades)) {
-        setSyncGateStatus('error');
-        return 'not_found';
+  const runSync = useCallback(async ({ silent = false, reason = 'manual' } = {}) => {
+    refreshSyncInfo();
+    if (!navigator.onLine) {
+      setSyncPillStatus('offline');
+      if (!silent) {
+        pushSyncActivity('offline', reason, 'Device is offline');
+        showToast('You are offline', 'error');
       }
-      saveSyncConfig({ blobId, lastSync: Date.now() });
-      window.location.hash = `sync=${blobId}`;
-      const { lastModified, ...rest } = cloud;
-      const merged = { ...rest, _lastModified: lastModified || Date.now() };
-      localStorage.setItem('risk-engine-data', JSON.stringify(merged));
-      window.location.reload();
-      return 'ok';
-    } catch {
-      setSyncGateStatus('error');
-      return 'timeout';
+      return 'offline';
     }
-  };
-
-  const startFresh = () => {
-    // Dismiss gate IMMEDIATELY — never block the user
-    setSyncGate('ready');
-    // Create blob in the background — if it fails, next page load retries via initSync
-    (async () => {
-      try {
-        const data = { version: 1, initialEquity: trades.initialEquity, trades: [], _lastModified: Date.now() };
-        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000));
-        const blobId = await Promise.race([createBlob(data), timeout]);
-        if (blobId) {
-          saveSyncConfig({ blobId, lastSync: Date.now() });
-          window.location.hash = `sync=${blobId}`;
+    setSyncPillStatus('syncing');
+    if (!silent && reason === 'manual') {
+      pushSyncActivity('syncing', reason, 'Manual sync started');
+    }
+    try {
+      const result = await syncRef.current?.();
+      refreshSyncInfo();
+      const summary = describeSyncResult(result || 'in_sync');
+      if (result === 'merged') {
+        setSyncPillStatus('merged');
+        pushSyncActivity('merged', reason, summary);
+        if (!silent) showToast('Device changes merged');
+      } else if (result === 'pushed' || result === 'in_sync') {
+        setSyncPillStatus('ready');
+        if (!silent || result === 'pushed') pushSyncActivity(result === 'pushed' ? 'ready' : 'ready', reason, summary);
+        if (!silent && reason === 'manual') {
+          showToast(result === 'pushed' ? 'Sync complete' : 'Already up to date');
         }
-      } catch {}
-    })();
-  };
+      } else {
+        setSyncPillStatus('ready');
+      }
+      return result || 'in_sync';
+    } catch {
+      setSyncPillStatus('error');
+      pushSyncActivity('error', reason, 'Sync failed');
+      if (!silent) showToast('Sync failed', 'error');
+      return 'error';
+    }
+  }, [pushSyncActivity, refreshSyncInfo, showToast, syncRef]);
 
-  // Auto-sync: URL hash is the sync key
+  // Auto-sync: always use one shared internal sync space and silently migrate legacy per-link syncs
   useEffect(() => {
     const initSync = async () => {
       const hash = window.location.hash;
       const match = hash.match(/sync=([a-zA-Z0-9-]+)/);
-      let config = getSyncConfig();
-      // Clean up stale config from previous sync versions (Firebase)
-      if (config && !config.blobId) { clearSyncConfig(); config = null; }
+      const config = getSyncConfig();
+      const legacyBlobId = match?.[1] && match[1] !== DEFAULT_SYNC_ID
+        ? match[1]
+        : (config?.blobId && config.blobId !== DEFAULT_SYNC_ID ? config.blobId : null);
 
-      if (match) {
-        // URL has sync ID — use it
-        const blobId = match[1];
-        if (!config || config.blobId !== blobId) {
-          saveSyncConfig({ blobId, lastSync: null });
-        }
-        setSyncGate('ready');
-      } else if (!config) {
-        // No hash, no config — check if user has existing trades
-        try {
-          const raw = localStorage.getItem('risk-engine-data');
-          const existing = raw ? JSON.parse(raw) : null;
-          if (existing && existing.trades && existing.trades.length > 0) {
-            // Has local trades — auto-create blob for them
-            const data = { ...existing, _lastModified: Date.now() };
-            try {
-              const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000));
-              const blobId = await Promise.race([createBlob(data), timeout]);
-              if (blobId) {
-                saveSyncConfig({ blobId, lastSync: Date.now() });
-                window.location.hash = `sync=${blobId}`;
-              }
-            } catch {}
-            setSyncGate('ready');
-            return; // just created — no need to pull
-          }
-        } catch {}
-        // Truly fresh device — show sync gate
-        setSyncGate('setup');
-        return;
-      } else {
-        // Has config but URL missing hash — restore it
-        window.location.hash = `sync=${config.blobId}`;
-        setSyncGate('ready');
+      ensurePrimarySyncConfig();
+      refreshSyncInfo();
+
+      if (window.location.hash) {
+        window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
       }
 
-      // Use ref to get latest syncFromCloud (avoids stale closure)
-      if (syncRef.current) syncRef.current().catch(() => {});
+      if (legacyBlobId) {
+        try {
+          const legacyCloud = await pullFromBlobId(legacyBlobId);
+          if (legacyCloud && Array.isArray(legacyCloud.trades)) {
+            const { lastModified, ...rest } = legacyCloud;
+            const localData = readStoredDataset(trades.initialEquity);
+            const merged = mergeDatasets(
+              localData,
+              normalizeDataset({ ...rest, _lastModified: lastModified || Date.now() }, trades.initialEquity),
+              trades.initialEquity
+            );
+            writeStoredDataset({ ...merged, _lastModified: Date.now() }, trades.initialEquity);
+            await pushToBlobId(DEFAULT_SYNC_ID, merged);
+            saveSyncConfig({ blobId: DEFAULT_SYNC_ID, lastSync: Date.now() });
+            refreshSyncInfo();
+            pushSyncActivity('merged', 'boot', 'Migrated legacy sync into the always-on vault');
+          }
+        } catch {}
+      }
+
+      runSync({ silent: true, reason: 'boot' }).catch(() => {});
     };
     initSync();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Periodic sync every 60 seconds — uses ref to avoid stale closures
-  useEffect(() => {
-    const id = setInterval(() => {
-      if (getSyncConfig() && syncRef.current) {
-        syncRef.current().catch(() => {});
-      }
-    }, 60000);
-    return () => clearInterval(id);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const syncIntervalMs = showTradeEntry ? 15000 : 30000;
 
-  const openTradeEntry = (trade = null) => {
-    if (!trade) {
+  // Adaptive periodic sync — fast while actively entering trades, slower while browsing, off in background
+  useEffect(() => {
+    if (!isForeground || !navigator.onLine) return undefined;
+    const id = setInterval(() => {
+      runSync({ silent: true, reason: 'interval' }).catch(() => {});
+    }, syncIntervalMs);
+    return () => clearInterval(id);
+  }, [isForeground, runSync, syncIntervalMs]);
+
+  useEffect(() => {
+    const handleForegroundState = () => {
+      const visible = document.visibilityState === 'visible';
+      const focused = typeof document.hasFocus === 'function' ? document.hasFocus() : true;
+      const nextForeground = visible && focused;
+      setIsForeground(nextForeground);
+      if (nextForeground) {
+        runSync({ silent: true, reason: 'focus' }).catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', handleForegroundState);
+    window.addEventListener('focus', handleForegroundState);
+    window.addEventListener('blur', handleForegroundState);
+    return () => {
+      document.removeEventListener('visibilitychange', handleForegroundState);
+      window.removeEventListener('focus', handleForegroundState);
+      window.removeEventListener('blur', handleForegroundState);
+    };
+  }, [runSync]);
+
+  useEffect(() => {
+    const handleConnectivity = () => {
+      if (!navigator.onLine) {
+        setSyncPillStatus('offline');
+        pushSyncActivity('offline', 'connectivity', 'Device went offline');
+        return;
+      }
+      refreshSyncInfo();
+      setSyncPillStatus('ready');
+      pushSyncActivity('ready', 'connectivity', 'Device is back online');
+    };
+    window.addEventListener('online', handleConnectivity);
+    window.addEventListener('offline', handleConnectivity);
+    return () => {
+      window.removeEventListener('online', handleConnectivity);
+      window.removeEventListener('offline', handleConnectivity);
+    };
+  }, [pushSyncActivity, refreshSyncInfo]);
+
+  const openTradeEntry = (trade = null, options = {}) => {
+    const seededEntry = !!options.entrySeed;
+    if (!trade && !seededEntry) {
       if (settings.tiltLockEnabled &&
           trades.stats.streakType === 'loss' &&
           trades.stats.currentStreak >= settings.tiltLockThreshold) {
@@ -177,24 +253,55 @@ export default function App() {
       }
     }
     setEditTradeData(trade);
+    setTradeEntrySeed(options.entrySeed || null);
     setShowTradeEntry(true);
+  };
+  const openRapidEntryFromTrade = (trade) => {
+    const entrySeed = buildRapidEntrySeed(trade);
+    if (!entrySeed) return;
+    openTradeEntry(null, { entrySeed });
+    showToast('Last trade template loaded');
   };
   const overrideRiskGate = () => {
     setRiskGate(null);
     setEditTradeData(null);
+    setTradeEntrySeed(null);
     setShowTradeEntry(true);
   };
   const closeTradeEntry = () => {
     setShowTradeEntry(false);
     setEditTradeData(null);
+    setTradeEntrySeed(null);
   };
-  const handleTradeSave = (tradeData) => {
+  const syncMutationFeedback = useCallback(async (successMsg, fallbackMsg) => {
+    const result = await runSync({ silent: true, reason: 'save' });
+    if (result === 'offline' || result === 'error') {
+      showToast(fallbackMsg);
+      return result;
+    }
+    showToast(successMsg);
+    return result;
+  }, [runSync, showToast]);
+  const handleTradeSave = async (tradeData) => {
     trades.addTrade(tradeData);
-    showToast('Trade logged');
+    await syncMutationFeedback('Trade saved & synced', 'Trade saved locally');
   };
-  const handleTradeEdit = (id, changes) => {
+  const handleTradeEdit = async (id, changes, options = {}) => {
     trades.editTrade(id, changes);
-    showToast('Trade updated');
+    if (options.silent) {
+      await runSync({ silent: true, reason: 'autosave' });
+      return;
+    }
+    await syncMutationFeedback('Trade updated & synced', 'Trade updated locally');
+  };
+  const handleTradeDelete = async (id) => {
+    const deleted = await trades.deleteTrade(id);
+    if (deleted) {
+      closeTradeEntry();
+      await syncMutationFeedback('Trade deleted & synced', 'Trade deleted locally');
+    } else {
+      showToast('Could not delete trade', 'error');
+    }
   };
 
   return (
@@ -211,84 +318,20 @@ export default function App() {
       ].join('') }} />
 
       {/* Sync Gate — shown on fresh device with no data */}
-      {syncGate === 'setup' && (
-        <div className="fixed inset-0 z-[100] bg-deep flex items-center justify-center p-6">
-          <div className="w-full max-w-sm space-y-6">
-            {/* Branding */}
-            <div className="text-center space-y-3">
-              <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 mx-auto">
-                <Shield className="w-7 h-7 text-blue-400" />
-              </div>
-              <h1 className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-white font-bold text-xl tracking-widest">TRADEVAULT</h1>
-              <p className="text-sm text-slate-500">$20K → $10M Challenge</p>
-            </div>
-
-            {/* Primary: Get Started */}
-            <div className="space-y-2">
-              <p className="text-xs text-slate-500 text-center leading-relaxed">
-                Your trades sync across devices automatically. No account needed.
-              </p>
-              <button
-                onClick={startFresh}
-                className="w-full flex items-center justify-center gap-2 py-3.5 bg-blue-500 text-white text-sm font-bold rounded-xl active:scale-[0.98] hover:bg-blue-400 transition-all shadow-lg shadow-blue-500/20"
-              >
-                <Zap className="w-4 h-4" /> Get Started
-              </button>
-            </div>
-
-            {/* Divider */}
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-line" />
-              <span className="text-xs text-slate-600 font-medium">or</span>
-              <div className="flex-1 h-px bg-line" />
-            </div>
-
-            {/* Secondary: Connect to existing */}
-            <div className="bg-surface rounded-2xl p-4 border border-line space-y-3">
-              <div className="flex items-center gap-2">
-                <Link2 className="w-4 h-4 text-slate-500" />
-                <span className="text-sm font-medium text-slate-400">Already have a sync?</span>
-              </div>
-              <input
-                type="text"
-                value={syncGateInput}
-                onChange={e => { setSyncGateInput(e.target.value); setSyncGateStatus(''); }}
-                placeholder="Paste sync link from other device"
-                className="w-full bg-deep border border-line rounded-xl text-sm text-white py-3 px-4 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all placeholder:text-slate-700"
-              />
-              {syncGateStatus === 'error' && (
-                <p className="text-xs text-red-400">Could not find that sync. Check the link and try again.</p>
-              )}
-              <button
-                onClick={() => connectToSync(syncGateInput)}
-                disabled={!syncGateInput.trim() || syncGateStatus === 'connecting'}
-                className={'w-full py-2.5 rounded-xl font-semibold text-sm transition-all ' +
-                  (syncGateInput.trim() && syncGateStatus !== 'connecting'
-                    ? 'bg-elevated text-slate-300 border border-line active:scale-[0.98] hover:bg-line'
-                    : 'bg-elevated text-slate-600 border border-line cursor-not-allowed')}
-              >
-                {syncGateStatus === 'connecting' ? (
-                  <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Connecting...</span>
-                ) : 'Connect'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Loading state while checking sync */}
-      {syncGate === null && (
-        <div className="fixed inset-0 z-[100] bg-deep flex items-center justify-center">
-          <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
-        </div>
-      )}
-
       {/* Desktop Sidebar (md+) */}
       <aside className="hidden md:flex flex-col items-center fixed left-0 top-0 bottom-0 w-16 bg-surface border-r border-line z-50 py-5 gap-1">
         {/* Logo */}
-        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 mb-6">
+        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 mb-2">
           <Shield className="w-5 h-5 text-blue-400" />
         </div>
+        <SyncStatusPill
+          compact
+          status={syncPillStatus}
+          lastSync={syncInfo?.lastSync}
+          onClick={() => runSync({ silent: false, reason: 'manual' })}
+          disabled={syncPillStatus === 'syncing'}
+          className="mb-5"
+        />
 
         {/* Nav items */}
         {TABS.map(t => {
@@ -335,10 +378,12 @@ export default function App() {
             transition={{ duration: 0.06 }}
           >
             <ErrorBoundary key={tab}>
-              {tab === 'home' && <Home trades={trades} settings={settings} onOpenTradeEntry={openTradeEntry} />}
-              {tab === 'trades' && <Trades trades={trades} settings={settings} onOpenTradeEntry={openTradeEntry} showToast={showToast} />}
-              {tab === 'analysis' && <Analysis trades={trades} settings={settings} />}
-              {tab === 'settings' && <Settings settings={settings} trades={trades} showToast={showToast} />}
+              <Suspense fallback={<ViewLoader />}>
+                {tab === 'home' && <Home trades={trades} settings={settings} onOpenTradeEntry={openTradeEntry} />}
+                {tab === 'trades' && <Trades trades={trades} settings={settings} onOpenTradeEntry={openTradeEntry} onDuplicateLastTrade={() => openRapidEntryFromTrade(trades.trades[trades.trades.length - 1])} showToast={showToast} />}
+                {tab === 'analysis' && <Analysis trades={trades} settings={settings} />}
+                {tab === 'settings' && <Settings settings={settings} trades={trades} showToast={showToast} syncInfo={syncInfo} syncStatus={syncPillStatus} syncActivity={syncActivity} onRunSync={() => runSync({ silent: false, reason: 'settings' })} />}
+              </Suspense>
             </ErrorBoundary>
           </motion.div>
         </AnimatePresence>
@@ -359,26 +404,39 @@ export default function App() {
                     </div>
                   </button>
                 )}
-                <button
-                  onClick={() => setTab(t.id)}
-                  className={'flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-colors min-w-[48px] ' +
-                    (active ? 'text-blue-400' : 'text-slate-500 active:text-slate-300')}
-                >
-                  <Icon className={'w-5 h-5 transition-transform ' + (active ? 'scale-110' : '')} strokeWidth={active ? 2.5 : 1.5} />
-                  <span className={'text-xs font-medium ' + (active ? 'font-semibold' : '')}>{t.label}</span>
-                  {active && (
-                    <motion.div
-                      layoutId="bottomTab"
-                      className="absolute bottom-1 w-6 h-0.5 bg-blue-500 rounded-full"
-                      transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                    />
-                  )}
-                </button>
+                <div className="relative flex h-16 min-w-[54px] items-center justify-center">
+                  <button
+                    onClick={() => setTab(t.id)}
+                    className={'relative flex min-w-[48px] flex-col items-center gap-0.5 rounded-xl px-2 py-1.5 transition-colors ' +
+                      (active ? 'text-blue-400' : 'text-slate-500 active:text-slate-300')}
+                  >
+                    <Icon className={'w-5 h-5 transition-transform ' + (active ? 'scale-110' : '')} strokeWidth={active ? 2.5 : 1.5} />
+                    <span className={'text-xs font-medium ' + (active ? 'font-semibold' : '')}>{t.label}</span>
+                    {active && (
+                      <motion.div
+                        layoutId="bottomTab"
+                        className="absolute bottom-1 w-6 h-0.5 bg-blue-500 rounded-full"
+                        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                      />
+                    )}
+                  </button>
+                </div>
               </React.Fragment>
             );
           })}
         </div>
       </nav>
+
+      <div className="fixed bottom-20 right-3 z-50 md:hidden">
+        <SyncStatusPill
+          compact
+          status={syncPillStatus}
+          lastSync={syncInfo?.lastSync}
+          onClick={() => runSync({ silent: false, reason: 'manual' })}
+          disabled={syncPillStatus === 'syncing'}
+          className="h-9 w-9 rounded-full shadow-md ring-2 ring-deep"
+        />
+      </div>
 
       {/* Risk Gate Overlay (Tilt Lock / Daily Limit) */}
       <AnimatePresence>
@@ -448,20 +506,27 @@ export default function App() {
       </AnimatePresence>
 
       {/* App-Level Trade Entry */}
-      <TradeEntry
-        open={showTradeEntry}
-        onClose={closeTradeEntry}
-        onSave={handleTradeSave}
-        onEdit={handleTradeEdit}
-        editData={editTradeData}
-        currentEquity={trades.currentEquity}
-        nextRisk={trades.nextRisk}
-      />
+      <Suspense fallback={<ViewLoader compact />}>
+        <TradeEntry
+          open={showTradeEntry}
+          onClose={closeTradeEntry}
+          onSave={handleTradeSave}
+          onEdit={handleTradeEdit}
+          onDelete={handleTradeDelete}
+          editData={editTradeData}
+          entrySeed={tradeEntrySeed}
+          recentTrades={trades.trades}
+          currentEquity={trades.currentEquity}
+          nextRisk={trades.nextRisk}
+        />
+      </Suspense>
 
       {/* Milestone Celebration Overlay */}
       <AnimatePresence>
         {trades.celebration && (
-          <Celebration milestone={trades.celebration} onDismiss={trades.clearCelebration} />
+          <Suspense fallback={<ViewLoader compact />}>
+            <Celebration milestone={trades.celebration} onDismiss={trades.clearCelebration} />
+          </Suspense>
         )}
       </AnimatePresence>
 

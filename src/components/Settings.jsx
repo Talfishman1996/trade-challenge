@@ -1,23 +1,36 @@
 import React, { useState, useRef } from 'react';
-import { Download, Upload, Trash2, FileSpreadsheet, Cloud, CloudOff, RefreshCw, Copy, Check, Link2, Loader2 } from 'lucide-react';
-import { getSyncConfig, clearSyncConfig, saveSyncConfig, extractBlobId, pullFromBlobId, createBlob } from '../sync.js';
+import { Download, Upload, Trash2, FileSpreadsheet, Cloud, Copy, Check, Link2, Loader2, Share2 } from 'lucide-react';
+import { buildSyncUrl, DEFAULT_SYNC_ID, ensurePrimarySyncConfig, extractBlobId, pullFromBlobId, pushToBlobId, saveSyncConfig } from '../sync.js';
 import { exportJSON, exportCSV, importJSON } from '../utils/dataIO.js';
+import { mergeDatasets, normalizeDataset, readStoredDataset, writeStoredDataset } from '../utils/tradeData.js';
+import SyncStatusPill from './SyncStatusPill.jsx';
+import { describeSyncResult } from '../utils/syncStatus.js';
 
-export default function Settings({ settings, trades, showToast }) {
+function ControlModeBadge({ mode }) {
+  const soft = mode === 'Soft';
+  return (
+    <span className={'text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border ' +
+      (soft
+        ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+        : 'bg-blue-500/10 text-blue-400 border-blue-500/20')}>
+      {mode}
+    </span>
+  );
+}
+
+export default function Settings({ settings, trades, showToast, syncInfo, syncStatus = 'offline', syncActivity = [], onRunSync }) {
   const [showConfirm, setShowConfirm] = useState(null);
   const [eqInput, setEqInput] = useState(String(settings.initialEquity));
   const [dailyLimitInput, setDailyLimitInput] = useState(String(settings.dailyLossLimit || 0));
   const fileRef = useRef(null);
-  const [syncConfig, setSyncConfig] = useState(() => getSyncConfig());
+  const [syncConfig, setSyncConfig] = useState(() => ensurePrimarySyncConfig());
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState('');
   const [copied, setCopied] = useState(false);
-  const [showSwitchSync, setShowSwitchSync] = useState(false);
-  const [switchInput, setSwitchInput] = useState('');
-  const [switchStatus, setSwitchStatus] = useState(''); // '', 'connecting', 'error'
-  const [showOfflineConnect, setShowOfflineConnect] = useState(false);
-  const [offlineInput, setOfflineInput] = useState('');
-  const [offlineStatus, setOfflineStatus] = useState(''); // '', 'creating', 'connecting', 'error'
+  const [shared, setShared] = useState(false);
+  const [showLegacyImport, setShowLegacyImport] = useState(false);
+  const [legacyInput, setLegacyInput] = useState('');
+  const [legacyStatus, setLegacyStatus] = useState(''); // '', 'connecting', 'error'
 
   const handleEqChange = e => {
     const val = e.target.value.replace(/[^0-9]/g, '');
@@ -50,99 +63,68 @@ export default function Settings({ settings, trades, showToast }) {
     setSyncing(true);
     setSyncMsg('');
     try {
-      const result = await trades.syncFromCloud();
-      setSyncMsg(result === 'pulled' ? 'Updated from cloud' : 'Cloud is up to date');
-      setSyncConfig(getSyncConfig());
+      const result = onRunSync ? await onRunSync() : await trades.syncFromCloud();
+      setSyncMsg(describeSyncResult(result));
+      setSyncConfig(ensurePrimarySyncConfig());
     } catch { setSyncMsg('Sync failed'); }
     setSyncing(false);
   };
 
-  const handleCreateSync = async () => {
-    setOfflineStatus('creating');
-    setSyncMsg('');
-    try {
-      const data = { version: 1, initialEquity: trades.initialEquity || 20000, trades: trades.trades, _lastModified: Date.now() };
-      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000));
-      const blobId = await Promise.race([createBlob(data), timeout]);
-      if (blobId) {
-        saveSyncConfig({ blobId, lastSync: Date.now() });
-        window.location.hash = `sync=${blobId}`;
-        setSyncConfig({ blobId, lastSync: Date.now() });
-        setOfflineStatus('');
-        setSyncMsg('Sync created successfully');
-      } else {
-        setOfflineStatus('error');
-        setSyncMsg('Could not reach sync server. Try again later.');
-      }
-    } catch {
-      setOfflineStatus('error');
-      setSyncMsg('Connection timed out. Check your internet and try again.');
-    }
-  };
-
-  const handleOfflineConnect = async () => {
-    const blobId = extractBlobId(offlineInput);
-    if (!blobId) { setOfflineStatus('error'); setSyncMsg('Invalid sync link'); return; }
-    setOfflineStatus('connecting');
+  const handleLegacyImport = async () => {
+    const blobId = extractBlobId(legacyInput);
+    if (!blobId) { setLegacyStatus('error'); setSyncMsg('Invalid legacy sync link'); return; }
+    setLegacyStatus('connecting');
     setSyncMsg('');
     try {
       const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000));
       const cloud = await Promise.race([pullFromBlobId(blobId), timeout]);
       if (!cloud || !Array.isArray(cloud.trades)) {
-        setOfflineStatus('error');
-        setSyncMsg('Sync not found. Check the link and try again.');
+        setLegacyStatus('error');
+        setSyncMsg('Legacy sync not found. Check the link and try again.');
         return;
       }
-      saveSyncConfig({ blobId, lastSync: Date.now() });
-      window.location.hash = `sync=${blobId}`;
       const { lastModified, ...rest } = cloud;
-      const merged = { ...rest, _lastModified: lastModified || Date.now() };
-      localStorage.setItem('risk-engine-data', JSON.stringify(merged));
-      window.location.reload();
+      const localData = readStoredDataset(trades.initialEquity);
+      const merged = mergeDatasets(
+        localData,
+        normalizeDataset({ ...rest, _lastModified: lastModified || Date.now() }, trades.initialEquity),
+        trades.initialEquity
+      );
+      writeStoredDataset({ ...merged, _lastModified: Date.now() }, trades.initialEquity);
+      await pushToBlobId(DEFAULT_SYNC_ID, merged);
+      saveSyncConfig({ blobId: DEFAULT_SYNC_ID, lastSync: Date.now() });
+      setSyncConfig(ensurePrimarySyncConfig());
+      setLegacyStatus('');
+      setLegacyInput('');
+      setShowLegacyImport(false);
+      setSyncMsg('Legacy sync imported into the always-on vault');
     } catch {
-      setOfflineStatus('error');
+      setLegacyStatus('error');
       setSyncMsg('Connection timed out. Check your internet and try again.');
     }
   };
 
-  const [switchConfirm, setSwitchConfirm] = useState(false);
-
-  const handleSwitchSync = async () => {
-    if (!switchConfirm) {
-      setSwitchConfirm(true);
-      return;
-    }
-    const blobId = extractBlobId(switchInput);
-    if (!blobId) { setSwitchStatus('error'); setSwitchConfirm(false); return; }
-    setSwitchStatus('connecting');
-    const cloud = await pullFromBlobId(blobId);
-    if (!cloud || !Array.isArray(cloud.trades)) {
-      setSwitchStatus('error');
-      setSwitchConfirm(false);
-      return;
-    }
-    saveSyncConfig({ blobId, lastSync: Date.now() });
-    window.location.hash = `sync=${blobId}`;
-    const { lastModified, ...rest } = cloud;
-    const merged = { ...rest, _lastModified: lastModified || Date.now() };
-    localStorage.setItem('risk-engine-data', JSON.stringify(merged));
-    window.location.reload();
-  };
-
-  const handleSyncDisconnect = () => {
-    clearSyncConfig();
-    setSyncConfig(null);
-    window.location.hash = '';
-    setSyncMsg('Sync disconnected. Reload to create a new sync.');
-  };
-
   const handleCopyLink = () => {
-    if (syncConfig?.blobId) {
-      const link = `${window.location.origin}${window.location.pathname}#sync=${syncConfig.blobId}`;
-      navigator.clipboard.writeText(link).catch(() => {});
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+    navigator.clipboard.writeText(buildSyncUrl()).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShareLink = async () => {
+    const link = buildSyncUrl();
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'TradeVault',
+          text: 'Open TradeVault on your other device. It syncs automatically in the background.',
+          url: link,
+        });
+        setShared(true);
+        setTimeout(() => setShared(false), 2000);
+        return;
+      } catch {}
     }
+    handleCopyLink();
   };
 
   const handleCSVExport = () => exportCSV(trades);
@@ -155,12 +137,15 @@ export default function Settings({ settings, trades, showToast }) {
       <div className="bg-surface rounded-2xl p-4 border border-line space-y-4">
         <div>
           <div className="text-xs text-slate-500 font-medium">Risk Controls</div>
-          <p className="text-xs text-slate-500 mt-1">Alerts and overrides for risk management.</p>
+          <p className="text-xs text-slate-500 mt-1">Soft controls warn and add friction. They do not hard-lock you out.</p>
         </div>
 
         <div>
           <div className="flex justify-between items-center mb-2">
-            <label className="text-sm text-slate-400">Drawdown Alert</label>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-slate-400">Drawdown Alert</label>
+              <ControlModeBadge mode="Soft" />
+            </div>
             <span className="text-sm text-amber-400 font-bold font-mono bg-deep px-2 py-0.5 rounded-md border border-line tabular-nums">
               {settings.drawdownAlertPct}%
             </span>
@@ -182,7 +167,10 @@ export default function Settings({ settings, trades, showToast }) {
 
         <div>
           <div className="flex justify-between items-center mb-2">
-            <label className="text-sm text-slate-400">Max Risk Override</label>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-slate-400">Max Risk Override</label>
+              <ControlModeBadge mode="Soft" />
+            </div>
             <span className={'text-sm font-bold font-mono bg-deep px-2 py-0.5 rounded-md border border-line tabular-nums ' +
               (settings.maxRiskPct === 0 ? 'text-slate-500' : 'text-red-400')}>
               {settings.maxRiskPct === 0 ? 'Off' : settings.maxRiskPct + '%'}
@@ -207,8 +195,11 @@ export default function Settings({ settings, trades, showToast }) {
         <div className="border-t border-line/50 pt-4">
           <div className="flex justify-between items-center mb-2">
             <div>
-              <label className="text-sm text-slate-400">Tilt Lock</label>
-              <p className="text-[10px] text-slate-500 mt-0.5">Warns before trading during a losing streak</p>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-slate-400">Tilt Lock</label>
+                <ControlModeBadge mode="Soft" />
+              </div>
+              <p className="text-[10px] text-slate-500 mt-0.5">Warns before trading during a losing streak and adds override friction</p>
             </div>
             <button
               onClick={() => settings.setTiltLockEnabled(!settings.tiltLockEnabled)}
@@ -266,8 +257,11 @@ export default function Settings({ settings, trades, showToast }) {
         <div className="border-t border-line/50 pt-4">
           <div className="flex justify-between items-center mb-2">
             <div>
-              <label className="text-sm text-slate-400">Daily Loss Limit</label>
-              <p className="text-[10px] text-slate-500 mt-0.5">Warns when daily losses exceed this amount (0 = off)</p>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-slate-400">Daily Loss Limit</label>
+                <ControlModeBadge mode="Soft" />
+              </div>
+              <p className="text-[10px] text-slate-500 mt-0.5">Warns when daily losses exceed this amount and requires an override to continue</p>
             </div>
           </div>
           <div className="relative">
@@ -333,21 +327,11 @@ export default function Settings({ settings, trades, showToast }) {
           <div className="flex justify-between items-center mb-2">
             <label className="text-sm text-slate-400">Risk:Reward</label>
             <span className="text-sm text-blue-400 font-bold font-mono bg-deep px-2 py-0.5 rounded-md border border-line tabular-nums">
-              {settings.rewardRatio.toFixed(1)}:1
+              1.0:1
             </span>
           </div>
-          <input
-            type="range"
-            min={10}
-            max={40}
-            step={1}
-            value={settings.rewardRatio * 10}
-            onChange={e => settings.setRewardRatio(+e.target.value / 10)}
-            className="w-full"
-          />
-          <div className="flex justify-between text-xs text-slate-600 mt-1">
-            <span>1.0:1</span>
-            <span>4.0:1</span>
+          <div className="bg-deep rounded-xl border border-line px-3 py-2 text-xs text-slate-500 leading-relaxed">
+            Fixed RR: the decay engine still sizes 1R, and wins/losses now use the same 1R dollar amount.
           </div>
         </div>
       </div>
@@ -381,149 +365,108 @@ export default function Settings({ settings, trades, showToast }) {
       <div className="bg-surface rounded-2xl p-4 border border-line space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {syncConfig ? <Cloud className="w-4 h-4 text-blue-400" /> : <CloudOff className="w-4 h-4 text-slate-600" />}
+            <Cloud className="w-4 h-4 text-blue-400" />
             <div className="text-xs text-slate-500 font-medium">Cloud Sync</div>
           </div>
-          <span className={'text-xs font-mono ' + (syncConfig ? 'text-blue-400/70' : 'text-slate-600')}>
-            {syncConfig ? 'Auto-synced' : 'Offline'}
-          </span>
+          <span className="text-xs font-mono text-blue-400/70">Always On</span>
         </div>
 
-        {syncConfig ? (
-          <>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Syncs automatically every 60s and on each trade. Open this link on another device to sync there too.
-            </p>
+        <p className="text-xs text-slate-500 leading-relaxed">
+          This internal app uses one shared background vault across your devices. Open the same app link everywhere and it should land on Home, then sync quietly behind the scenes.
+        </p>
 
-            <button
-              onClick={handleCopyLink}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-deep text-slate-400 text-xs font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
-            >
-              {copied ? <Check className="w-3.5 h-3.5 text-blue-400" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied ? 'Link Copied!' : 'Copy Sync Link'}
-            </button>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={handleCopyLink}
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-deep text-slate-400 text-xs font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
+          >
+            {copied ? <Check className="w-3.5 h-3.5 text-blue-400" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? 'Copied!' : 'Copy App Link'}
+          </button>
+          <button
+            onClick={handleShareLink}
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-deep text-slate-400 text-xs font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all"
+          >
+            {shared ? <Check className="w-3.5 h-3.5 text-blue-400" /> : <Share2 className="w-3.5 h-3.5" />}
+            {shared ? 'Shared!' : 'Share App'}
+          </button>
+        </div>
 
-            {syncConfig.lastSync && (
-              <div className="text-xs text-slate-500 text-center">
-                Last synced: {new Date(syncConfig.lastSync).toLocaleString()}
-              </div>
-            )}
+        {syncConfig?.lastSync && (
+          <div className="text-xs text-slate-500 text-center">
+            Last background sync: {new Date(syncConfig.lastSync).toLocaleString()}
+          </div>
+        )}
 
-            <button
-              onClick={handleSyncNow}
-              disabled={syncing}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-deep text-slate-400 text-xs font-medium rounded-xl border border-line active:scale-[0.98] hover:bg-elevated transition-all disabled:opacity-50"
-            >
-              <RefreshCw className={'w-3.5 h-3.5 ' + (syncing ? 'animate-spin' : '')} />
-              {syncing ? 'Syncing...' : 'Sync Now'}
-            </button>
+        <div className="flex justify-center">
+          <SyncStatusPill
+            status={syncing ? 'syncing' : syncStatus}
+            lastSync={(syncInfo || syncConfig)?.lastSync}
+            onClick={handleSyncNow}
+            disabled={syncing}
+          />
+        </div>
 
-            {syncMsg && <div className="text-xs text-blue-400/70 text-center">{syncMsg}</div>}
+        {syncMsg && <div className="text-xs text-blue-400/70 text-center">{syncMsg}</div>}
 
-            {/* Switch to different sync */}
-            {showSwitchSync ? (
-              <div className="space-y-2 pt-1">
-                <input
-                  type="text"
-                  value={switchInput}
-                  onChange={e => { setSwitchInput(e.target.value); setSwitchStatus(''); }}
-                  placeholder="Paste sync link from other device"
-                  className="w-full bg-deep border border-line rounded-xl text-xs text-white py-2.5 px-3 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all placeholder:text-slate-700"
-                />
-                {switchStatus === 'error' && (
-                  <p className="text-xs text-red-400">Invalid link or sync not found. Check and try again.</p>
-                )}
-                {switchConfirm && (
-                  <p className="text-xs text-amber-400">This will replace all local data with the cloud data. Continue?</p>
-                )}
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleSwitchSync}
-                    disabled={!switchInput.trim() || switchStatus === 'connecting'}
-                    className={'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-xl transition-all ' +
-                      (switchInput.trim() && switchStatus !== 'connecting'
-                        ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30 active:scale-[0.98]'
-                        : 'bg-elevated text-slate-600 border border-line cursor-not-allowed')}
-                  >
-                    {switchStatus === 'connecting' ? <><Loader2 className="w-3 h-3 animate-spin" /> Connecting...</> : 'Connect'}
-                  </button>
-                  <button
-                    onClick={() => { setShowSwitchSync(false); setSwitchInput(''); setSwitchStatus(''); setSwitchConfirm(false); }}
-                    className="flex-1 py-2 text-xs font-medium text-slate-500 bg-deep rounded-xl border border-line active:scale-[0.98] transition-all"
-                  >
-                    Cancel
-                  </button>
+        {syncActivity.length > 0 && (
+          <div className="rounded-xl border border-line bg-deep p-3 space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Sync Activity</div>
+              <div className="text-[10px] text-slate-600">Latest {Math.min(syncActivity.length, 5)}</div>
+            </div>
+            <div className="space-y-2">
+              {syncActivity.slice(0, 5).map(item => (
+                <div key={item.id} className="flex items-start justify-between gap-3 text-[11px]">
+                  <div className="min-w-0">
+                    <div className="text-slate-300 leading-relaxed">{item.message}</div>
+                    <div className="text-slate-600 uppercase tracking-wide mt-0.5">{item.source}</div>
+                  </div>
+                  <div className="shrink-0 text-slate-500">{new Date(item.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</div>
                 </div>
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowSwitchSync(true)}
-                className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] text-slate-500 hover:text-blue-400 transition-colors"
-              >
-                <Link2 className="w-3 h-3" /> Connect to Different Sync
-              </button>
-            )}
+              ))}
+            </div>
+          </div>
+        )}
 
-            <button
-              onClick={handleSyncDisconnect}
-              className="w-full text-xs text-slate-500 hover:text-red-400 transition-colors py-1"
-            >
-              Disconnect
-            </button>
-          </>
+        {showLegacyImport ? (
+          <div className="space-y-2 pt-1">
+            <input
+              type="text"
+              value={legacyInput}
+              onChange={e => { setLegacyInput(e.target.value); setLegacyStatus(''); setSyncMsg(''); }}
+              placeholder="Paste old sync link if you need to import legacy data"
+              className="w-full bg-deep border border-line rounded-xl text-xs text-white py-2.5 px-3 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all placeholder:text-slate-700"
+            />
+            {legacyStatus === 'error' && (
+              <p className="text-xs text-red-400">Invalid legacy link or sync not found. Check and try again.</p>
+            )}
+            <div className="flex gap-2">
+              <button
+                onClick={handleLegacyImport}
+                disabled={!legacyInput.trim() || legacyStatus === 'connecting'}
+                className={'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-xl transition-all ' +
+                  (legacyInput.trim() && legacyStatus !== 'connecting'
+                    ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30 active:scale-[0.98]'
+                    : 'bg-elevated text-slate-600 border border-line cursor-not-allowed')}
+              >
+                {legacyStatus === 'connecting' ? <><Loader2 className="w-3 h-3 animate-spin" /> Importing...</> : 'Import Legacy Sync'}
+              </button>
+              <button
+                onClick={() => { setShowLegacyImport(false); setLegacyInput(''); setLegacyStatus(''); }}
+                className="flex-1 py-2 text-xs font-medium text-slate-500 bg-deep rounded-xl border border-line active:scale-[0.98] transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         ) : (
-          <>
-            {syncMsg && <p className={'text-xs leading-relaxed ' + (offlineStatus === 'error' ? 'text-red-400' : 'text-blue-400/70')}>{syncMsg}</p>}
-
-            <button
-              onClick={handleCreateSync}
-              disabled={offlineStatus === 'creating'}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-500/15 text-blue-400 text-xs font-medium rounded-xl border border-blue-500/30 active:scale-[0.98] transition-all disabled:opacity-50"
-            >
-              {offlineStatus === 'creating' ? (
-                <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Creating sync...</>
-              ) : (
-                <><Cloud className="w-3.5 h-3.5" /> Create Cloud Sync</>
-              )}
-            </button>
-
-            {showOfflineConnect ? (
-              <div className="space-y-2">
-                <input
-                  type="text"
-                  value={offlineInput}
-                  onChange={e => { setOfflineInput(e.target.value); setOfflineStatus(''); setSyncMsg(''); }}
-                  placeholder="Paste sync link from other device"
-                  className="w-full bg-deep border border-line rounded-xl text-xs text-white py-2.5 px-3 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all placeholder:text-slate-700"
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleOfflineConnect}
-                    disabled={!offlineInput.trim() || offlineStatus === 'connecting'}
-                    className={'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-xl transition-all ' +
-                      (offlineInput.trim() && offlineStatus !== 'connecting'
-                        ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30 active:scale-[0.98]'
-                        : 'bg-elevated text-slate-600 border border-line cursor-not-allowed')}
-                  >
-                    {offlineStatus === 'connecting' ? <><Loader2 className="w-3 h-3 animate-spin" /> Connecting...</> : 'Connect'}
-                  </button>
-                  <button
-                    onClick={() => { setShowOfflineConnect(false); setOfflineInput(''); setOfflineStatus(''); setSyncMsg(''); }}
-                    className="flex-1 py-2 text-xs font-medium text-slate-500 bg-deep rounded-xl border border-line active:scale-[0.98] transition-all"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowOfflineConnect(true)}
-                className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] text-slate-500 hover:text-blue-400 transition-colors"
-              >
-                <Link2 className="w-3 h-3" /> Connect to Existing Sync
-              </button>
-            )}
-          </>
+          <button
+            onClick={() => setShowLegacyImport(true)}
+            className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] text-slate-500 hover:text-blue-400 transition-colors"
+          >
+            <Link2 className="w-3 h-3" /> Import Legacy Sync Link
+          </button>
         )}
       </div>
 
@@ -595,8 +538,8 @@ export default function Settings({ settings, trades, showToast }) {
         </div>
         <p className="text-xs text-slate-500 font-medium mt-0.5">$20K {'\u2192'} $10M</p>
         <p className="text-xs text-slate-500 leading-relaxed mt-1">
-          {'\u2154'} Power Decay position sizing. Risk scales with equity to protect gains and maximize growth.
-          {syncConfig ? ' Data syncs to cloud and is stored locally.' : ' All data stored locally in your browser.'}
+          {'\u2154'} Power Decay position sizing with fixed 1:1 risk/reward. The decay engine sizes 1R; RR only controls the reward/loss symmetry.
+          {' '}Trades and edits save locally first and sync into your shared cloud vault in the background.
         </p>
       </div>
     </div>

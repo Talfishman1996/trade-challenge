@@ -3,7 +3,7 @@ import {
   ComposedChart, Area, Line, XAxis, YAxis,
   Tooltip as RTooltip, ResponsiveContainer, ReferenceLine, CartesianGrid
 } from 'recharts';
-import { rN } from '../math/risk.js';
+import { TARGET_RR, rN } from '../math/risk.js';
 import { fmt } from '../math/format.js';
 import { MILES, TT, AX } from '../math/constants.js';
 
@@ -20,7 +20,7 @@ function pct(sorted, p) {
 }
 
 // Run Monte Carlo cone simulation
-function runCone(equity, wr, rr, nTrades = 200, nPaths = 500, seed = 555) {
+function runCone(equity, wr, nTrades = 200, nPaths = 500, seed = 555) {
   const rand = mkRng(seed);
   const wrFrac = wr / 100;
 
@@ -33,7 +33,7 @@ function runCone(equity, wr, rr, nTrades = 200, nPaths = 500, seed = 555) {
     for (let t = 1; t <= nTrades; t++) {
       const risk = rN(eq);
       const riskDol = eq * risk;
-      eq = rand() < wrFrac ? eq + riskDol * rr : eq - riskDol;
+      eq = rand() < wrFrac ? eq + riskDol * TARGET_RR : eq - riskDol;
       if (eq < 1) eq = 1;
       grid[t].push(eq);
     }
@@ -83,10 +83,10 @@ function ConeTip({ active, payload }) {
   );
 }
 
-export default function ProbabilityCone({ equity, winRate, rewardRatio, seed = 555, numTrades = 200 }) {
+export default function ProbabilityCone({ equity, winRate, seed = 555, numTrades = 200 }) {
   const coneData = useMemo(
-    () => runCone(equity, winRate, rewardRatio, numTrades, 500, seed),
-    [equity, winRate, rewardRatio, numTrades, seed]
+    () => runCone(equity, winRate, numTrades, 500, seed),
+    [equity, winRate, numTrades, seed]
   );
 
   const maxVal = useMemo(() => {

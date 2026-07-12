@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
+import { TARGET_RR } from '../math/risk.js';
 
 const STORAGE_KEY = 'risk-engine-settings';
 
 const DEFAULTS = {
   winRate: 60,
-  rewardRatio: 1.5,
+  rewardRatio: TARGET_RR,
   initialEquity: 20000,
   drawdownAlertPct: 20,
   maxRiskPct: 0,
@@ -18,7 +19,7 @@ const DEFAULTS = {
 const load = () => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? { ...DEFAULTS, ...JSON.parse(raw) } : { ...DEFAULTS };
+    return raw ? { ...DEFAULTS, ...JSON.parse(raw), rewardRatio: TARGET_RR } : { ...DEFAULTS };
   } catch {
     return { ...DEFAULTS };
   }
@@ -40,7 +41,7 @@ export const useSettings = () => {
   return {
     ...settings,
     setWinRate: v => set('winRate', v),
-    setRewardRatio: v => set('rewardRatio', v),
+    setRewardRatio: () => set('rewardRatio', TARGET_RR),
     setInitialEquity: v => set('initialEquity', v),
     setDrawdownAlertPct: v => set('drawdownAlertPct', v),
     setMaxRiskPct: v => set('maxRiskPct', v),

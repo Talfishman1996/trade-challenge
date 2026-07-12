@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Undo2, Redo2, Plus, LayoutGrid, TableProperties, Pencil } from 'lucide-react';
+import { Undo2, Redo2, Plus, LayoutGrid, TableProperties, Pencil, CopyPlus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { fmt, fmtPnl } from '../math/format.js';
 import FilterBar from './FilterBar.jsx';
+import { daysBetweenLocalDates, formatLocalDate } from '../utils/tradeData.js';
 
 const ordSuffix = n => {
   const s = ['th','st','nd','rd'];
@@ -10,16 +11,19 @@ const ordSuffix = n => {
   return s[(v - 20) % 10] || s[v] || s[0];
 };
 const fmtDate = d => {
-  const dt = new Date(d);
-  const mon = dt.toLocaleDateString('en-US', { month: 'short' });
-  const day = dt.getDate();
+  const formatted = formatLocalDate(d, { month: 'short', day: 'numeric' });
+  const [, mon, dayText] = formatted.match(/^(\w+)\s(\d+)$/) || [];
+  const day = Number(dayText);
+  if (!mon || !day) return '--';
   return `${mon} ${day}${ordSuffix(day)}`;
 };
 const fmtDateFull = d => {
-  const dt = new Date(d);
-  const mon = dt.toLocaleDateString('en-US', { month: 'short' });
-  const day = dt.getDate();
-  return `${mon} ${day}${ordSuffix(day)} ${dt.getFullYear()}`;
+  const formatted = formatLocalDate(d, { month: 'short', day: 'numeric', year: 'numeric' });
+  const match = formatted.match(/^(\w+)\s(\d+),\s(\d{4})$/);
+  if (!match) return '--';
+  const [, mon, dayText, year] = match;
+  const day = Number(dayText);
+  return `${mon} ${day}${ordSuffix(day)} ${year}`;
 };
 
 const DirBadge = ({ dir, compact }) => {
@@ -36,18 +40,18 @@ const DirBadge = ({ dir, compact }) => {
 
 const calcDuration = (open, close) => {
   if (!open || !close) return null;
-  const ms = new Date(close) - new Date(open);
-  const days = Math.round(ms / 86400000);
+  const days = Math.round(daysBetweenLocalDates(open, close) ?? 0);
   if (days === 0) return null;
   return `${days}d`;
 };
 
-export default function Trades({ trades, settings, onOpenTradeEntry, showToast }) {
+export default function Trades({ trades, settings, onOpenTradeEntry, onDuplicateLastTrade, showToast }) {
   const rMode = settings.rMultipleDisplay;
   const [view, setView] = useState('grid');
   const [filteredTrades, setFilteredTrades] = useState(null);
   const [sortCol, setSortCol] = useState(null);
   const [sortDir, setSortDir] = useState('desc');
+  const latestTrade = trades.trades[trades.trades.length - 1] || null;
 
   // Use filtered trades if filters active, otherwise all trades
   const displayTrades = filteredTrades || trades.trades;
@@ -103,12 +107,22 @@ export default function Trades({ trades, settings, onOpenTradeEntry, showToast }
       {/* Header + Log Trade */}
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-bold text-white">Trade History</h2>
-        <button
-          onClick={() => onOpenTradeEntry()}
-          className="flex items-center gap-1.5 px-3 py-2 bg-blue-500 text-white text-sm font-semibold rounded-xl active:scale-[0.97] hover:bg-blue-400 transition-all shrink-0"
-        >
-          <Plus className="w-4 h-4" /> Log
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {latestTrade && (
+            <button
+              onClick={onDuplicateLastTrade}
+              className="flex items-center gap-1.5 px-3 py-2 bg-surface text-slate-300 text-sm font-semibold rounded-xl border border-line active:scale-[0.97] hover:bg-elevated transition-all"
+            >
+              <CopyPlus className="w-4 h-4" /> Repeat Last
+            </button>
+          )}
+          <button
+            onClick={() => onOpenTradeEntry()}
+            className="flex items-center gap-1.5 px-3 py-2 bg-blue-500 text-white text-sm font-semibold rounded-xl active:scale-[0.97] hover:bg-blue-400 transition-all"
+          >
+            <Plus className="w-4 h-4" /> Log
+          </button>
+        </div>
       </div>
 
       {/* Stats Dashboard */}

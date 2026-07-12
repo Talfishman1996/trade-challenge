@@ -1,6 +1,6 @@
 import { E0, SMIN, FM, MILES } from './constants.js';
 import { lg } from './format.js';
-import { rN, rO, rF, geoGrowth, lossesToWipe, calcStreak } from './risk.js';
+import { TARGET_RR, rN, rO, rF, geoGrowth, lossesToWipe, calcStreak } from './risk.js';
 
 // Mulberry32 PRNG (deterministic, seedable)
 export const mb32 = seed => {
@@ -24,8 +24,8 @@ export const ptile = (arr, p) => {
 };
 
 // Run heavy metrics simulation (500 paths x 100 trades x 3 models)
-export const computeHeavyMetrics = (dEq, dWr, dRr) => {
-  const b = dRr, w = dWr / 100, NP = 500, NT = 100;
+export const computeHeavyMetrics = (dEq, dWr) => {
+  const b = TARGET_RR, w = dWr / 100, NP = 500, NT = 100;
 
   const sim = fn => {
     const rand = mb32(42);
@@ -80,15 +80,15 @@ export const computeHeavyMetrics = (dEq, dWr, dRr) => {
   const fMap = FM.map(m => {
     const r = rN(m.v), drd = r * m.v;
     const e1l = Math.max(1, m.v * (1 - r));
-    const e3l = calcStreak(m.v, 3, false, dRr);
-    const e3w = calcStreak(m.v, 3, true, dRr);
+    const e3l = calcStreak(m.v, 3, false);
+    const e3w = calcStreak(m.v, 3, true);
     return {
-      ...m, r, rd: drd, gd: drd * dRr, e1l,
+      ...m, r, rd: drd, gd: drd * TARGET_RR, e1l,
       dd3: ((m.v - e3l) / m.v) * 100,
       dd1: ((m.v - e1l) / m.v) * 100,
       gu3: ((e3w - m.v) / m.v) * 100,
       e3l, e3w,
-      g: geoGrowth(r, w, dRr),
+      g: geoGrowth(r, w),
       ltw: lossesToWipe(m.v),
     };
   });
@@ -138,8 +138,8 @@ export const computeHeavyMetrics = (dEq, dWr, dRr) => {
 };
 
 // Milestone projection simulation (500 paths x 400 trades)
-export const computeMilestones = (dEq, dWr, dRr, simSeed) => {
-  const w = dWr / 100, b = dRr;
+export const computeMilestones = (dEq, dWr, simSeed) => {
+  const w = dWr / 100, b = TARGET_RR;
 
   const bestWins = (fn, target) => {
     if (dEq >= target) return 0;

@@ -1,12 +1,15 @@
 {
   "name": "tradevault",
   "version": "3.1.0",
-  "description": "Mobile-first trading risk dashboard with 2/3 Power Decay position sizing. Track trades from $20K to $10M.",
+  "description": "Mobile-first trading risk dashboard with 2/3 Power Decay sizing and fixed 1:1 RR. Track trades from $20K to $10M.",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy:cloudflare": "wrangler pages deploy dist --project-name tradevault",
+    "deploy:worker": "wrangler deploy --config worker/wrangler.toml",
+    "deploy:all": "npm run build && npm run deploy:cloudflare"
   },
   "keywords": ["trading", "risk-management", "position-sizing", "dashboard", "react", "vite"],
   "author": "Talfishman1996",
@@ -23,6 +26,7 @@
     "@tailwindcss/vite": "^4.2.0",
     "@vitejs/plugin-react": "^5.1.4",
     "tailwindcss": "^4.2.0",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "wrangler": "^4.83.0"
   }
 }

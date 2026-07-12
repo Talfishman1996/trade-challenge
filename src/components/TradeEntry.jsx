@@ -1,25 +1,38 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, TrendingUp, TrendingDown, Calendar, ArrowUpRight, ArrowDownRight, Clock, ChevronDown, ImagePlus, Trash2 } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, Calendar, ArrowUpRight, ArrowDownRight, Clock, ChevronDown, ImagePlus, Trash2, CopyPlus } from 'lucide-react';
 import { fmt } from '../math/format.js';
 import TagPicker from './TagPicker.jsx';
 import { SETUP_TAGS, EMOTION_TAGS, MISTAKE_TAGS, STRATEGY_OPTIONS } from '../store/tags.js';
 import { compressImage, saveImage, getImage, deleteImage } from '../utils/imageDB.js';
-
-const localDate = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
+import { daysBetweenLocalDates, todayLocalDate, toLocalDateString } from '../utils/tradeData.js';
 
 const calcDuration = (open, close) => {
   if (!open || !close) return null;
-  const ms = new Date(close) - new Date(open);
-  const days = Math.round(ms / 86400000);
+  const days = Math.round(daysBetweenLocalDates(open, close) ?? 0);
   if (days === 0) return 'Same day';
   if (days === 1) return '1 day';
   if (days >= 7 && days < 14) return '1 week';
   if (days >= 14 && days % 7 === 0) return `${Math.round(days / 7)} weeks`;
   return `${days} days`;
+};
+
+const buildRecentValues = (items, pick, limit = 6) => {
+  const seen = new Set();
+  const values = [];
+  for (const item of [...items].reverse()) {
+    const rawValues = pick(item);
+    for (const raw of rawValues) {
+      const value = typeof raw === 'string' ? raw.trim() : '';
+      if (!value) continue;
+      const key = value.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      values.push(value);
+      if (values.length >= limit) return values;
+    }
+  }
+  return values;
 };
 
 // Collapsible section wrapper
@@ -41,7 +54,18 @@ const Section = ({ title, open, onToggle, count, children }) => (
   </div>
 );
 
-export default function TradeEntry({ open, onClose, onSave, onEdit, editData, currentEquity, nextRisk }) {
+export default function TradeEntry({
+  open,
+  onClose,
+  onSave,
+  onEdit,
+  onDelete,
+  editData,
+  entrySeed,
+  recentTrades = [],
+  currentEquity,
+  nextRisk,
+}) {
   const isEditMode = !!editData;
 
   // Core fields
@@ -83,20 +107,147 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
   const [tagsOpen, setTagsOpen] = useState(false);
   const [mediaOpen, setMediaOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lastAutoSaveAt, setLastAutoSaveAt] = useState(null);
 
   const inputRef = useRef(null);
   const imageInputRef = useRef(null);
+
+  const applyEntrySeed = (seed = {}) => {
+    const nextDirection = seed.direction || 'long';
+    const nextStrategy = seed.strategy || '';
+    const nextContracts = seed.contracts != null && seed.contracts !== '' ? String(seed.contracts) : '';
+    const nextEntryPrice = seed.entryPrice != null && seed.entryPrice !== '' ? String(seed.entryPrice) : '';
+    const nextExitPrice = seed.exitPrice != null && seed.exitPrice !== '' ? String(seed.exitPrice) : '';
+    const nextSetupTags = Array.isArray(seed.setupTags) ? seed.setupTags : [];
+    const nextEmotionTags = Array.isArray(seed.emotionTags) ? seed.emotionTags : [];
+    const nextMistakes = Array.isArray(seed.mistakes) ? seed.mistakes : [];
+    const nextImageKeys = Array.isArray(seed.imageKeys) ? seed.imageKeys : (Array.isArray(seed.images) ? seed.images : []);
+    const nextTradeDate = seed.tradeDate || seed.date ? toLocalDateString(seed.tradeDate || seed.date) : todayLocalDate();
+    const nextOpenDate = seed.openDate ? toLocalDateString(seed.openDate) : '';
+
+    setDirection(nextDirection);
+    setIsWin(seed.isWin ?? ((seed.pnl ?? 1) >= 0));
+    const nextAmount = seed.amount != null && seed.amount !== ''
+      ? String(seed.amount)
+      : (seed.pnl != null ? String(Math.abs(seed.pnl)) : '');
+    setAmount(nextAmount);
+    setTicker((seed.ticker || '').toUpperCase());
+    setStrategy(nextStrategy);
+    setContracts(nextContracts);
+    setEntryPrice(nextEntryPrice);
+    setExitPrice(nextExitPrice);
+    setSetupTags(nextSetupTags);
+    setEmotionTags(nextEmotionTags);
+    setMistakes(nextMistakes);
+    setTradeDate(nextTradeDate);
+    setOpenDate(nextOpenDate);
+    setEntryTime(seed.entryTime || '');
+    setExitTime(seed.exitTime || '');
+    setImageKeys(nextImageKeys);
+    setImagePreviews([]);
+    setMae(seed.mae != null && seed.mae !== '' ? String(seed.mae) : '');
+    setMfe(seed.mfe != null && seed.mfe !== '' ? String(seed.mfe) : '');
+    setNotes(seed.notes || '');
+    setStrategyOpen(!!(nextStrategy || nextContracts || nextEntryPrice || nextExitPrice));
+    setTagsOpen(!!(nextSetupTags.length || nextEmotionTags.length || nextMistakes.length));
+    setMediaOpen(!!nextImageKeys.length);
+    setAdvancedOpen(!!((seed.mae != null && seed.mae !== '') || (seed.mfe != null && seed.mfe !== '')));
+  };
+
+  const createFollowUpSeed = () => ({
+    direction,
+    isWin,
+    ticker,
+    strategy,
+    contracts,
+    setupTags,
+    tradeDate: todayLocalDate(),
+    openDate: '',
+    entryTime: '',
+    exitTime: '',
+    amount: '',
+    entryPrice: '',
+    exitPrice: '',
+    emotionTags: [],
+    mistakes: [],
+    imageKeys: [],
+    mae: '',
+    mfe: '',
+    notes: '',
+  });
+
+  const recentTickers = useMemo(
+    () => buildRecentValues(recentTrades, trade => [trade.ticker]),
+    [recentTrades]
+  );
+  const recentSetupTags = useMemo(
+    () => buildRecentValues(recentTrades, trade => trade.setupTags || [], 8),
+    [recentTrades]
+  );
+  const numericAmount = parseFloat((amount || '').replace(/,/g, ''));
+  const canSubmit = Number.isFinite(numericAmount) && numericAmount > 0;
+  const editSnapshot = useMemo(() => {
+    if (!canSubmit) return null;
+    const pnl = (isWin ? 1 : -1) * numericAmount;
+    return {
+      pnl,
+      direction,
+      ticker,
+      notes,
+      setupTags,
+      emotionTags,
+      mistakes,
+      strategy,
+      contracts: contracts ? parseFloat(contracts) : 0,
+      entryPrice: entryPrice ? parseFloat(entryPrice) : 0,
+      exitPrice: exitPrice ? parseFloat(exitPrice) : 0,
+      entryTime,
+      exitTime,
+      images: imageKeys,
+      mae: mae ? parseFloat(mae) : null,
+      mfe: mfe ? parseFloat(mfe) : null,
+      date: tradeDate || undefined,
+      openDate: openDate || null,
+    };
+  }, [
+    canSubmit,
+    contracts,
+    direction,
+    emotionTags,
+    entryPrice,
+    entryTime,
+    exitPrice,
+    exitTime,
+    imageKeys,
+    isWin,
+    mae,
+    mfe,
+    mistakes,
+    notes,
+    openDate,
+    setupTags,
+    strategy,
+    ticker,
+    tradeDate,
+    numericAmount,
+  ]);
+  const closeSheet = () => {
+    if (!isSubmitting) onClose();
+  };
 
   // Load image previews from IndexedDB
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
     const loadPreviews = async () => {
-      const urls = [];
-      for (const key of imageKeys) {
-        const url = await getImage(key);
-        if (url && !cancelled) urls.push({ key, url });
-      }
+      const urls = (await Promise.all(
+        imageKeys.map(async (key) => {
+          const url = await getImage(key);
+          return url ? { key, url } : null;
+        })
+      )).filter(Boolean);
       if (!cancelled) setImagePreviews(urls);
     };
     loadPreviews();
@@ -113,66 +264,56 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
   useEffect(() => {
     if (open) {
       if (editData) {
-        setDirection(editData.direction || 'long');
-        setIsWin(editData.pnl >= 0);
-        setAmount(String(Math.abs(editData.pnl)));
-        setTicker(editData.ticker || '');
-        setStrategy(editData.strategy || '');
-        setContracts(editData.contracts ? String(editData.contracts) : '');
-        setEntryPrice(editData.entryPrice ? String(editData.entryPrice) : '');
-        setExitPrice(editData.exitPrice ? String(editData.exitPrice) : '');
-        setSetupTags(editData.setupTags || []);
-        setEmotionTags(editData.emotionTags || []);
-        setMistakes(editData.mistakes || []);
-        setTradeDate(editData.date ? editData.date.slice(0, 10) : localDate());
-        setOpenDate(editData.openDate ? editData.openDate.slice(0, 10) : '');
-        setEntryTime(editData.entryTime || '');
-        setExitTime(editData.exitTime || '');
-        setImageKeys(editData.images || []);
-        setMae(editData.mae != null ? String(editData.mae) : '');
-        setMfe(editData.mfe != null ? String(editData.mfe) : '');
-        setNotes(editData.notes || '');
-
-        // Auto-open sections with data
-        setStrategyOpen(!!(editData.strategy || editData.contracts || editData.entryPrice || editData.exitPrice));
-        setTagsOpen(!!(editData.setupTags?.length || editData.emotionTags?.length || editData.mistakes?.length));
-        setMediaOpen(!!(editData.images?.length));
-        setAdvancedOpen(!!(editData.mae != null || editData.mfe != null));
+        applyEntrySeed(editData);
+        setLastAutoSaveAt(null);
+      } else if (entrySeed) {
+        applyEntrySeed(entrySeed);
+        setLastAutoSaveAt(null);
       } else {
-        setDirection('long');
-        setIsWin(true);
-        setAmount('');
-        setTicker('');
-        setStrategy('');
-        setContracts('');
-        setEntryPrice('');
-        setExitPrice('');
-        setSetupTags([]);
-        setEmotionTags([]);
-        setMistakes([]);
-        setTradeDate(localDate());
-        setOpenDate('');
-        setEntryTime('');
-        setExitTime('');
-        setImageKeys([]);
-        setImagePreviews([]);
-        setMae('');
-        setMfe('');
-        setNotes('');
-        setStrategyOpen(false);
-        setTagsOpen(false);
-        setMediaOpen(false);
-        setAdvancedOpen(false);
+        applyEntrySeed({ isWin: true });
+        setLastAutoSaveAt(null);
       }
+      setIsSubmitting(false);
+      setShowDeleteConfirm(false);
       setTimeout(() => inputRef.current?.focus(), 300);
     }
-  }, [open, editData]);
+  }, [open, editData, entrySeed]);
 
-  const handleSave = () => {
-    const num = parseFloat(amount.replace(/,/g, ''));
-    if (isNaN(num) || num <= 0) return;
+  useEffect(() => {
+    if (!open || !isEditMode || isSubmitting || !onEdit || !editData || !editSnapshot) return;
+    const original = JSON.stringify({
+      pnl: editData.pnl,
+      direction: editData.direction || 'long',
+      ticker: editData.ticker || '',
+      notes: editData.notes || '',
+      setupTags: editData.setupTags || [],
+      emotionTags: editData.emotionTags || [],
+      mistakes: editData.mistakes || [],
+      strategy: editData.strategy || '',
+      contracts: editData.contracts || 0,
+      entryPrice: editData.entryPrice || 0,
+      exitPrice: editData.exitPrice || 0,
+      entryTime: editData.entryTime || '',
+      exitTime: editData.exitTime || '',
+      images: editData.images || [],
+      mae: editData.mae ?? null,
+      mfe: editData.mfe ?? null,
+      date: editData.date || undefined,
+      openDate: editData.openDate || null,
+    });
+    const next = JSON.stringify(editSnapshot);
+    if (original === next) return;
+    const id = setTimeout(async () => {
+      await onEdit(editData.id, editSnapshot, { silent: true });
+      setLastAutoSaveAt(Date.now());
+    }, 450);
+    return () => clearTimeout(id);
+  }, [editData, editSnapshot, isEditMode, isSubmitting, onEdit, open]);
+
+  const commitTrade = async (closeAfterSave = true) => {
+    const num = numericAmount;
+    if (isNaN(num) || num <= 0 || isSubmitting) return;
     const pnl = isWin ? num : -num;
-    const openDateISO = openDate ? new Date(openDate + 'T12:00:00').toISOString() : null;
 
     const tradeFields = {
       pnl, direction, ticker, notes,
@@ -187,14 +328,25 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
       mfe: mfe ? parseFloat(mfe) : null,
     };
 
-    if (isEditMode && onEdit) {
-      const dateISO = tradeDate ? new Date(tradeDate + 'T12:00:00').toISOString() : undefined;
-      onEdit(editData.id, { ...tradeFields, date: dateISO, openDate: openDateISO });
-    } else {
-      const dateISO = tradeDate ? new Date(tradeDate + 'T12:00:00').toISOString() : null;
-      onSave({ ...tradeFields, date: dateISO, openDate: openDateISO });
+    setIsSubmitting(true);
+    try {
+      if (isEditMode && onEdit) {
+        await onEdit(editData.id, { ...tradeFields, date: tradeDate || undefined, openDate: openDate || null });
+      } else {
+        await onSave({ ...tradeFields, date: tradeDate || null, openDate: openDate || null });
+      }
+
+      if (closeAfterSave || isEditMode) {
+        onClose();
+        return;
+      }
+
+      applyEntrySeed(createFollowUpSeed());
+      setShowDeleteConfirm(false);
+      setTimeout(() => inputRef.current?.focus(), 0);
+    } finally {
+      setIsSubmitting(false);
     }
-    onClose();
   };
 
   const handleAmountChange = e => {
@@ -212,13 +364,17 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
 
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files || []);
-    for (const file of files) {
-      const compressed = await compressImage(file, 200);
-      if (compressed) {
+    const uploadedKeys = (await Promise.all(
+      files.map(async (file) => {
+        const compressed = await compressImage(file, 200);
+        if (!compressed) return null;
         const key = `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         await saveImage(key, compressed);
-        setImageKeys(prev => [...prev, key]);
-      }
+        return key;
+      })
+    )).filter(Boolean);
+    if (uploadedKeys.length > 0) {
+      setImageKeys(prev => [...prev, ...uploadedKeys]);
     }
     e.target.value = '';
   };
@@ -238,6 +394,20 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
   const tagCount = setupTags.length + emotionTags.length + mistakes.length;
   const strategyCount = [strategy, contracts, entryPrice, exitPrice].filter(Boolean).length;
 
+  const handleDelete = async () => {
+    if (!editData || !onDelete) return;
+    if (!showDeleteConfirm) {
+      setShowDeleteConfirm(true);
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await onDelete(editData.id);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <AnimatePresence>
       {open && (
@@ -248,7 +418,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
-            onClick={onClose}
+            onClick={closeSheet}
           />
 
           {/* Bottom sheet */}
@@ -260,7 +430,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
             drag="y"
             dragConstraints={{ top: 0 }}
             dragElastic={0.2}
-            onDragEnd={(_, info) => { if (info.offset.y > 120) onClose(); }}
+            onDragEnd={(_, info) => { if (info.offset.y > 120) closeSheet(); }}
             className="fixed bottom-0 inset-x-0 z-[60] bg-surface border-t border-line rounded-t-3xl max-h-[90vh] flex flex-col"
           >
             <div className="flex-1 overflow-y-auto min-h-0">
@@ -276,10 +446,17 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                   {isEditMode ? 'Edit Trade' : 'Log Trade'}
                   {isEditMode && <span className="text-sm font-normal text-slate-500 ml-2">#{editData.id}</span>}
                 </h2>
-                <button onClick={onClose} className="p-3 text-slate-500 hover:text-white rounded-lg transition-colors">
+                <button onClick={closeSheet} className="p-3 text-slate-500 hover:text-white rounded-lg transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
+              {isEditMode && (
+                <div className="mb-4 text-[11px] text-slate-500">
+                  {lastAutoSaveAt
+                    ? `Changes auto-saved ${new Date(lastAutoSaveAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
+                    : 'Valid changes auto-save while you edit.'}
+                </div>
+              )}
 
               {/* === CORE SECTION (always open) === */}
 
@@ -329,7 +506,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
 
               {/* P&L Amount */}
               <div className="mb-4">
-                <label className="text-xs text-slate-500 font-medium mb-2 block">P&L Amount</label>
+                <label className="text-xs text-slate-500 font-medium mb-2 block">Profit / Loss Amount</label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-slate-600">
                     {isWin ? '+$' : '-$'}
@@ -340,10 +517,13 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                     inputMode="decimal"
                     value={amount}
                     onChange={handleAmountChange}
-                    placeholder="0"
+                    placeholder="0.00"
                     className="w-full bg-deep border border-line rounded-xl text-xl font-bold font-mono text-white py-4 pl-14 pr-4 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all duration-150 tabular-nums placeholder:text-slate-700"
                   />
                 </div>
+                <p className="text-[10px] text-slate-500 mt-1.5">
+                  Type the actual dollar result. Use WIN/LOSS above to set the sign.
+                </p>
               </div>
 
               {/* Ticker */}
@@ -356,6 +536,23 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                   placeholder="e.g., AAPL, ES, BTC"
                   className="w-full bg-deep border border-line rounded-xl text-sm font-mono font-bold text-white py-3 px-4 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all placeholder:text-slate-700 placeholder:font-normal"
                 />
+                {recentTickers.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {recentTickers.map(value => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setTicker(value)}
+                        className={'px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all ' +
+                          (ticker === value
+                            ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
+                            : 'bg-surface text-slate-400 border-line hover:text-slate-200')}
+                      >
+                        {value}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* === STRATEGY SECTION (collapsible) === */}
@@ -415,6 +612,31 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
               {/* === TAGS SECTION (collapsible) === */}
               <Section title="Tags" open={tagsOpen} onToggle={() => setTagsOpen(!tagsOpen)} count={tagCount}>
                 <div className="space-y-4">
+                  {recentSetupTags.length > 0 && (
+                    <div>
+                      <div className="text-[10px] text-slate-500 font-medium mb-2 block">Recent Setup Shortcuts</div>
+                      <div className="flex flex-wrap gap-2">
+                        {recentSetupTags.map(tag => {
+                          const active = setupTags.includes(tag);
+                          return (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => setSetupTags(prev => (
+                                prev.includes(tag) ? prev.filter(item => item !== tag) : [...prev, tag]
+                              ))}
+                              className={'px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all ' +
+                                (active
+                                  ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                  : 'bg-surface text-slate-400 border-line hover:text-slate-200')}
+                            >
+                              {tag}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                   <TagPicker tags={SETUP_TAGS} selected={setupTags} onChange={setSetupTags} color="emerald" label="Setup" />
                   <TagPicker tags={EMOTION_TAGS} selected={emotionTags} onChange={setEmotionTags} color="amber" label="Emotion" />
                   <TagPicker tags={MISTAKE_TAGS} selected={mistakes} onChange={setMistakes} color="rose" label="Mistakes" />
@@ -433,7 +655,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                     type="date"
                     value={openDate}
                     onChange={e => setOpenDate(e.target.value)}
-                    max={tradeDate || localDate()}
+                    max={tradeDate || todayLocalDate()}
                     className="flex-1 bg-deep border border-line rounded-lg text-base text-white py-2.5 px-3 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all [color-scheme:dark]"
                   />
                   <input
@@ -453,7 +675,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                     value={tradeDate}
                     onChange={e => setTradeDate(e.target.value)}
                     min={openDate || undefined}
-                    max={localDate()}
+                    max={todayLocalDate()}
                     className="flex-1 bg-deep border border-line rounded-lg text-base text-white py-2.5 px-3 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all [color-scheme:dark]"
                   />
                   <input
@@ -565,7 +787,7 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
                     <div className="text-white font-bold">${fmt(currentEquity)}</div>
                   </div>
                   <div className="flex-1 bg-deep rounded-lg p-3 border border-line text-center">
-                    <div className="text-slate-500 mb-1">Risk Allowed</div>
+                    <div className="text-slate-500 mb-1">1R Risk</div>
                     <div className="text-red-400 font-bold">${fmt(nextRisk.dol)}</div>
                   </div>
                   <div className="flex-1 bg-deep rounded-lg p-3 border border-line text-center">
@@ -579,16 +801,59 @@ export default function TradeEntry({ open, onClose, onSave, onEdit, editData, cu
             </div>
             {/* Fixed save button */}
             <div className="shrink-0 px-5 pb-8 pt-3 max-w-lg mx-auto w-full border-t border-line/50">
-              <button
-                onClick={handleSave}
-                disabled={!amount || parseFloat(amount) <= 0}
-                className={'w-full py-4 rounded-xl font-bold text-base transition-all ' +
-                  (amount && parseFloat(amount) > 0
-                    ? 'bg-blue-500 text-white active:scale-[0.98] hover:bg-blue-400'
-                    : 'bg-elevated text-slate-600 cursor-not-allowed')}
-              >
-                {isEditMode ? 'Save Changes' : 'Save Trade'}
-              </button>
+              <div className="space-y-2">
+                {isEditMode && onDelete && (
+                  showDeleteConfirm ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={handleDelete}
+                        disabled={isSubmitting}
+                        className="py-3 rounded-xl font-semibold text-sm bg-rose-500/15 text-rose-400 border border-rose-500/30 active:scale-[0.98] transition-all"
+                      >
+                        {isSubmitting ? 'Deleting...' : 'Confirm Delete'}
+                      </button>
+                      <button
+                        onClick={() => setShowDeleteConfirm(false)}
+                        disabled={isSubmitting}
+                        className="py-3 rounded-xl font-medium text-sm bg-elevated text-slate-400 border border-line active:scale-[0.98] transition-all"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleDelete}
+                      disabled={isSubmitting}
+                      className="w-full py-3 rounded-xl font-medium text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 active:scale-[0.98] transition-all"
+                    >
+                      Delete Trade
+                    </button>
+                  )
+                )}
+                {!isEditMode && (
+                  <button
+                    onClick={() => commitTrade(false)}
+                    disabled={!canSubmit || isSubmitting}
+                    className={'w-full py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 ' +
+                      (canSubmit && !isSubmitting
+                        ? 'bg-elevated text-slate-200 border border-line active:scale-[0.98] hover:bg-line'
+                        : 'bg-elevated text-slate-600 border border-line cursor-not-allowed')}
+                  >
+                    <CopyPlus className="w-4 h-4" />
+                    {isSubmitting ? 'Saving...' : 'Save & Add Another'}
+                  </button>
+                )}
+                <button
+                  onClick={() => commitTrade(true)}
+                  disabled={!canSubmit || isSubmitting}
+                  className={'w-full py-4 rounded-xl font-bold text-base transition-all ' +
+                    (canSubmit && !isSubmitting
+                      ? 'bg-blue-500 text-white active:scale-[0.98] hover:bg-blue-400'
+                      : 'bg-elevated text-slate-600 cursor-not-allowed')}
+                >
+                  {isSubmitting ? (isEditMode ? 'Saving...' : 'Saving...') : (isEditMode ? 'Save Changes' : 'Save Trade')}
+                </button>
+              </div>
             </div>
           </motion.div>
         </>

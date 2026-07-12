@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { fmt } from '../math/format.js';
 import { rN, r$N, getPhaseName, getPhase, riskSeverity } from '../math/risk.js';
 import { E0, MILES } from '../math/constants.js';
+import { localDateToTimestamp } from '../utils/tradeData.js';
 import EquityCurve from './EquityCurve.jsx';
 
 /* ───────────────────────────────────────────
@@ -94,9 +95,9 @@ const TRAIL_MILESTONES = [
 const SUMMIT = { label: '$10M', value: 10000000, x: 195, y: 55 };
 
 const PHASE_INFO = {
-  pre: 'Aggressive growth mode. High risk compounds your account toward the $87.5K anchor. This is by design.',
-  anchor: 'Balanced zone. Risk is at the Kelly-optimal 33% level.',
-  model: 'Decay active. Risk shrinks as portfolio grows, protecting gains.',
+  pre: 'Aggressive growth mode. High risk compounds your account toward the $87.5K anchor. 1R reward now matches 1R risk.',
+  anchor: 'Balanced zone. Risk is at the Kelly-style 33% level, with reward fixed to 1:1.',
+  model: 'Decay active. Risk shrinks as portfolio grows, protecting gains while reward stays 1:1.',
 };
 
 /* ───────────────────────────────────────────
@@ -722,8 +723,8 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
   // Trades per week and milestone ETA
   const tradesPerWeek = useMemo(() => {
     if (trades.trades.length < 2) return 0;
-    const first = new Date(trades.trades[0].date).getTime();
-    const last = new Date(trades.trades[trades.trades.length - 1].date).getTime();
+    const first = localDateToTimestamp(trades.trades[0].date);
+    const last = localDateToTimestamp(trades.trades[trades.trades.length - 1].date);
     const weeks = Math.max(1, (last - first) / (7 * 86400000));
     return trades.trades.length / weeks;
   }, [trades.trades]);
@@ -1022,7 +1023,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
 
         {/* ── DRAWDOWN ALERT ── */}
         {!dismissAlert && trades.currentDrawdownPct > 0 && trades.stats.maxDrawdownPct > 0 &&
-          trades.currentDrawdownPct > trades.stats.maxDrawdownPct * 0.7 && (
+          trades.currentDrawdownPct >= settings.drawdownAlertPct && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1104,15 +1105,15 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
                   <div className="text-xs text-slate-500 mt-0.5">At Risk</div>
                 </div>
                 <div className="bg-deep rounded-xl p-2.5 border border-line/50">
-                  <div className="text-sm font-bold font-mono tabular-nums text-amber-400">${fmt(r$N(exploreEq) * 2)}</div>
-                  <div className="text-xs text-slate-500 mt-0.5">2R Gain</div>
+                  <div className="text-sm font-bold font-mono tabular-nums text-amber-400">${fmt(r$N(exploreEq))}</div>
+                  <div className="text-xs text-slate-500 mt-0.5">1R Gain</div>
                 </div>
               </div>
               {riskSeverity(rN(exploreEq) * 100) === 'danger' && (
                 <div className="flex items-start gap-2 bg-amber-500/5 border border-amber-500/15 rounded-lg px-3 py-2">
                   <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
                   <p className="text-[11px] text-slate-400 leading-relaxed">
-                    Below $87.5K, position sizing is aggressive by design — this is the high-risk growth phase.
+                    Below $87.5K, decay sizing is aggressive by design. With 1:1 RR, the reward target matches the same 1R dollar risk.
                   </p>
                 </div>
               )}

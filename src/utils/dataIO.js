@@ -1,4 +1,5 @@
 import { getPhaseName } from '../math/risk.js';
+import { todayLocalDate, toLocalDateString } from './tradeData.js';
 
 export function exportJSON(trades) {
   const json = trades.exportJSON();
@@ -6,7 +7,7 @@ export function exportJSON(trades) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `tradevault-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `tradevault-${todayLocalDate()}.json`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -18,8 +19,8 @@ export function exportCSV(trades) {
     const joinTags = (arr) => arr && arr.length > 0 ? `"${arr.join(', ')}"` : '';
     rows.push([
       t.id,
-      new Date(t.date).toISOString().slice(0, 10),
-      t.openDate ? new Date(t.openDate).toISOString().slice(0, 10) : '',
+      toLocalDateString(t.date),
+      t.openDate ? toLocalDateString(t.openDate) : '',
       t.direction || '',
       t.ticker || '',
       t.strategy || '',
@@ -44,7 +45,7 @@ export function exportCSV(trades) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `tradevault-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `tradevault-${todayLocalDate()}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }

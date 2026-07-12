@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fmt } from '../math/format.js';
-import { rN, r$N, lossesToWipe, calcStreak } from '../math/risk.js';
+import { TARGET_RR, rN, r$N, lossesToWipe, calcStreak } from '../math/risk.js';
 import { computeMilestones } from '../math/monte-carlo.js';
 import { calcAdvancedMetrics, calcTagAnalytics, calcMAEMFE, calcDurationCorrelation } from '../math/analytics.js';
 import { TT, AX } from '../math/constants.js';
@@ -19,9 +19,9 @@ import Heatmap from './Heatmap.jsx';
 import ScatterPlot from './ScatterPlot.jsx';
 
 const TABS = [
-  { id: 'performance', l: 'Performance', ic: TrendingUp },
-  { id: 'behavioral', l: 'Behavioral', ic: Brain },
-  { id: 'projections', l: 'Projections', ic: Rocket },
+  { id: 'performance', l: 'Performance', s: 'Perf', ic: TrendingUp },
+  { id: 'behavioral', l: 'Behavioral', s: 'Behavior', ic: Brain },
+  { id: 'projections', l: 'Projections', s: 'Proj', ic: Rocket },
 ];
 
 function SectionDivider({ title, subtitle }) {
@@ -100,23 +100,22 @@ function TagLeaderboard({ data, title }) {
 export default function Analysis({ trades, settings }) {
   const realEq = trades.currentEquity;
   const wr = settings.winRate;
-  const rr = settings.rewardRatio;
+  const rr = TARGET_RR;
 
   const [tab, setTab] = useState('performance');
   const [simSeed, setSimSeed] = useState(555);
   const [projWr, setProjWr] = useState(wr);
-  const [projRr, setProjRr] = useState(rr);
 
   // Advanced computed metrics
   const advMetrics = useMemo(() => calcAdvancedMetrics(trades.trades), [trades.trades]);
   const tagAnalytics = useMemo(() => calcTagAnalytics(trades.trades), [trades.trades]);
   const maeData = useMemo(() => calcMAEMFE(trades.trades), [trades.trades]);
   const durationData = useMemo(() => calcDurationCorrelation(trades.trades), [trades.trades]);
-  const milestoneData = useMemo(() => computeMilestones(realEq, projWr, projRr, simSeed), [realEq, projWr, projRr, simSeed]);
+  const milestoneData = useMemo(() => computeMilestones(realEq, projWr, simSeed), [realEq, projWr, simSeed]);
 
   // Loss scenarios
-  const d3 = ((realEq - calcStreak(realEq, 3, false, rr)) / realEq) * 100;
-  const d5 = ((realEq - calcStreak(realEq, 5, false, rr)) / realEq) * 100;
+  const d3 = ((realEq - calcStreak(realEq, 3, false)) / realEq) * 100;
+  const d5 = ((realEq - calcStreak(realEq, 5, false)) / realEq) * 100;
   const ltw = lossesToWipe(realEq);
 
   const msA = milestoneData.filter(m => m.achieved);
@@ -132,8 +131,10 @@ export default function Analysis({ trades, settings }) {
           const Ic = t.ic;
           const on = tab === t.id;
           return (
-            <button key={t.id} onClick={() => setTab(t.id)} className={'flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-semibold transition-colors whitespace-nowrap relative rounded-t-lg ' + (on ? 'text-blue-400 bg-surface' : 'text-slate-500 hover:text-slate-300 hover:bg-surface/30')}>
-              <Ic className="w-3.5 h-3.5" /> {t.l}
+            <button key={t.id} onClick={() => setTab(t.id)} className={'flex-1 flex items-center justify-center gap-1.5 px-2 md:px-3 py-2.5 text-xs font-semibold transition-colors whitespace-nowrap relative rounded-t-lg ' + (on ? 'text-blue-400 bg-surface' : 'text-slate-500 hover:text-slate-300 hover:bg-surface/30')}>
+              <Ic className="w-3.5 h-3.5" />
+              <span className="md:hidden">{t.s}</span>
+              <span className="hidden md:inline">{t.l}</span>
               {on && <motion.div layoutId="analysisTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" transition={{ type: 'spring', stiffness: 500, damping: 35 }} />}
             </button>
           );
@@ -344,17 +345,13 @@ export default function Analysis({ trades, settings }) {
                       <input type="range" min={30} max={90} step={1} value={projWr}
                         onChange={e => setProjWr(+e.target.value)} className="w-full" />
                     </div>
-                    <div>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-slate-500">Reward/Risk</span>
-                        <span className="font-mono font-bold text-white">{projRr.toFixed(1)}:1</span>
-                      </div>
-                      <input type="range" min={5} max={50} step={1} value={Math.round(projRr * 10)}
-                        onChange={e => setProjRr(+e.target.value / 10)} className="w-full" />
+                    <div className="flex justify-between text-xs bg-surface rounded-lg border border-line px-3 py-2">
+                      <span className="text-slate-500">Reward/Risk</span>
+                      <span className="font-mono font-bold text-white">1.0:1</span>
                     </div>
                     <div className="flex justify-between text-xs text-slate-500">
                       <span>From ${fmt(realEq)}</span>
-                      <button onClick={() => { setProjWr(wr); setProjRr(rr); }} className="text-blue-400/60 hover:text-blue-400 transition-colors">
+                      <button onClick={() => { setProjWr(wr); }} className="text-blue-400/60 hover:text-blue-400 transition-colors">
                         Reset to settings
                       </button>
                     </div>
@@ -365,7 +362,7 @@ export default function Analysis({ trades, settings }) {
                 <div>
                   <h3 className="text-sm font-bold text-white mb-1">Probability Cone<Tip text="Fan chart showing simulated equity paths. Bands represent confidence intervals (P5-P95, P16-P84, P25-P75). Median is the solid line." /></h3>
                   <ProbabilityCone
-                    equity={realEq} winRate={projWr} rewardRatio={projRr}
+                    equity={realEq} winRate={projWr}
                     seed={simSeed} numTrades={200}
                   />
                 </div>
@@ -389,7 +386,7 @@ export default function Analysis({ trades, settings }) {
                 </div>
 
                 {/* Milestone Roadmap */}
-                <SectionDivider title="Milestone Roadmap" subtitle={'From $' + fmt(realEq) + ' at ' + projWr + '% WR, ' + projRr.toFixed(1) + ':1 RR'} />
+                <SectionDivider title="Milestone Roadmap" subtitle={'From $' + fmt(realEq) + ' at ' + projWr + '% WR, ' + TARGET_RR.toFixed(1) + ':1 RR'} />
                 <div className="flex items-center justify-between">
                   <div />
                   <button onClick={() => setSimSeed(s => s + 1)} className="px-2.5 py-1 text-xs font-semibold bg-elevated text-slate-400 rounded-lg border border-line hover:bg-line hover:text-white transition-colors">Re-Roll</button>
@@ -455,7 +452,7 @@ export default function Analysis({ trades, settings }) {
         </AnimatePresence>
       </div>
 
-      <p className="text-center text-slate-500 text-xs font-mono">{wr}% WR {'\u00B7'} {rr.toFixed(1)} RR {'\u00B7'} {'\u2154'} Power Decay</p>
+      <p className="text-center text-slate-500 text-xs font-mono">{wr}% WR {'\u00B7'} {TARGET_RR.toFixed(1)} RR {'\u00B7'} {'\u2154'} Power Decay</p>
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import { E0, K0 } from './constants.js';
 
-// 2/3 Power Decay model (main)
+export const TARGET_RR = 1;
+
+// 2/3 Power Decay sizing model. Reward is separately fixed at TARGET_RR.
 export const rN = e => {
   if (e <= 20000) return 1;
   if (e <= 50000) return 1 - 0.5 * ((e - 20000) / 30000);
@@ -8,18 +10,16 @@ export const rN = e => {
   return K0 * Math.pow(E0 / e, 2 / 3);
 };
 
-// 1/3 Power model (old)
+// Comparison exports for alternate curves.
 export const rO = e => Math.min(1, K0 * Math.pow(E0 / Math.max(e, 1), 1 / 3));
-
-// Fixed 33% model
 export const rF = () => K0;
 
-// Dollar risk for 2/3 model
+// Dollar risk for the active decay model.
 export const r$N = e => rN(e) * e;
 
-// Geometric growth rate per trade
-export const geoGrowth = (r, wr, rr) =>
-  r >= 1 ? -Infinity : r <= 0 ? 0 : wr * Math.log(1 + r * rr) + (1 - wr) * Math.log(1 - r);
+// Geometric growth rate per trade under the fixed-RR challenge model.
+export const geoGrowth = (r, wr) =>
+  r >= 1 ? -Infinity : r <= 0 ? 0 : wr * Math.log(1 + r * TARGET_RR) + (1 - wr) * Math.log(1 - r);
 
 // Consecutive losses to wipe account
 export const lossesToWipe = e => {
@@ -31,11 +31,11 @@ export const lossesToWipe = e => {
   return 200;
 };
 
-// Equity after n consecutive wins or losses
-export const calcStreak = (e, n, win, rr) => {
+// Equity after n consecutive wins or losses under the fixed-RR challenge model.
+export const calcStreak = (e, n, win) => {
   let q = e;
   for (let i = 0; i < n; i++) {
-    q = win ? q * (1 + rN(q) * rr) : q * (1 - rN(q));
+    q = win ? q * (1 + rN(q) * TARGET_RR) : q * (1 - rN(q));
     q = Math.max(q, 1);
   }
   return q;
@@ -57,6 +57,6 @@ export const getPhase = e => {
 export const getPhaseName = phase =>
   phase === 'pre' ? 'Growth' : phase === 'anchor' ? 'Anchor' : 'Decay';
 
-// Semantic risk severity: safe (at/below Kelly), elevated, danger
+// Semantic risk severity: safe (at/below Kelly), elevated, danger.
 export const riskSeverity = pct =>
   pct <= 34 ? 'safe' : pct <= 55 ? 'elevated' : 'danger';

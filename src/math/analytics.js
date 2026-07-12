@@ -1,4 +1,5 @@
 // Advanced trade analytics — pure functions operating on trades[] arrays
+import { daysBetweenLocalDates, parseLocalDate } from '../utils/tradeData.js';
 
 // Calculate advanced performance metrics
 export function calcAdvancedMetrics(trades) {
@@ -49,7 +50,7 @@ export function calcAdvancedMetrics(trades) {
   // Average hold time in days
   const holdDays = trades
     .filter(t => t.openDate && t.date)
-    .map(t => Math.max(0, (new Date(t.date) - new Date(t.openDate)) / 86400000));
+    .map(t => Math.max(0, daysBetweenLocalDates(t.openDate, t.date) || 0));
   const avgHoldDays = holdDays.length > 0 ? holdDays.reduce((a, b) => a + b, 0) / holdDays.length : 0;
 
   // Win rate by direction
@@ -113,7 +114,8 @@ export function calcTimeAnalytics(trades) {
   const byHour = Array.from({ length: 24 }, () => ({ pnl: 0, count: 0, wins: 0 }));
 
   for (const t of trades) {
-    const d = new Date(t.date);
+    const d = parseLocalDate(t.date);
+    if (!d) continue;
     const day = d.getDay();
     byDay[day].pnl += t.pnl;
     byDay[day].count++;
@@ -156,7 +158,7 @@ export function calcDurationCorrelation(trades) {
   return trades
     .filter(t => t.openDate && t.date && t.riskDol > 0)
     .map(t => {
-      const holdDays = Math.max(0, (new Date(t.date) - new Date(t.openDate)) / 86400000);
+      const holdDays = Math.max(0, daysBetweenLocalDates(t.openDate, t.date) || 0);
       return {
         ticker: t.ticker || '',
         holdDays,

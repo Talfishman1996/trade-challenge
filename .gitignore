@@ -3,6 +3,7 @@ dist/
 .claude/
 *.local
 .DS_Store
+._*
 Thumbs.db
 
 # Temp artifacts

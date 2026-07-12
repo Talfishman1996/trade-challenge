@@ -4,6 +4,7 @@ import {
 } from 'recharts';
 import { fmt } from '../math/format.js';
 import { MILES, TT, AX } from '../math/constants.js';
+import { formatLocalDate, localDateToTimestamp } from '../utils/tradeData.js';
 
 function EqTooltip({ active, payload }) {
   if (!active || !payload?.[0]) return null;
@@ -29,7 +30,7 @@ function EqTooltip({ active, payload }) {
       )}
       <div style={{ color: '#64748b', fontSize: 10, marginTop: 3 }}>
         Trade #{d.trade}
-        {d.date && (' \u00B7 ' + new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))}
+        {d.date && (' \u00B7 ' + formatLocalDate(d.date, { month: 'short', day: 'numeric' }))}
       </div>
     </div>
   );
@@ -41,7 +42,7 @@ export default function EquityCurve({ trades, height = 280 }) {
   const chartData = useMemo(() => {
     const pts = [];
     let peak = trades.initialEquity;
-    const firstDate = trades.trades.length > 0 ? new Date(trades.trades[0].date).getTime() - 86400000 : Date.now();
+    const firstDate = trades.trades.length > 0 ? localDateToTimestamp(trades.trades[0].date) - 86400000 : Date.now();
     pts.push({ trade: 0, equity: trades.initialEquity, dd: 0, dateTs: firstDate });
 
     trades.trades.forEach((t, i) => {
@@ -53,7 +54,7 @@ export default function EquityCurve({ trades, height = 280 }) {
         equity: eq,
         pnl: t.pnl,
         date: t.date,
-        dateTs: new Date(t.date).getTime(),
+        dateTs: localDateToTimestamp(t.date),
         dd,
       });
     });
@@ -82,7 +83,7 @@ export default function EquityCurve({ trades, height = 280 }) {
   const xKey = xMode === 'dates' ? 'dateTs' : 'trade';
   const xType = xMode === 'dates' ? 'number' : 'number';
   const xTickFmt = xMode === 'dates'
-    ? v => new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    ? v => formatLocalDate(new Date(v), { month: 'short', day: 'numeric' })
     : undefined;
 
   const mainHeight = Math.round(height * 0.65);

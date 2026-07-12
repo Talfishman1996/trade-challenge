@@ -1,15 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Info } from 'lucide-react';
 
-export const Tip = ({ text }) => (
-  <span className="group relative inline-flex items-center ml-1 cursor-help">
-    <Info className="w-3 h-3 text-slate-600 group-hover:text-blue-400 transition-colors" />
-    <span className="absolute bottom-full left-1/2 mb-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all bg-elevated text-slate-300 text-xs rounded-lg border border-line p-2.5 z-50 pointer-events-none font-sans normal-case tracking-normal leading-relaxed" style={{ transform: 'translateX(-50%)' }}>
-      {text}
-      <span className="absolute top-full left-1/2 -mt-px border-4 border-transparent border-t-slate-800" style={{ transform: 'translateX(-50%)' }} />
+export const Tip = ({ text }) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <span className="group relative inline-flex items-center ml-1">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        onBlur={() => setOpen(false)}
+        className="inline-flex items-center cursor-help"
+        aria-label="Show help"
+      >
+        <Info className="w-3 h-3 text-slate-600 group-hover:text-blue-400 transition-colors" />
+      </button>
+      <span
+        className={'absolute bottom-full left-1/2 mb-2 w-56 transition-all bg-elevated text-slate-300 text-xs rounded-lg border border-line p-2.5 z-50 font-sans normal-case tracking-normal leading-relaxed ' +
+          (open ? 'opacity-100 visible' : 'opacity-0 invisible group-hover:opacity-100 group-hover:visible pointer-events-none')}
+        style={{ transform: 'translateX(-50%)' }}
+      >
+        {text}
+        <span className="absolute top-full left-1/2 -mt-px border-4 border-transparent border-t-slate-800" style={{ transform: 'translateX(-50%)' }} />
+      </span>
     </span>
-  </span>
-);
+  );
+};
 
 export const ChartLegend = () => (
   <div className="flex flex-wrap justify-center gap-5 mt-4">

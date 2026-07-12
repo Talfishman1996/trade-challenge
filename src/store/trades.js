@@ -1,57 +1,78 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
 import { rN, r$N, getPhase } from '../math/risk.js';
 import { MILES } from '../math/constants.js';
-import { pushToCloud, pullFromCloud, getSyncConfig } from '../sync.js';
+import { pushToCloud, pullFromCloud } from '../sync.js';
+import { clearAllImages, deleteImage } from '../utils/imageDB.js';
+import {
+  createTradeUid,
+  freshTradeDefaults,
+  localDateDaysAgo,
+  mergeDatasets,
+  normalizeDataset,
+  readStoredDataset,
+  todayLocalDate,
+  writeStoredDataset,
+} from '../utils/tradeData.js';
 
-const STORAGE_KEY = 'risk-engine-data';
-
-// Default values for new V3 trade fields — applied during migration
-const freshTradeDefaults = () => ({
-  strategy: '',
-  contracts: 0,
-  entryPrice: 0,
-  exitPrice: 0,
-  entryTime: '',
-  exitTime: '',
-  setupTags: [],
-  emotionTags: [],
-  mistakes: [],
-  mae: null,
-  mfe: null,
-  images: [],
+const datasetSignature = (data) => JSON.stringify({
+  initialEquity: data.initialEquity,
+  trades: data.trades,
+  tombstones: data.tombstones || [],
 });
 
-// Migrate a trade: fill in missing V3 fields with defaults
-const migrateTrade = (t) => ({ ...freshTradeDefaults(), ...t });
-
-const loadData = (initialEquity) => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return { ...parsed, trades: (parsed.trades || []).map(migrateTrade) };
-    }
-  } catch {}
-  return { version: 1, initialEquity, trades: [] };
+const upsertTombstone = (tombstones, next) => {
+  const all = Array.isArray(tombstones) ? [...tombstones] : [];
+  const idx = all.findIndex(item => item.uid === next.uid);
+  if (idx === -1) return [...all, next];
+  if ((all[idx].deletedAt || 0) <= next.deletedAt) all[idx] = next;
+  return all;
 };
 
-const saveData = data => {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+const recalcTradeChain = (trades, baseEquity) => {
+  const result = [...trades];
+  for (let i = 0; i < result.length; i++) {
+    const eqBefore = i > 0 ? result[i - 1].equityAfter : baseEquity;
+    result[i] = {
+      ...result[i],
+      equityBefore: eqBefore,
+      equityAfter: Math.max(1, eqBefore + result[i].pnl),
+      riskPct: rN(eqBefore),
+      riskDol: r$N(eqBefore),
+      phase: getPhase(eqBefore),
+    };
+  }
+  return result;
 };
 
 export const useTrades = (initialEquity = 20000) => {
-  const [data, setData] = useState(() => loadData(initialEquity));
+  const [data, setData] = useState(() => {
+    const loaded = readStoredDataset(initialEquity);
+    return {
+      ...loaded,
+      trades: recalcTradeChain(loaded.trades, loaded.initialEquity || initialEquity),
+    };
+  });
+  const dataRef = useRef(data);
   const [celebration, setCelebration] = useState(null);
   const undoStackRef = useRef([]);
   const [undoStackLen, setUndoStackLen] = useState(0);
   const clearCelebration = useCallback(() => setCelebration(null), []);
 
+  dataRef.current = data;
+
   const persist = useCallback(newData => {
-    const stamped = { ...newData, _lastModified: Date.now() };
-    setData(stamped);
-    saveData(stamped);
-    if (getSyncConfig()) pushToCloud(stamped).catch(() => {});
-  }, []);
+    const normalized = normalizeDataset(newData, initialEquity);
+    const stamped = {
+      ...normalized,
+      trades: recalcTradeChain(normalized.trades, normalized.initialEquity || initialEquity),
+      _lastModified: Date.now(),
+    };
+    const stored = writeStoredDataset(stamped, initialEquity);
+    dataRef.current = stored;
+    setData(stored);
+    pushToCloud(stored).catch(() => {});
+    return stored;
+  }, [initialEquity]);
 
   // Current equity from trade log
   const currentEquity = useMemo(() => {
@@ -68,38 +89,27 @@ export const useTrades = (initialEquity = 20000) => {
     return peak;
   }, [data, initialEquity]);
 
-  // Recalculate equity chain from a given index forward
-  const recalcChain = (trades, fromIdx, baseEquity) => {
-    const result = [...trades];
-    for (let i = fromIdx; i < result.length; i++) {
-      const eqBefore = i > 0 ? result[i - 1].equityAfter : baseEquity;
-      result[i] = {
-        ...result[i],
-        equityBefore: eqBefore,
-        equityAfter: Math.max(1, eqBefore + result[i].pnl),
-        riskPct: rN(eqBefore),
-        riskDol: r$N(eqBefore),
-        phase: getPhase(eqBefore),
-      };
-    }
-    return result;
-  };
-
   // Add a new trade — accepts a tradeData object with at minimum { pnl }
   const addTrade = useCallback((tradeData) => {
     undoStackRef.current = []; setUndoStackLen(0);
-    const eq = data.trades.length > 0
-      ? data.trades[data.trades.length - 1].equityAfter
-      : (data.initialEquity || initialEquity);
+    const currentData = dataRef.current;
+    const eq = currentData.trades.length > 0
+      ? currentData.trades[currentData.trades.length - 1].equityAfter
+      : (currentData.initialEquity || initialEquity);
 
     const { pnl } = tradeData;
     const equityAfter = Math.max(1, eq + pnl);
-    const maxId = data.trades.length > 0 ? Math.max(...data.trades.map(t => t.id)) : 0;
+    const maxId = currentData.trades.length > 0 ? Math.max(...currentData.trades.map(t => t.id)) : 0;
+    const now = Date.now();
     const trade = {
-      ...freshTradeDefaults(),
+      ...freshTradeDefaults(now),
       ...tradeData,
+      uid: tradeData.uid || createTradeUid(),
       id: maxId + 1,
-      date: tradeData.date || new Date().toISOString(),
+      createdAt: tradeData.createdAt || now,
+      updatedAt: tradeData.updatedAt || now,
+      deletedAt: null,
+      date: tradeData.date || todayLocalDate(),
       openDate: tradeData.openDate || null,
       pnl,
       direction: tradeData.direction || 'long',
@@ -112,7 +122,7 @@ export const useTrades = (initialEquity = 20000) => {
       notes: tradeData.notes || '',
     };
 
-    persist({ ...data, trades: [...data.trades, trade] });
+    persist({ ...currentData, trades: [...currentData.trades, trade] });
 
     // Celebration: detect newly crossed milestones
     const newlyReached = MILES.filter(m => eq < m.v && equityAfter >= m.v);
@@ -121,14 +131,15 @@ export const useTrades = (initialEquity = 20000) => {
     }
 
     return trade;
-  }, [data, initialEquity, persist]);
+  }, [initialEquity, persist]);
 
   // Edit an existing trade — changes is an object of fields to update
   const editTrade = useCallback((id, changes) => {
     undoStackRef.current = []; setUndoStackLen(0);
-    const idx = data.trades.findIndex(t => t.id === id);
+    const currentData = dataRef.current;
+    const idx = currentData.trades.findIndex(t => t.id === id);
     if (idx === -1) return;
-    const updated = [...data.trades];
+    const updated = [...currentData.trades];
     updated[idx] = { ...updated[idx] };
     // Apply all provided fields
     const editableFields = [
@@ -141,21 +152,35 @@ export const useTrades = (initialEquity = 20000) => {
     for (const key of editableFields) {
       if (changes[key] !== undefined) updated[idx][key] = changes[key];
     }
-    const baseEq = data.initialEquity || initialEquity;
-    const recalced = recalcChain(updated, idx, baseEq);
-    persist({ ...data, trades: recalced });
-  }, [data, initialEquity, persist]);
+    updated[idx].updatedAt = Date.now();
+    const baseEq = currentData.initialEquity || initialEquity;
+    const recalced = recalcTradeChain(updated, baseEq);
+    persist({ ...currentData, trades: recalced });
+  }, [initialEquity, persist]);
 
   // Delete a specific trade
-  const deleteTrade = useCallback((id) => {
+  const deleteTrade = useCallback(async (id) => {
     undoStackRef.current = []; setUndoStackLen(0);
-    const idx = data.trades.findIndex(t => t.id === id);
-    if (idx === -1) return;
-    const remaining = data.trades.filter(t => t.id !== id);
-    const baseEq = data.initialEquity || initialEquity;
-    const recalced = remaining.length > 0 ? recalcChain(remaining, Math.max(0, idx), baseEq) : [];
-    persist({ ...data, trades: recalced });
-  }, [data, initialEquity, persist]);
+    const currentData = dataRef.current;
+    const idx = currentData.trades.findIndex(t => t.id === id);
+    if (idx === -1) return false;
+    const trade = currentData.trades[idx];
+    await Promise.allSettled((trade.images || []).map(key => deleteImage(key)));
+    const remaining = currentData.trades.filter(t => t.id !== id);
+    const baseEq = currentData.initialEquity || initialEquity;
+    const recalced = remaining.length > 0 ? recalcTradeChain(remaining, baseEq) : [];
+    const tombstone = {
+      uid: trade.uid,
+      deletedAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    persist({
+      ...currentData,
+      trades: recalced,
+      tombstones: upsertTombstone(currentData.tombstones, tombstone),
+    });
+    return true;
+  }, [initialEquity, persist]);
 
   // Delete last trade (undo) — pushes removed trade onto redo stack
   // Uses functional setData to avoid stale closure issues with rapid clicks
@@ -166,11 +191,12 @@ export const useTrades = (initialEquity = 20000) => {
       undoStackRef.current = [...undoStackRef.current, removed];
       setUndoStackLen(undoStackRef.current.length);
       const next = { ...prev, trades: prev.trades.slice(0, -1), _lastModified: Date.now() };
-      saveData(next);
-      if (getSyncConfig()) pushToCloud(next).catch(() => {});
+      writeStoredDataset(next, initialEquity);
+      dataRef.current = next;
+      pushToCloud(next).catch(() => {});
       return next;
     });
-  }, []);
+  }, [initialEquity]);
 
   // Redo last undone trade — pops from redo stack
   // Uses functional setData to avoid stale closure issues with rapid clicks
@@ -182,27 +208,36 @@ export const useTrades = (initialEquity = 20000) => {
     setUndoStackLen(undoStackRef.current.length);
     setData(prev => {
       const next = { ...prev, trades: [...prev.trades, trade], _lastModified: Date.now() };
-      saveData(next);
-      if (getSyncConfig()) pushToCloud(next).catch(() => {});
+      writeStoredDataset(next, initialEquity);
+      dataRef.current = next;
+      pushToCloud(next).catch(() => {});
       return next;
     });
-  }, []);
+  }, [initialEquity]);
 
   // Clear all trades
-  const clearTrades = useCallback(() => {
+  const clearTrades = useCallback(async () => {
     undoStackRef.current = []; setUndoStackLen(0);
-    persist({ ...data, trades: [] });
-  }, [data, persist]);
+    const currentData = dataRef.current;
+    await clearAllImages().catch(() => {});
+    const deletedAt = Date.now();
+    const tombstones = currentData.trades.reduce(
+      (acc, trade) => upsertTombstone(acc, { uid: trade.uid, deletedAt, updatedAt: deletedAt }),
+      currentData.tombstones || []
+    );
+    persist({ ...currentData, trades: [], tombstones });
+  }, [persist]);
 
   // Update initial equity
   const setInitialEquity = useCallback(eq => {
-    persist({ ...data, initialEquity: eq });
-  }, [data, persist]);
+    const currentData = dataRef.current;
+    persist({ ...currentData, initialEquity: eq });
+  }, [persist]);
 
   // Export as JSON string
   const exportJSON = useCallback(() => {
     return JSON.stringify(data, null, 2);
-  }, [data]);
+  }, [data, initialEquity]);
 
   // Import from JSON string
   const importJSON = useCallback(json => {
@@ -210,14 +245,14 @@ export const useTrades = (initialEquity = 20000) => {
       const parsed = JSON.parse(json);
       if (parsed && Array.isArray(parsed.trades)) {
         undoStackRef.current = []; setUndoStackLen(0);
-        persist(parsed);
+        persist(normalizeDataset(parsed, initialEquity));
         return true;
       }
       return false;
     } catch {
       return false;
     }
-  }, [persist]);
+  }, [initialEquity, persist]);
 
   // Computed stats
   const stats = useMemo(() => {
@@ -262,12 +297,12 @@ export const useTrades = (initialEquity = 20000) => {
     }
 
     // Today stats
-    const today = new Date().toISOString().slice(0, 10);
-    const todayTrades = trades.filter(t => t.date.slice(0, 10) === today);
+    const today = todayLocalDate();
+    const todayTrades = trades.filter(t => t.date === today);
 
     // Last 30 days stats
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
-    const last30 = trades.filter(t => t.date.slice(0, 10) >= thirtyDaysAgo);
+    const thirtyDaysAgo = localDateDaysAgo(30);
+    const last30 = trades.filter(t => t.date >= thirtyDaysAgo);
 
     // R-multiples
     const rMultiples = trades.map(t => t.riskDol > 0 ? t.pnl / t.riskDol : 0);
@@ -343,23 +378,38 @@ export const useTrades = (initialEquity = 20000) => {
   // Cloud sync: pull from cloud and merge
   const syncFromCloud = useCallback(async () => {
     const cloud = await pullFromCloud();
+    const currentData = dataRef.current;
     if (!cloud || !Array.isArray(cloud.trades)) {
       // No cloud data — push local up
-      if (data.trades.length > 0) pushToCloud(data).catch(() => {});
-      return 'pushed';
+      if (currentData.trades.length > 0 || (currentData.tombstones || []).length > 0) {
+        const pushed = await pushToCloud(currentData);
+        return pushed ? 'pushed' : 'error';
+      }
+      return 'in_sync';
     }
-    const cloudMod = cloud.lastModified || 0;
-    const localMod = data._lastModified || 0;
-    if (cloudMod > localMod) {
-      const { lastModified, ...rest } = cloud;
-      const merged = { ...rest, _lastModified: cloudMod };
-      setData(merged);
-      saveData(merged);
-      return 'pulled';
+    const localData = normalizeDataset(currentData, initialEquity);
+    const remoteData = normalizeDataset({
+      ...cloud,
+      _lastModified: cloud.lastModified || cloud._lastModified || 0,
+    }, initialEquity);
+    const merged = mergeDatasets(localData, remoteData, initialEquity);
+
+    const localSig = datasetSignature(localData);
+    const remoteSig = datasetSignature(remoteData);
+    const mergedSig = datasetSignature(merged);
+
+    if (mergedSig !== localSig) {
+      persist(merged);
+      return 'merged';
     }
-    pushToCloud(data).catch(() => {});
-    return 'pushed';
-  }, [data]);
+
+    if (mergedSig !== remoteSig) {
+      const pushed = await pushToCloud(localData);
+      return pushed ? 'pushed' : 'error';
+    }
+
+    return 'in_sync';
+  }, [initialEquity, persist]);
 
   // Ref that always points to latest syncFromCloud (avoids stale closures in intervals)
   const syncRef = useRef(syncFromCloud);

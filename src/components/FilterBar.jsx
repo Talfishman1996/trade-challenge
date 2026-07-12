@@ -2,14 +2,14 @@ import React, { useState, useMemo } from 'react';
 import { X, Filter, ChevronDown } from 'lucide-react';
 
 const QUICK_FILTERS = [
-  { id: 'winners', label: 'Winners', fn: t => t.pnl > 0 },
-  { id: 'losers', label: 'Losers', fn: t => t.pnl <= 0 },
-  { id: 'long', label: 'Long', fn: t => t.direction === 'long' },
-  { id: 'short', label: 'Short', fn: t => t.direction === 'short' },
+  { id: 'winners', group: 'outcome', label: 'Winners', fn: t => t.pnl > 0 },
+  { id: 'losers', group: 'outcome', label: 'Losers', fn: t => t.pnl <= 0 },
+  { id: 'long', group: 'direction', label: 'Long', fn: t => t.direction === 'long' },
+  { id: 'short', group: 'direction', label: 'Short', fn: t => t.direction === 'short' },
 ];
 
 export default function FilterBar({ trades, onFilter }) {
-  const [active, setActive] = useState(new Set());
+  const [active, setActive] = useState({});
   const [tickerFilter, setTickerFilter] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -20,11 +20,13 @@ export default function FilterBar({ trades, onFilter }) {
     return [...set].sort();
   }, [trades]);
 
-  // Unique setup tags
+  // Unique tags across all tag families
   const usedTags = useMemo(() => {
     const set = new Set();
     for (const t of trades) {
       if (t.setupTags) t.setupTags.forEach(tag => set.add(tag));
+      if (t.emotionTags) t.emotionTags.forEach(tag => set.add(tag));
+      if (t.mistakes) t.mistakes.forEach(tag => set.add(tag));
     }
     return [...set].sort();
   }, [trades]);
@@ -35,9 +37,9 @@ export default function FilterBar({ trades, onFilter }) {
   const applyFilters = (nextActive, nextTicker, nextTags) => {
     let result = trades;
 
-    // Quick filters (OR within same type doesn't make sense, these are exclusive)
+    // One active quick filter per group
     for (const qf of QUICK_FILTERS) {
-      if (nextActive.has(qf.id)) {
+      if (nextActive[qf.group] === qf.id) {
         result = result.filter(qf.fn);
       }
     }
@@ -50,7 +52,9 @@ export default function FilterBar({ trades, onFilter }) {
     // Tag filter (any match)
     if (nextTags.size > 0) {
       result = result.filter(t =>
-        t.setupTags && t.setupTags.some(tag => nextTags.has(tag))
+        [t.setupTags || [], t.emotionTags || [], t.mistakes || []]
+          .flat()
+          .some(tag => nextTags.has(tag))
       );
     }
 
@@ -58,9 +62,10 @@ export default function FilterBar({ trades, onFilter }) {
   };
 
   const toggleQuick = (id) => {
-    const next = new Set(active);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
+    const quick = QUICK_FILTERS.find(item => item.id === id);
+    if (!quick) return;
+    const next = { ...active };
+    next[quick.group] = next[quick.group] === id ? null : id;
     setActive(next);
     applyFilters(next, tickerFilter, tagFilter);
   };
@@ -79,14 +84,14 @@ export default function FilterBar({ trades, onFilter }) {
   };
 
   const clearAll = () => {
-    setActive(new Set());
+    setActive({});
     setTickerFilter('');
     setTagFilter(new Set());
     setShowAdvanced(false);
     onFilter(trades);
   };
 
-  const hasFilters = active.size > 0 || tickerFilter || tagFilter.size > 0;
+  const hasFilters = Object.values(active).some(Boolean) || tickerFilter || tagFilter.size > 0;
 
   return (
     <div className="space-y-2">
@@ -98,7 +103,7 @@ export default function FilterBar({ trades, onFilter }) {
             key={qf.id}
             onClick={() => toggleQuick(qf.id)}
             className={'px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all shrink-0 ' +
-              (active.has(qf.id)
+              (active[qf.group] === qf.id
                 ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/30'
                 : 'bg-elevated text-slate-500 hover:text-slate-300')}
           >

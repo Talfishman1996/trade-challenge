@@ -1,5 +1,6 @@
 const SYNC_KEY = 'tradevault-sync';
 const API = 'https://tradevault-sync.talfishmanbusiness.workers.dev';
+export const DEFAULT_SYNC_ID = 'tradevault-main';
 
 export const getSyncConfig = () => {
   try {
@@ -16,6 +17,20 @@ export const clearSyncConfig = () => {
   try { localStorage.removeItem(SYNC_KEY); } catch {}
 };
 
+export const ensurePrimarySyncConfig = () => {
+  const current = getSyncConfig();
+  const next = {
+    blobId: DEFAULT_SYNC_ID,
+    lastSync: current?.lastSync || null,
+  };
+  if (current?.blobId !== DEFAULT_SYNC_ID || current?.lastSync !== next.lastSync) {
+    saveSyncConfig(next);
+  }
+  return next;
+};
+
+export const buildSyncUrl = () => `${window.location.origin}${window.location.pathname}`;
+
 // Create a new cloud sync key, returns the key ID
 export const createBlob = async (data) => {
   const payload = { ...data, lastModified: Date.now() };
@@ -29,19 +44,26 @@ export const createBlob = async (data) => {
   return json?.id || null;
 };
 
-// Push data to existing blob
-export const pushToCloud = async (data) => {
-  const config = getSyncConfig();
-  if (!config?.blobId) return false;
+export const pushToBlobId = async (blobId, data) => {
+  if (!blobId) return false;
   try {
     const payload = { ...data, lastModified: Date.now() };
     delete payload._lastModified;
-    const res = await fetch(`${API}/${config.blobId}`, {
+    const res = await fetch(`${API}/${blobId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    if (res.ok) {
+    return res.ok;
+  } catch { return false; }
+};
+
+// Push data to existing blob
+export const pushToCloud = async (data) => {
+  const config = ensurePrimarySyncConfig();
+  try {
+    const pushed = await pushToBlobId(config.blobId, data);
+    if (pushed) {
       saveSyncConfig({ ...config, lastSync: Date.now() });
       return true;
     }
@@ -51,8 +73,7 @@ export const pushToCloud = async (data) => {
 
 // Pull data from cloud
 export const pullFromCloud = async () => {
-  const config = getSyncConfig();
-  if (!config?.blobId) return null;
+  const config = ensurePrimarySyncConfig();
   try {
     const res = await fetch(`${API}/${config.blobId}`);
     if (!res.ok) return null;
