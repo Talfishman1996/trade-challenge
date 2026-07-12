@@ -47,3 +47,4 @@ virtual-keyboard, and workflow-video gaps remain explicit for later phases.
 |---|---|---|---|---|
 | `EV-P2-FBL-001` | `FBL` | `fable5/packet-v1/*`, generated 172-row packet manifest, `reports/P2.1-neutral-packet.md` | Neutral packet contains complete authorized visual/source/raw context, separates current and planned models, excludes prior reviews, and matches frozen origins | indexed |
 | `EV-P2-FBL-002` | `FBL` | `P2.2-contamination-audit.txt`, `tooling/run-sealed-fable-review.sh`, `reports/P2.2-prompt-contamination-audit.md` | Authored language, packet paths, frozen hashes, read-only execution flags, and output-sealing behavior pass before execution | indexed |
+| `EV-P2-FBL-003` | `FBL` | failed run metadata and hashes; `reports/P2.3-fable-usage-block.md` | Committed Fable 5 max-effort execution reached the service but produced no review because usage credits were exhausted | indexed blocker |
