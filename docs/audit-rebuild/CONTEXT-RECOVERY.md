@@ -199,6 +199,11 @@ Every passed phase must leave a handoff containing:
 At plan creation, the intended state is:
 
 - plan suite written on a plan-only branch
+- final pre-greenlight gap review recorded as 14 binding scope dispositions:
+  structured visual-direction comparison included and the other 13 expansions
+  excluded
+- Codex is the structured evaluator, the owner is the approval authority, and no
+  external human pilot or in-product reviewer instrumentation is planned
 - original checkpoint untouched
 - production untouched
 - P0 not started

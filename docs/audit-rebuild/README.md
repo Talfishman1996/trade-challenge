@@ -54,10 +54,18 @@ assumptions, previously completed work, and older product decisions.
 - Planning assumptions include `10%` break-even trades and `3.5` trades/month.
 - Mobile is primary. Tablet and desktop are secondary compatibility surfaces.
 - Every current visual element is open to criticism or replacement.
+- At least three mobile visual directions will be evaluated under identical tasks,
+  content, states, viewports, fidelity, weighted criteria, and hard-failure rules.
+- Codex performs the structured direction/task evaluation; no separate human pilot
+  or in-product reviewer-feedback instrumentation is part of this program.
 - Fable 5 is an independent advisor, not an authority and not an implementation
   instruction source.
 - The first authorized stopping point is a validated interactive prototype and
   production rebuild roadmap, not a production replacement.
+
+The binding disposition of every accepted or rejected pre-greenlight gap is in
+`DECISIONS-RISKS-QUESTIONS.md`, section 2. Excluded expansions must not be silently
+reintroduced during execution.
 
 ## Reading Order
 

@@ -38,6 +38,8 @@ cannot be traced to a user need, system risk, or quality requirement is rejected
 - neutral independent Fable 5 design and product review using raw images/context
 - findings registry ranked by severity, frequency, impact, confidence, and effort
 - north-star product model, navigation, workflows, design system, and architecture
+- controlled comparison of at least three mobile visual directions using identical
+  tasks, content, states, viewports, fidelity, and a fixed rubric
 - code-based interactive prototype on an isolated branch and staging environment
 - prototype validation, adversarial audit, and final production rebuild roadmap
 - durable evidence, decisions, checkpoints, breadcrumbs, and recovery records
@@ -49,6 +51,25 @@ cannot be traced to a user need, system risk, or quality requirement is rejected
 - writing prototype data to the production sync Worker
 - migrating or rewriting live trade history
 - implementing public multi-user accounts, billing, or compliance controls
+- formal external-user research or a representative human pilot; Codex performs
+  the structured evaluation and the owner remains the approval authority
+- a dedicated behavioral/psychological-safety, localization/RTL, or formal
+  financial-ethics workstream
+- advanced probability-regime, clustered-loss, or fat-tail research beyond
+  verifying the app's configured assumptions and outputs
+- a separately implemented second mathematical engine; ordinary specification,
+  boundary, invariant, and UI-consistency tests remain required
+- 10,000-concurrent-reviewer capacity planning, load testing, or cost modeling
+- software supply-chain, dependency-license, or package-vulnerability certification
+- formal VoiceOver, TalkBack, switch-control, or assistive-technology lab sessions;
+  baseline semantic, contrast, target-size, text-scaling, and motion checks remain
+- installed-PWA/native mobile integrations such as haptics, share sheets, launch
+  screens, platform installation, battery/thermal profiling, or storage-eviction labs
+- in-product reviewer telemetry, analytics, or feedback collection infrastructure
+- disaster-recovery rehearsal; current backup/restore behavior and a later rollback
+  design are still documented
+- a peripheral design-asset package covering favicon, app icon, social preview,
+  launch artwork, browser chrome, or print/export branding
 - treating reviewer feedback as proof without independent validation
 - declaring production readiness from prototype evidence alone
 
@@ -87,6 +108,8 @@ The experience should support four repeated loops:
 10. Copy must say what the system actually does, not what it aspires to do.
 11. Reviewer preference is evidence, not automatic product truth.
 12. No phase passes based on memory, confidence, or visual intuition alone.
+13. Competing visual directions use the same evaluation conditions before any
+    direction is selected or blended.
 
 ## 5. Audit Coverage Matrix
 
@@ -105,7 +128,7 @@ The experience should support four repeated loops:
 | Motion | Does animation clarify, motivate, or confirm without delaying action? |
 | Copy | Are labels concise, specific, trustworthy, and consistent? |
 | Charts | Are charts readable, inspectable, truthful, and useful on a phone? |
-| Accessibility | Can the product be used with large text, reduced motion, and assistive tools? |
+| Accessibility | Do semantics, contrast, target sizes, large text, and reduced motion support baseline access? |
 | Frontend | Are responsibilities, state ownership, rendering, and tests sustainable? |
 | Backend | Can persistence and sync survive offline use, conflicts, and stale clients? |
 | Data | Are dates, trades, images, tombstones, imports, and exports deterministic? |
@@ -237,7 +260,7 @@ Objective: capture objective current-state facts before interpretation begins.
 
 - Research current primary sources for iOS web behavior, Android/Chrome behavior,
   WCAG/WAI accessibility, Web Vitals, React, Vite, Cloudflare Pages/Workers/KV, and
-  relevant browser storage/PWA constraints.
+  relevant browser-storage constraints.
 - Record publication/version dates and direct citations.
 - Separate standards requirements from design preferences.
 - Establish a dated reference baseline so later recommendations do not rely on
@@ -398,11 +421,22 @@ Objective: audit every pixel and interaction under realistic phone constraints.
   only the current theme.
 - Explain what each direction optimizes and sacrifices.
 
+### P4.8 Structured direction comparison
+
+- Freeze identical representative content, workflow tasks, product states,
+  viewports, and fidelity across every direction before scoring begins.
+- Evaluate each direction using the weighted comparison rubric in
+  `EVIDENCE-AND-GATES.md`, plus measured task friction and documented hard failures.
+- Record the strongest complete direction, rejected directions, transferable ideas,
+  unresolved tradeoffs, and confidence without blending concepts prematurely.
+- Keep Fable 5 output sealed; this comparison is part of Codex's independent audit.
+
 ### G4 pass condition
 
 Every visible component and state has been inspected at required mobile sizes, all
-visual findings have coordinates or screenshots, and alternative directions are
-supported by product needs.
+visual findings have coordinates or screenshots, and at least three comparable
+directions have been scored under identical conditions with evidence-backed
+strengths, failures, and tradeoffs.
 
 ## P5: Frontend Architecture Audit
 
@@ -518,7 +552,10 @@ product truth.
 - Test percentage nonincrease and dollar-risk nondecrease over at least 50,000
   sampled points.
 - Compare JavaScript, simulation, PDF, and displayed UI outputs.
-- Test Monte Carlo assumptions separately from deterministic sizing.
+- Verify that configured projection assumptions are passed, displayed, and applied
+  consistently without adding a separate regime/fat-tail research program.
+- Do not build a separately authored second model engine; these are direct
+  specification and product-consistency tests.
 
 ### G7 pass condition
 
@@ -544,14 +581,14 @@ constraints and non-happy-path use.
 
 ### P8.3 Accessibility
 
-- Test semantic structure, labels, focus, keyboard operation, screen-reader output,
-  contrast, target sizes, 200% text, zoom, reduced motion, and color independence.
+- Test semantic structure, labels, focus behavior, contrast, target sizes, 200%
+  text, zoom, reduced motion, and color independence.
+- Record that formal assistive-technology lab testing is outside this program.
 
 ### P8.4 Browser and device compatibility
 
 - Test current and previous major iOS Safari and Android Chrome where available.
-- Test browser tab and installed PWA modes, portrait/landscape, safe areas, and
-  virtual keyboards.
+- Test browser-tab mode, portrait/landscape, safe areas, and virtual keyboards.
 
 ### P8.5 Resilience
 
@@ -637,7 +674,8 @@ writing prototype code.
 ### P10.5 Prototype scope contract
 
 - List exactly which flows are functional and which are simulated.
-- Define reviewer scenarios, fixture datasets, reset controls, and feedback capture.
+- Define reviewer scenarios, fixture datasets, reset controls, and a manual owner
+  review guide; do not add feedback telemetry or in-product collection.
 - Freeze acceptance criteria and non-goals.
 
 ### G10 pass condition
@@ -724,7 +762,7 @@ Objective: prove the prototype direction rather than merely demonstrate it.
 
 - Present staging URL, scenario guide, evidence dossier, known limitations, and
   unresolved alternatives.
-- Collect structured feedback and disposition every item.
+- Record structured owner feedback manually and disposition every item.
 
 ### G12 pass condition
 
@@ -788,6 +826,7 @@ an owner decision.
 - evidence-linked finding registry
 - independent Fable 5 raw reviews and confluence records
 - product north-star and feature disposition map
+- controlled three-direction comparison matrix and selection rationale
 - mobile information architecture and workflow specifications
 - complete design system and motion/content specifications
 - frontend/backend/model production architecture recommendations

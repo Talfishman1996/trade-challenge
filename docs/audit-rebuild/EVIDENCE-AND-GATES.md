@@ -38,8 +38,9 @@ Evidence types:
 - `A11Y`: accessibility result
 - `DATA`: fixture, schema, or data-flow capture
 - `TEST`: automated or manual test report
+- `CMP`: controlled visual-direction comparison
 - `SRC`: source map or code reference
-- `USR`: structured owner/reviewer feedback
+- `USR`: structured owner feedback recorded outside the prototype
 - `EXT`: independent external-advisor output
 
 ## 3. Planned Artifact Structure
@@ -61,6 +62,7 @@ output/audit-rebuild/
   video/
   metrics/
   accessibility/
+  comparisons/
   tests/
   fable5/
   prototype/
@@ -94,9 +96,7 @@ major versions are preferred where available.
 Required mobile environments:
 
 - iOS Safari in browser-tab mode
-- iOS installed web-app/PWA mode if supported by the prototype
 - Android Chrome in browser-tab mode
-- Android installed PWA mode if supported by the prototype
 - light system text scaling and 200% text scaling
 - reduced motion on and off
 - portrait and landscape
@@ -174,7 +174,60 @@ If a state does not apply, the evidence index must say why.
 Each workflow records taps, fields, elapsed time, errors, scroll distance, keyboard
 changes, network state, and observed uncertainty.
 
-## 7. Provisional Quality Budgets
+## 7. Controlled Visual-Direction Comparison
+
+P4.8 compares at least three evidence-derived directions without external user
+research. Codex performs the evaluation; the owner makes the selection at P9.5.
+
+### Frozen comparison conditions
+
+- identical factual copy, values, datasets, and information hierarchy requirements
+- identical fidelity and interaction depth so polish cannot substitute for quality
+- critical viewports `M01`, `M04`, and `M06`
+- product states `S01`, `S05`, `S07`, `S16`, `S18`, and `S20`
+- workflows `W01`, `W02`, `W03`, `W09`, `W10`, and `W12`
+- the same capture tooling, zoom, system settings, and evidence annotations
+- a rubric frozen and hashed before any direction receives a score
+
+If a direction cannot represent a frozen state or workflow, that is a documented
+failure rather than permission to change the comparison conditions.
+
+### Weighted rubric
+
+| Criterion | Weight | Required evidence |
+|---|---:|---|
+| Core-task clarity and hierarchy | 20 | first-action identification, task path, annotated screen |
+| One-handed reach and interaction economy | 15 | tap count, reach map, target geometry |
+| Numeric scanning and decision comprehension | 15 | risk/equity/progress scan test |
+| Save/sync confidence and state visibility | 10 | pending/synced/error comparison |
+| Mobile density and spatial resilience | 10 | M01/M04/M06 captures and overflow check |
+| Error, drawdown, and recovery clarity | 10 | S07/S20 workflow evidence |
+| Emotional identity and memorability | 10 | qualitative rationale tied to product north star |
+| Baseline accessibility | 5 | contrast, target, text-scale, color/motion checks |
+| Implementation coherence and regression exposure | 5 | component/state implications |
+| **Total** | **100** | complete comparison packet |
+
+### Hard-failure rules
+
+A direction cannot win on weighted score alone if it:
+
+- obscures a primary task, navigation destination, risk number, or sync/error state
+- introduces horizontal page scrolling or keyboard/safe-area obstruction at a
+  critical viewport
+- requires precision tapping for a frequent action
+- depends on color alone for win/loss, risk, save, sync, or error meaning
+- presents model/projection information more confidently than the underlying state
+- cannot support the required empty, drawdown, pending, synced, and error states
+
+### Required result
+
+The comparison records raw scores, evidence IDs, hard failures, uncertainty,
+strengths, weaknesses, transferable ideas, and implementation implications for
+every direction. It recommends one complete direction without automatically
+blending the highest-scoring fragments. Any later blend is a separate recorded
+decision with a new comparison check.
+
+## 8. Provisional Quality Budgets
 
 Budgets are provisional until P1 measures the baseline. G1 either ratifies them or
 records an evidence-based revision. Budgets may not be weakened solely to make a
@@ -220,7 +273,7 @@ gate pass.
 - displayed sync state matches observed local/cloud state
 - model calculations are deterministic for identical inputs
 
-## 8. Finding Severity
+## 9. Finding Severity
 
 | Severity | Definition |
 |---|---|
@@ -234,7 +287,7 @@ gate pass.
 Every finding also records frequency, impact, confidence, affected states, evidence,
 dependencies, reversibility, proposed remedy, and validation method.
 
-## 9. Gate Packet Requirements
+## 10. Gate Packet Requirements
 
 Every gate packet must contain:
 
@@ -251,7 +304,7 @@ Every gate packet must contain:
 - adversarial self-audit: what could make this result wrong?
 - next phase authorization or required repair work
 
-## 10. Gate Procedure
+## 11. Gate Procedure
 
 1. Set all phase subphases to `EVIDENCE_READY`.
 2. Freeze mutable evidence and generate hashes.
@@ -264,7 +317,7 @@ Every gate packet must contain:
 9. Repair and rerun the entire affected validation set.
 10. On pass, commit the gate report and create a new immutable phase tag.
 
-## 11. Reopening Rules
+## 12. Reopening Rules
 
 A passed phase is reopened when:
 
@@ -277,7 +330,7 @@ A passed phase is reopened when:
 
 Reopening does not rewrite the old checkpoint. It creates a new corrective record.
 
-## 12. No-Proof Prohibitions
+## 13. No-Proof Prohibitions
 
 The following phrases are invalid without evidence IDs:
 

@@ -21,15 +21,18 @@ Protected baseline: `CHECKPOINT-PRE-100K-MIGRATION-2026-07-12`
 | Item | Result |
 |---|---|
 | Plan gate | `GATE_PASSED` |
-| Plan content commit | `cb98bc1` |
+| Plan revision | final gap-review scope disposition |
+| Plan content commit | `2f669d7e5873cd9f7a949ef560f85002557a9dc0` |
+| Plan validation checkpoint | `PLAN-MOBILE-FIRST-AUDIT-PROTOTYPE-FINAL-SCOPE-2026-07-12` |
 | Plan branch | `plan/mobile-first-audit-prototype-2026-07-12` |
 | Control documents | 7 present |
 | Program phases | 14 present, P0 through P13 |
-| Tracked subphases | 74 unique and matched between master plan/tracker |
-| Locked decisions | 15 unique |
+| Tracked subphases | 75 unique and matched between master plan/tracker |
+| Locked decisions | 17 unique |
+| Final scope dispositions | 14 recorded: 1 included, 13 excluded |
 | Working assumptions | 9 unique |
 | Evidence questions | 13 unique |
-| Program risks | 28 unique |
+| Program risks | 29 unique |
 | Markdown/diff validation | passed |
 | Application-source changes | 0 |
 | Audit evidence captured | 0 |
@@ -108,6 +111,7 @@ gate actually passed.
 | P4.5 | Charts, progress, and monument | `NOT_STARTED` | chart/identity findings |
 | P4.6 | Motion and feedback | `NOT_STARTED` | motion inventory/profiles |
 | P4.7 | Visual direction alternatives | `NOT_STARTED` | at least three directions |
+| P4.8 | Structured direction comparison | `NOT_STARTED` | controlled comparison matrix |
 | P5.1 | Responsibility map | `NOT_STARTED` | component/import graph |
 | P5.2 | State and persistence | `NOT_STARTED` | state ownership findings |
 | P5.3 | Component/design-system architecture | `NOT_STARTED` | boundary proposal |
@@ -181,7 +185,7 @@ gate actually passed.
 |---|---|---|---|
 | `CHECKPOINT-PRE-100K-MIGRATION-2026-07-12` | Exact original app | `ed845a5` / `c41314c` | yes |
 | GitHub protected branch | Remote exact original tree | `5a35dd9` / `c41314c` | yes |
-| Plan branch | Plan-only documents | `cb98bc1` plus validation record | no |
+| Plan branch | Plan-only documents | `2f669d7` plus final validation checkpoint | no |
 
 ## Active Blockers
 
@@ -192,7 +196,11 @@ None. The program is intentionally waiting for greenlight.
 - The original application checkpoint is protected and verified.
 - Reviewers are critics, not persistent multi-user account holders.
 - The `$100K` model is the planned product truth.
-- The plan suite is being finalized on a separate branch.
+- Final gap review includes only the controlled comparison of visual directions;
+  the other 13 proposed expansion programs are explicitly excluded.
+- Codex performs the structured evaluation and the owner remains the prototype
+  approval authority; no external human pilot or reviewer telemetry is planned.
+- The final plan suite is validated on a separate branch and awaits greenlight.
 - No audit evidence has been captured under this program.
 - Fable 5 has not been invoked under this program.
 - No prototype code or staging deployment exists.

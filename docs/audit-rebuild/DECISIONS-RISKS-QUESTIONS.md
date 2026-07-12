@@ -22,8 +22,33 @@ risks. It does not own task status or evidence.
 | D-013 | Live production data migration is not a current concern | Prototype must still be isolated from production writes |
 | D-014 | First stopping point is an interactive prototype | Production rebuild requires a later greenlight |
 | D-015 | Build the plan, then wait | P0 cannot begin without explicit owner greenlight |
+| D-016 | Do not run a separate human-review pilot | Codex performs structured task and design evaluation; the owner reviews and approves the prototype |
+| D-017 | Compare competing visual directions under controlled conditions | At least three directions use identical tasks, content, states, viewports, fidelity, and a fixed rubric before selection |
 
-## 2. Working Assumptions
+## 2. Final Gap-Review Scope Dispositions
+
+These dispositions are binding for this audit/prototype program. `Excluded` means
+do not create a dedicated workstream, deliverable, or gate requirement. It does not
+remove ordinary correctness checks already necessary to audit the app itself.
+
+| ID | Proposed expansion | Disposition | Exact boundary |
+|---|---|---|---|
+| SD-001 | Representative human reviewer pilot | `EXCLUDED` | Codex performs repeatable heuristic/task evaluation and the owner performs the final review; no external behavioral sample is claimed |
+| SD-002 | Behavioral or psychological-safety program | `EXCLUDED` | Ordinary usability and emotional-tone findings remain allowed; no dedicated tilt, loss-chasing, gamification, or milestone-pressure study |
+| SD-003 | Expanded probabilistic model-risk research | `EXCLUDED` | Verify configured assumptions and product outputs only; do not add clustered-loss, non-stationary-win-rate, dependence, or fat-tail research |
+| SD-004 | Independent second mathematical implementation | `EXCLUDED` | Keep ordinary specification, boundary, invariant, and UI-consistency tests; do not build a separately authored validation engine |
+| SD-005 | 10,000-reviewer capacity program | `EXCLUDED` | The audience is evaluative, not a concurrent-user load target; no load, bandwidth, CDN, Worker/KV capacity, or cost exercise |
+| SD-006 | Software supply-chain program | `EXCLUDED` | Dependency inspection serves architecture and performance only; no license, vulnerability, abandonment, or reproducible-build certification |
+| SD-007 | Real assistive-technology sessions | `EXCLUDED` | Retain baseline semantics, contrast, target-size, large-text, focus, color, and reduced-motion checks; no VoiceOver, TalkBack, switch-control, or specialist lab |
+| SD-008 | Native/PWA mobile-platform integration program | `EXCLUDED` | Retain browser behavior needed for core save/sync flows; no install, haptics, share sheet, platform launch screen, battery/thermal, or storage-eviction work |
+| SD-009 | Reviewer-feedback instrumentation | `EXCLUDED` | No telemetry, analytics, or in-product feedback collector; owner feedback is recorded manually in the evidence/decision process |
+| SD-010 | Localization and formatting-resilience program | `EXCLUDED` | No currency/locale matrix, translation expansion, or RTL workstream |
+| SD-011 | Disaster-recovery drill | `EXCLUDED` | Document current backup/restore behavior and later rollback design; do not conduct an operational recovery rehearsal |
+| SD-012 | Structured visual-direction comparison | `INCLUDED` | Codex compares at least three directions with frozen tasks, content, states, viewports, fidelity, weighted criteria, and hard-failure rules before owner selection |
+| SD-013 | Formal financial-communication ethics program | `EXCLUDED` | Ordinary factual copy, uncertainty, model-assumption, and capability-truth checks remain; no separate ethics workstream |
+| SD-014 | Peripheral design-asset completeness package | `EXCLUDED` | No favicon, app icon, launch screen, social preview, browser chrome, or branded print/export asset program |
+
+## 3. Working Assumptions
 
 Assumptions are not decisions. They must be verified or replaced during execution.
 
@@ -39,7 +64,7 @@ Assumptions are not decisions. They must be verified or replaced during executio
 | A-008 | A code prototype provides better evidence than static mockups alone | P10/P11 |
 | A-009 | Current Cloudflare production remains online throughout prototype work | P0/P11 |
 
-## 3. Open Questions to Resolve Through Evidence
+## 4. Open Questions to Resolve Through Evidence
 
 These questions are not blockers to plan approval. Their resolution is a required
 output of the named phase.
@@ -60,7 +85,7 @@ output of the named phase.
 | Q-012 | What review cadence should the product actively facilitate? | P3 | before G10 |
 | Q-013 | Which prototype surfaces must be real versus simulated for reviewers to judge honestly? | P10 | before G10 |
 
-## 4. Program Risk Register
+## 5. Program Risk Register
 
 Likelihood and impact are planning estimates until evidence updates them.
 
@@ -94,8 +119,9 @@ Likelihood and impact are planning estimates until evidence updates them.
 | R-026 | Manual P&L and modeled 1R become conflated | High | High | separate realized/model fields and copy | app changes entered P&L |
 | R-027 | Telegram/external reporting duplicates the app without value | Medium | Medium | feature disposition and workflow justification | no measurable review benefit |
 | R-028 | Reviewer feedback becomes an unranked wishlist | High | High | structured feedback IDs and disposition | conflicting requests accumulate |
+| R-029 | Visual-direction comparison is biased by unequal polish, content, or test conditions | Medium | High | freeze fixtures, states, viewports, fidelity, rubric, and hard failures before scoring | ranking changes when conditions are normalized |
 
-## 5. Decision Procedure
+## 6. Decision Procedure
 
 Every new decision must record:
 
@@ -113,7 +139,7 @@ Every new decision must record:
 Silence is not consent. An assumption cannot be promoted to a decision without an
 explicit record.
 
-## 6. Risk Review Procedure
+## 7. Risk Review Procedure
 
 - Review all open risks at every gate.
 - Add evidence and update likelihood/impact without deleting history.

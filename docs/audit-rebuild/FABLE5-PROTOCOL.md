@@ -121,6 +121,8 @@ file and returns only metadata. If independence cannot be protected, G2 fails.
 Before unsealing Fable output:
 
 - finish the independent Codex findings registry
+- finish the controlled visual-direction comparison and preserve its frozen rubric,
+  raw scores, hard failures, and evidence links
 - resolve internal duplicates
 - record evidence IDs, severity, confidence, and proposed validation
 - generate a SHA-256 hash
