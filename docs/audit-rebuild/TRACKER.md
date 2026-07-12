@@ -2,13 +2,13 @@
 
 This file is the sole authority for execution status.
 
-Program state: `P0_GATE_PASSED`
+Program state: `P1_EVIDENCE_READY`
 
-Current phase: `P0_COMPLETE_AWAITING_P1_ACTIVATION`
+Current phase: `P1_FORENSIC_BASELINE_EXTRACTION`
 
-Current gate: `G0_GATE_PASSED`
+Current gate: `G1_AUDIT_PENDING`
 
-Next authorized action: `CREATE_G0_TAG_THEN_START_P1.1`
+Next authorized action: `G1_EVIDENCE_AUDIT`
 
 Last execution update: 2026-07-12 14:38:35 PDT, America/Los_Angeles
 
@@ -78,7 +78,7 @@ gate actually passed.
 | Phase | State | Gate | Evidence count | Checkpoint | Next action |
 |---|---|---|---:|---|---|
 | P0 Activation and isolation | `GATE_PASSED` | G0 | 5 | `AUDIT-P00-GATE-PASSED-2026-07-12` | start P1 after tag |
-| P1 Forensic baseline | `NOT_STARTED` | G1 | 0 | none | blocked by G0 |
+| P1 Forensic baseline | `EVIDENCE_READY` | G1 | 11 | none | audit G1 |
 | P2 Sealed Fable 5 review | `NOT_STARTED` | G2 | 0 | none | blocked by G1 |
 | P3 Product/workflow audit | `NOT_STARTED` | G3 | 0 | none | blocked by G2 |
 | P4 Mobile visual audit | `NOT_STARTED` | G4 | 0 | none | blocked by G3 |
@@ -100,12 +100,12 @@ gate actually passed.
 | P0.2 | Baseline protection verification | `EVIDENCE_READY` | ref/tree/archive verification |
 | P0.3 | Working branch isolation | `EVIDENCE_READY` | branch/environment map |
 | P0.4 | Toolchain and privacy boundary | `EVIDENCE_READY` | capability/privacy matrix |
-| P1.1 | Repository and dependency inventory | `NOT_STARTED` | source/import/dependency maps |
-| P1.2 | Product surface inventory | `NOT_STARTED` | surface/state inventory |
-| P1.3 | Data and model inventory | `NOT_STARTED` | schema/data-flow/model map |
-| P1.4 | Screenshot and video baseline | `NOT_STARTED` | raw capture corpus |
-| P1.5 | Objective measurement baseline | `NOT_STARTED` | raw metric dataset |
-| P1.6 | Standards and reference baseline | `NOT_STARTED` | dated primary-source index |
+| P1.1 | Repository and dependency inventory | `EVIDENCE_READY` | source/import/dependency maps |
+| P1.2 | Product surface inventory | `EVIDENCE_READY` | surface/state inventory |
+| P1.3 | Data and model inventory | `EVIDENCE_READY` | schema/data-flow/model map |
+| P1.4 | Screenshot and video baseline | `EVIDENCE_READY` | raw capture corpus |
+| P1.5 | Objective measurement baseline | `EVIDENCE_READY` | raw metric dataset |
+| P1.6 | Standards and reference baseline | `EVIDENCE_READY` | dated primary-source index |
 | P2.1 | Neutral packet construction | `NOT_STARTED` | packet manifest |
 | P2.2 | Prompt contamination audit | `NOT_STARTED` | neutral-language check |
 | P2.3 | Fable execution | `NOT_STARTED` | sealed response and run metadata |
@@ -177,7 +177,7 @@ gate actually passed.
 | Gate | State | Gate report | Commit | Tag | Reopened by |
 |---|---|---|---|---|---|
 | G0 | `GATE_PASSED` | `gates/GATE-P00.md` | `43dd70f` | `AUDIT-P00-GATE-PASSED-2026-07-12` | none |
-| G1 | `NOT_STARTED` | none | none | none | none |
+| G1 | `IN_PROGRESS` | pending | none | none | none |
 | G2 | `NOT_STARTED` | none | none | none | none |
 | G3 | `NOT_STARTED` | none | none | none | none |
 | G4 | `NOT_STARTED` | none | none | none | none |
@@ -202,13 +202,16 @@ gate actually passed.
 
 ## Active Blockers
 
-None. G0 passed; P1 remains unstarted until the gate tag is created.
+None. G0 is tagged and P1.1 is active.
 
 ## Current Breadcrumb
 
 - The original application checkpoint is protected and verified.
 - Owner greenlight `do it!` was received and recorded on 2026-07-12.
-- P0 is active on `codex/audit-mobile-first-2026-07-12`; no later phase has started.
+- G0 passed at local tag `AUDIT-P00-GATE-PASSED-2026-07-12`; remote recovery
+  snapshot is `c1e79b5`, with marker issue `#3`.
+- P1.1-P1.6 evidence is indexed and G1 evidence audit is active on
+  `codex/audit-mobile-first-2026-07-12`; no later phase has started.
 - Reviewers are critics, not persistent multi-user account holders.
 - The `$100K` model is the planned product truth.
 - Final gap review includes only the controlled comparison of visual directions;
@@ -216,7 +219,9 @@ None. G0 passed; P1 remains unstarted until the gate tag is created.
 - Codex performs the structured evaluation and the owner remains the prototype
   approval authority; no external human pilot or reviewer telemetry is planned.
 - The final plan suite remains preserved on its separate planning branch and tag.
-- No audit evidence has been captured under this program.
+- Eleven P1 source/surface/data/visual/metric/reference evidence records are indexed;
+  G1 has not passed
+  evaluated.
 - Fable 5 has not been invoked under this program.
 - No prototype code or staging deployment exists.
 - Production remains unchanged.

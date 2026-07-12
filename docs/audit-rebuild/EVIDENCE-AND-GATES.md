@@ -273,6 +273,18 @@ gate pass.
 - displayed sync state matches observed local/cloud state
 - model calculations are deterministic for identical inputs
 
+### G1-ratified delivery budgets
+
+- initial JavaScript: <=180 kB gzip on the production mobile entry path
+- any lazy route: <=75 kB gzip
+- cold first-view transfer excluding external fonts: <=750 kB
+- no raster asset above 500 kB without explicit measured justification
+- no unbounded DOM growth with trade count
+- zero console errors and zero repeated framework warnings in validated workflows
+
+These budgets were established from P1 decomposition and are targets for the rebuild,
+not descriptions of the current baseline. The current app exceeds several of them.
+
 ## 9. Finding Severity
 
 | Severity | Definition |
