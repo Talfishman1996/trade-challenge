@@ -10,7 +10,7 @@ Current gate: `G2_BLOCKED`
 
 Next authorized action: `RESTORE_FABLE_5_USAGE_AND_RERUN_P2.3`
 
-Last execution update: 2026-07-12 16:06:18 PDT, America/Los_Angeles
+Last execution update: 2026-07-12 16:11:18 PDT, America/Los_Angeles
 
 Working branch: `codex/audit-mobile-first-2026-07-12`
 
@@ -229,6 +229,8 @@ model is authorized. Restore Fable 5 usage, then rerun the committed sealed runn
   application files; P2.2 passed and froze the packet/prompt/runner hashes.
 - The first P2.3 process generated no review. Its quota response and metadata are
   hashed; the successful sealed response path remains absent and retry-safe.
+- A second unchanged P2.3 invocation returned the identical quota response hash;
+  no substantive output was generated and the blocker remains external.
 - Fable 5 has not been invoked under this program.
 - No prototype code or staging deployment exists.
 - Production remains unchanged.
