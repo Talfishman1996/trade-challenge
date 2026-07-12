@@ -1,5 +1,11 @@
 # TradeVault
 
+> [!IMPORTANT]
+> **PROTECTED PRE-MIGRATION CHECKPOINT:** The exact `$20K -> $10M` application that existed before the planned `$100K -> $10M` rebuild is permanently preserved as `CHECKPOINT-PRE-100K-MIGRATION-2026-07-12`. Do not delete or move that tag or its checkpoint branch. See [the full checkpoint and restore record](docs/checkpoints/PRE-100K-MIGRATION-2026-07-12.md).
+
+> [!NOTE]
+> **CURRENT FUTURE PROGRAM:** The evidence-gated mobile audit and interactive prototype plan begins at [docs/audit-rebuild/README.md](docs/audit-rebuild/README.md). Its authoritative status is in `docs/audit-rebuild/TRACKER.md`; no phase may start without explicit owner greenlight.
+
 Mobile-first trading risk dashboard with 2/3 Power Decay sizing and fixed 1:1 risk/reward. Personal tool for tracking the $20K to $10M equity challenge.
 
 ## Stack

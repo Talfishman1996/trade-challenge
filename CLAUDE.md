@@ -25,7 +25,17 @@ npx vite preview     # Preview production build
 - **Key function:** `rN(equity)` returns the active decay risk fraction at the given equity level.
 - **Anchor equity:** $87,500, where active risk is about 33%.
 - **Trade outcome rule:** a win adds one decay-sized 1R amount; a loss subtracts the same decay-sized 1R amount.
-- **Plan:** `docs/2026-04-16-rebuild-plan.md` has the current implementation plan and recovery context.
+- **Historical plan:** `docs/2026-04-16-rebuild-plan.md` preserves earlier implementation and recovery context; it is not current status authority.
+
+## Planned $100K Audit and Prototype Program
+
+- Start at `docs/audit-rebuild/README.md`.
+- Treat `docs/audit-rebuild/TRACKER.md` as the only execution-status authority.
+- The current plan state is `PLAN_VALIDATED_AWAITING_GREENLIGHT`.
+- Do not begin audit capture, invoke Fable 5, write prototype code, or deploy staging
+  without explicit owner greenlight.
+- Never modify the protected checkpoint identified in
+  `docs/checkpoints/PRE-100K-MIGRATION-2026-07-12.md`.
 
 ## File Layout
 ```

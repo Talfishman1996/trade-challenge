@@ -12,3 +12,6 @@ Thumbs.db
 *.gpt54*
 screenshots.json
 liquid-glass-nav.html
+
+# Private checkpoint archives and cloud-data snapshots
+output/checkpoints/
