@@ -8,9 +8,9 @@ Current phase: `P2_SEALED_FABLE_REVIEW`
 
 Current gate: `G2_NOT_EVALUATED`
 
-Next authorized action: `P2.1_NEUTRAL_PACKET_CONSTRUCTION`
+Next authorized action: `P2.3_SEALED_FABLE_EXECUTION`
 
-Last execution update: 2026-07-12 15:50:00 PDT, America/Los_Angeles
+Last execution update: 2026-07-12 16:02:01 PDT, America/Los_Angeles
 
 Working branch: `codex/audit-mobile-first-2026-07-12`
 
@@ -79,7 +79,7 @@ gate actually passed.
 |---|---|---|---:|---|---|
 | P0 Activation and isolation | `GATE_PASSED` | G0 | 5 | `AUDIT-P00-GATE-PASSED-2026-07-12` | start P1 after tag |
 | P1 Forensic baseline | `GATE_PASSED` | G1 | 11 | `AUDIT-P01-GATE-PASSED-2026-07-12` | preserve baseline |
-| P2 Sealed Fable 5 review | `IN_PROGRESS` | G2 | 0 | none | construct neutral packet |
+| P2 Sealed Fable 5 review | `IN_PROGRESS` | G2 | 2 | none | run sealed independent review |
 | P3 Product/workflow audit | `NOT_STARTED` | G3 | 0 | none | blocked by G2 |
 | P4 Mobile visual audit | `NOT_STARTED` | G4 | 0 | none | blocked by G3 |
 | P5 Frontend audit | `NOT_STARTED` | G5 | 0 | none | blocked by G4 |
@@ -106,9 +106,9 @@ gate actually passed.
 | P1.4 | Screenshot and video baseline | `EVIDENCE_READY` | raw capture corpus |
 | P1.5 | Objective measurement baseline | `EVIDENCE_READY` | raw metric dataset |
 | P1.6 | Standards and reference baseline | `EVIDENCE_READY` | dated primary-source index |
-| P2.1 | Neutral packet construction | `IN_PROGRESS` | packet manifest |
-| P2.2 | Prompt contamination audit | `NOT_STARTED` | neutral-language check |
-| P2.3 | Fable execution | `NOT_STARTED` | sealed response and run metadata |
+| P2.1 | Neutral packet construction | `EVIDENCE_READY` | packet manifest |
+| P2.2 | Prompt contamination audit | `EVIDENCE_READY` | neutral-language check |
+| P2.3 | Fable execution | `IN_PROGRESS` | sealed response and run metadata |
 | P2.4 | Seal verification | `NOT_STARTED` | hash and non-content validation |
 | P3.1 | Jobs and operating loop | `NOT_STARTED` | job/loop analysis |
 | P3.2 | Information architecture | `NOT_STARTED` | IA findings |
@@ -178,7 +178,7 @@ gate actually passed.
 |---|---|---|---|---|---|
 | G0 | `GATE_PASSED` | `gates/GATE-P00.md` | `43dd70f` | `AUDIT-P00-GATE-PASSED-2026-07-12` | none |
 | G1 | `GATE_PASSED` | `gates/GATE-P01.md` | `f2dc485` | `AUDIT-P01-GATE-PASSED-2026-07-12` | none |
-| G2 | `NOT_STARTED` | none | none | none | none |
+| G2 | `IN_PROGRESS` | pending | none | none | none |
 | G3 | `NOT_STARTED` | none | none | none | none |
 | G4 | `NOT_STARTED` | none | none | none | none |
 | G5 | `NOT_STARTED` | none | none | none | none |
@@ -200,6 +200,7 @@ gate actually passed.
 | Plan branch | Plan-only documents | `2f669d7` plus final validation checkpoint | no |
 | `AUDIT-P00-GATE-PASSED-2026-07-12` | Safe audit activation boundary | `43dd70f` plus gate validation record | yes |
 | `AUDIT-P01-GATE-PASSED-2026-07-12` | Frozen forensic current-state baseline | `f2dc485` plus gate validation record | yes |
+| Remote G1 checkpoint branch | GitHub forensic-baseline recovery | `ef6af8c` / `5cb20aa` | yes by convention |
 
 ## Active Blockers
 
@@ -212,7 +213,7 @@ None. G1 is passed and P2.1 is active.
 - G0 passed at local tag `AUDIT-P00-GATE-PASSED-2026-07-12`; remote recovery
   snapshot is `c1e79b5`, with marker issue `#3`.
 - P1.1-P1.6 evidence is indexed and G1 passed on
-  `codex/audit-mobile-first-2026-07-12`; P2.1 neutral-packet construction is active.
+  `codex/audit-mobile-first-2026-07-12`; P2.3 sealed Fable execution is active.
 - Reviewers are critics, not persistent multi-user account holders.
 - The `$100K` model is the planned product truth.
 - Final gap review includes only the controlled comparison of visual directions;
@@ -222,6 +223,8 @@ None. G1 is passed and P2.1 is active.
 - The final plan suite remains preserved on its separate planning branch and tag.
 - Eleven P1 source/surface/data/visual/metric/reference evidence records are indexed;
   the 141-artifact manifest is verified and G1 is checkpointed.
+- P2.1 produced a 172-artifact neutral packet with 71 screenshots and 40 tracked
+  application files; P2.2 passed and froze the packet/prompt/runner hashes.
 - Fable 5 has not been invoked under this program.
 - No prototype code or staging deployment exists.
 - Production remains unchanged.
