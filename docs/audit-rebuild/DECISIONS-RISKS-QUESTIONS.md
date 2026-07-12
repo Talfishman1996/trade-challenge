@@ -15,8 +15,8 @@ risks. It does not own task status or evidence.
 | D-006 | Use `10%` break-even and `3.5` trades/month for planning | Projection assumptions must be visible and versioned |
 | D-007 | Make mobile the primary product surface | Phone evidence gates direction before tablet/desktop |
 | D-008 | Allow every existing visual element to be challenged | Mountain, colors, typography, layout, and motion are not protected |
-| D-009 | Use Fable 5 as an independent second brain | Raw advice is preserved but never adopted automatically |
-| D-010 | Do not inject Codex opinions into the first Fable review | Packet is factual and response remains sealed until P9 |
+| D-009 | `[SUPERSEDED BY D-018]` Use Fable 5 as an independent second brain | Historical packet/attempt evidence remains preserved |
+| D-010 | `[SUPERSEDED BY D-018]` Do not inject Codex opinions into the first Fable review | Historical contamination audit remains preserved |
 | D-011 | No authentication, security, or compliance implementation is required now | Risks are audited and documented, not necessarily remediated in prototype |
 | D-012 | No fixed tooling or hosting budget is required now | Recommendations may prioritize quality while still recording cost |
 | D-013 | Live production data migration is not a current concern | Prototype must still be isolated from production writes |
@@ -24,6 +24,7 @@ risks. It does not own task status or evidence.
 | D-015 | Build the plan, then wait | P0 cannot begin without explicit owner greenlight |
 | D-016 | Do not run a separate human-review pilot | Codex performs structured task and design evaluation; the owner reviews and approves the prototype |
 | D-017 | Compare competing visual directions under controlled conditions | At least three directions use identical tasks, content, states, viewports, fidelity, and a fixed rubric before selection |
+| D-018 | Exclude Fable 5 and do everything else | Retire execution, unsealing, confluence, and prototype-critique dependencies; retain all other audit/prototype gates |
 
 ## 2. Final Gap-Review Scope Dispositions
 
@@ -120,6 +121,10 @@ Likelihood and impact are planning estimates until evidence updates them.
 | R-027 | Telegram/external reporting duplicates the app without value | Medium | Medium | feature disposition and workflow justification | no measurable review benefit |
 | R-028 | Reviewer feedback becomes an unranked wishlist | High | High | structured feedback IDs and disposition | conflicting requests accumulate |
 | R-029 | Visual-direction comparison is biased by unequal polish, content, or test conditions | Medium | High | freeze fixtures, states, viewports, fidelity, rubric, and hard failures before scoring | ranking changes when conditions are normalized |
+
+Risks `R-006`, `R-007`, `R-008`, and `R-023` are retired for remaining execution by
+`D-018`. Their historical evidence is not deleted. No replacement external advisor
+is authorized or required.
 
 ## 6. Decision Procedure
 

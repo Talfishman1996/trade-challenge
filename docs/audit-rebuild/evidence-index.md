@@ -41,10 +41,14 @@ Manifest SHA-256:
 P1 passed G1 at `AUDIT-P01-GATE-PASSED-2026-07-12`. Physical mobile,
 virtual-keyboard, and workflow-video gaps remain explicit for later phases.
 
-## P2: Sealed Independent Review
+## P2: External-Advisor Scope Disposition
 
 | Evidence ID | Type | Artifact(s) | What it proves | State |
 |---|---|---|---|---|
 | `EV-P2-FBL-001` | `FBL` | `fable5/packet-v1/*`, generated 172-row packet manifest, `reports/P2.1-neutral-packet.md` | Neutral packet contains complete authorized visual/source/raw context, separates current and planned models, excludes prior reviews, and matches frozen origins | indexed |
 | `EV-P2-FBL-002` | `FBL` | `P2.2-contamination-audit.txt`, `tooling/run-sealed-fable-review.sh`, `reports/P2.2-prompt-contamination-audit.md` | Authored language, packet paths, frozen hashes, read-only execution flags, and output-sealing behavior pass before execution | indexed |
 | `EV-P2-FBL-003` | `FBL` | failed run metadata and hashes; `reports/P2.3-fable-usage-block.md` | Committed Fable 5 max-effort execution reached the service but produced no review because usage credits were exhausted | indexed blocker |
+| `EV-P2-DEC-004` | `USR` | owner instruction, `D-018`, `reports/P2.4-owner-scope-disposition.md`, `gates/GATE-P02.md` | Owner explicitly removed Fable 5 while retaining every non-Fable audit, prototype, validation, and roadmap requirement | indexed |
+
+P2 historical external-advisor artifacts remain preserved, but no substantive
+review exists and no later phase depends on one.

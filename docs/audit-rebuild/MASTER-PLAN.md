@@ -2,7 +2,7 @@
 
 Plan date: 2026-07-12
 
-Program status: `PLAN_VALIDATED_AWAITING_GREENLIGHT`
+Program status: `EXECUTION_ACTIVE_P3`
 
 ## 1. Mission
 
@@ -35,7 +35,6 @@ cannot be traced to a user need, system risk, or quality requirement is rejected
 - exhaustive audit of the current frontend, backend, model, workflow, and design
 - complete mobile viewport, state, and interaction evidence capture
 - source and dependency inventory down to individual files and responsibilities
-- neutral independent Fable 5 design and product review using raw images/context
 - findings registry ranked by severity, frequency, impact, confidence, and effort
 - north-star product model, navigation, workflows, design system, and architecture
 - controlled comparison of at least three mobile visual directions using identical
@@ -145,14 +144,14 @@ The experience should support four repeated loops:
 |---|---|---|---|
 | P0 | Activation and isolation | Verified working boundary and immutable baseline | G0 |
 | P1 | Forensic baseline extraction | Source, screen, state, data, and metric baseline | G1 |
-| P2 | Sealed Fable 5 review | Neutral packet plus unread, hashed response | G2 |
+| P2 | External-advisor scope disposition | Preserved attempt evidence and owner scope decision | G2 |
 | P3 | Product and workflow audit | Task, IA, feature, and copy findings | G3 |
 | P4 | Mobile visual and interaction audit | Pixel/state/motion findings and alternatives | G4 |
 | P5 | Frontend architecture audit | Code responsibility and modernization report | G5 |
 | P6 | Backend, data, and sync audit | Data-flow, failure, and recovery report | G6 |
 | P7 | Mathematical model audit | Tested single-source model specification | G7 |
 | P8 | Performance, accessibility, and resilience | Measured compatibility and quality report | G8 |
-| P9 | Independent synthesis and confluence | Frozen Codex audit, unsealed Fable comparison, finding registry | G9 |
+| P9 | Cross-domain synthesis and prioritization | Frozen audit, contradiction matrix, finding registry | G9 |
 | P10 | North-star prototype specification | Approved IA, design system, flows, and prototype contract | G10 |
 | P11 | Interactive prototype build | Isolated mobile-first prototype and review harness | G11 |
 | P12 | Prototype validation and adversarial audit | Evidence-backed prototype verdict | G12 |
@@ -193,7 +192,7 @@ Objective: establish a safe execution boundary before collecting or changing dat
 ### P0.4 Toolchain and privacy boundary
 
 - Inventory browser-control, screenshot, accessibility, profiling, and build tools.
-- Verify Fable 5 model availability without running the review.
+- Verify the audit toolchain without requiring an external-advisor dependency.
 - Define synthetic fixture rules and redact secrets from evidence.
 - Ensure cloud snapshots remain ignored and private.
 
@@ -246,7 +245,7 @@ Objective: capture objective current-state facts before interpretation begins.
   `EVIDENCE-AND-GATES.md`.
 - Capture initial load, key workflows, keyboard-open states, scroll extremes,
   interruptions, offline use, sync transitions, and error recovery.
-- Store raw images without annotations for Fable 5.
+- Store raw images without annotations so later interpretations remain auditable.
 - Create separate annotated copies later for Codex findings.
 
 ### P1.5 Objective measurement baseline
@@ -282,43 +281,40 @@ Every known surface, state, source responsibility, data path, and model consumer
 represented in the evidence index. Missing states are explicitly listed rather than
 silently omitted.
 
-## P2: Sealed Independent Fable 5 Review
+## P2: External-Advisor Scope Disposition
 
-Objective: obtain an independent second-brain assessment without injecting Codex
-opinions and without allowing its output to shape the first Codex audit.
+Objective: preserve the attempted independent-review evidence, record the owner's
+explicit removal of Fable 5, and eliminate every downstream dependency on it without
+weakening the remaining audit.
 
-### P2.1 Neutral packet construction
+### P2.1 Preserve neutral packet evidence
 
-- Include only factual product purpose, user tasks, selected model specification,
-  source maps, unannotated screenshots/videos, viewport metadata, and raw metrics.
-- Exclude prior audit language, severity labels, proposed redesigns, owner aesthetic
-  preferences beyond factual constraints, and Codex conclusions.
+- Preserve the factual packet, 71-image corpus, source snapshot, prompt, and hashes.
+- Retain it as historical process evidence; do not execute or unseal it.
 
-### P2.2 Prompt contamination audit
+### P2.2 Preserve contamination-audit evidence
 
-- Search the packet for persuasive adjectives, conclusions, or leading questions.
-- Have the neutral prompt checked against the protocol exclusion list.
-- Hash and preserve the exact packet and prompt.
+- Preserve the completed prompt/path/execution-boundary audit.
+- Keep its findings isolated from the product findings registry.
 
-### P2.3 Fable execution
+### P2.3 Preserve failed execution evidence
 
-- Start a fresh Claude CLI context using the verified Fable 5 model.
-- Use maximum supported reasoning.
-- Attach the complete approved image set and factual context.
-- Redirect the full answer to a sealed file without displaying it to Codex.
-- Save command metadata, exit status, stderr, model identifier, and SHA-256 hash.
+- Preserve all three identical quota responses, metadata, and hashes.
+- Record that no substantive external review was generated.
 
-### P2.4 Seal verification
+### P2.4 Owner scope removal and dependency cleanup
 
-- Confirm the response file is non-empty and structurally readable without opening
-  its substantive content.
-- Mark the response `SEALED_UNTIL_P9`.
-- Do not summarize, quote, or inspect it before the Codex audit is frozen.
+- Record the owner's instruction to do everything else with no Fable 5.
+- Retire Fable execution, unsealing, confluence, and prototype-critique requirements.
+- Replace later external-review steps with evidence-isolated internal contradiction
+  and adversarial passes; do not represent those passes as external validation.
+- Search all authoritative control documents for hidden mandatory dependencies.
 
 ### G2 pass condition
 
-The neutral packet passes contamination checks, the response exists and is hashed,
-and no substantive Fable output has entered Codex analysis.
+The owner scope decision is indexed, all Fable artifacts remain preserved as
+historical evidence, no substantive response exists, every later mandatory Fable
+dependency is retired, and P3 has an unambiguous first authorized action.
 
 ## P3: Product and Workflow Audit
 
@@ -429,7 +425,7 @@ Objective: audit every pixel and interaction under realistic phone constraints.
   `EVIDENCE-AND-GATES.md`, plus measured task friction and documented hard failures.
 - Record the strongest complete direction, rejected directions, transferable ideas,
   unresolved tradeoffs, and confidence without blending concepts prematurely.
-- Keep Fable 5 output sealed; this comparison is part of Codex's independent audit.
+- Keep the comparison rubric and scoring isolated from later synthesis preferences.
 
 ### G4 pass condition
 
@@ -601,27 +597,29 @@ constraints and non-happy-path use.
 All provisional budgets are measured, deviations are explained, critical workflows
 remain usable under constrained conditions, and accessibility blockers are logged.
 
-## P9: Independent Synthesis and Confluence
+## P9: Cross-Domain Synthesis and Prioritization
 
-Objective: produce the complete findings set without allowing either reviewer to
-dominate by authority.
+Objective: reconcile the independently completed audit domains, expose internal
+contradictions, and produce one evidence-linked product direction without treating
+any single domain or aesthetic preference as authority.
 
-### P9.1 Freeze the Codex audit
+### P9.1 Freeze the complete audit
 
-- Finish and hash the independent Codex findings before opening Fable output.
+- Finish and hash all P3-P8 findings before synthesis begins.
 - Record severity, evidence, confidence, proposed remedy, and uncertainty for every
   finding.
 
-### P9.2 Unseal Fable 5
+### P9.2 Cross-domain contradiction audit
 
-- Verify the stored response hash.
-- Preserve an untouched raw copy.
-- Parse findings without editing their substance.
+- Compare product, visual, frontend, backend, model, performance, accessibility,
+  and resilience conclusions for incompatible assumptions or recommendations.
+- Reopen unsupported findings rather than averaging conflicts.
 
-### P9.3 Confluence matrix
+### P9.3 Evidence confluence matrix
 
-- Classify findings as shared, Codex-only, Fable-only, contradictory, or uncertain.
-- Investigate conflicts against evidence rather than averaging opinions.
+- Classify findings as corroborated, domain-specific, contradictory, preference,
+  uncertain, experiment-required, or superseded.
+- Investigate conflicts against raw evidence and controlled experiments.
 - Record accepted, rejected, deferred, and experiment-required recommendations.
 
 ### P9.4 Prioritization
@@ -638,9 +636,9 @@ dominate by authority.
 
 ### G9 pass condition
 
-The complete findings registry is evidence-linked, reviewer conflicts are resolved
-or marked unresolved, and the owner approves the direction rather than individual
-pixels.
+The complete findings registry is evidence-linked, cross-domain conflicts are
+resolved or marked unresolved, and the owner approves the direction rather than
+individual pixels.
 
 ## P10: North-Star Prototype Specification
 
@@ -752,11 +750,12 @@ Objective: prove the prototype direction rather than merely demonstrate it.
   and navigation races.
 - Reopen any earlier finding contradicted by prototype evidence.
 
-### P12.5 Independent prototype critique
+### P12.5 Evidence-isolated second-pass critique
 
-- Feed Fable 5 a new neutral prototype packet and screenshots.
-- Preserve its raw response and evaluate recommendations against evidence.
-- Do not adopt changes solely because they are novel or confidently worded.
+- Re-evaluate the prototype from a clean rubric containing acceptance criteria,
+  scenarios, screenshots, metrics, and known non-goals but not the first verdict.
+- Record critique findings separately, then compare them with P12.1-P12.4 evidence.
+- Label this as an internal adversarial pass, not independent external validation.
 
 ### P12.6 Owner prototype review
 
@@ -794,7 +793,7 @@ program without beginning that program.
 
 ### P13.4 Final evidence dossier
 
-- Assemble findings, decisions, Fable comparisons, specifications, prototype URL,
+- Assemble findings, decisions, contradiction records, specifications, prototype URL,
   screenshots, test results, performance results, risks, and recovery instructions.
 
 ### P13.5 Stop and await production greenlight
@@ -824,7 +823,7 @@ an owner decision.
 
 - exhaustive current-state audit
 - evidence-linked finding registry
-- independent Fable 5 raw reviews and confluence records
+- cross-domain contradiction and evidence-confluence records
 - product north-star and feature disposition map
 - controlled three-direction comparison matrix and selection rationale
 - mobile information architecture and workflow specifications

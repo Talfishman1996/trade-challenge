@@ -1,13 +1,12 @@
 # Mobile-First Audit and Prototype Program
 
-Status: `PLAN_VALIDATED_AWAITING_GREENLIGHT`
+Status: `EXECUTION_ACTIVE_P3`
 
 This directory is the authoritative control system for the `$100K -> $10M`
 TradeVault audit, redesign, and interactive prototype program.
 
-No audit execution, Fable 5 review, application implementation, staging deploy,
-production deploy, or data migration is authorized while the status above remains
-`PLAN_VALIDATED_AWAITING_GREENLIGHT`.
+The audit is active on its isolated branch. Production replacement, protected-
+checkpoint modification, and production-data migration remain unauthorized.
 
 ## Immutable Baseline
 
@@ -36,7 +35,7 @@ unless it is a short link to the authoritative source.
 | `findings-registry.md` | Evidence-backed findings, ownership, status, and reopen triggers |
 | `EVIDENCE-AND-GATES.md` | Evidence IDs, capture matrices, quality thresholds, gate packets, and proof rules |
 | `DECISIONS-RISKS-QUESTIONS.md` | Owner decisions, open questions, assumptions, risks, and mitigations |
-| `FABLE5-PROTOCOL.md` | Independent second-brain packet, neutral prompt, sealing, and confluence process |
+| `FABLE5-PROTOCOL.md` | Retired historical protocol and preserved attempt evidence; not an active dependency |
 | `CONTEXT-RECOVERY.md` | Session recovery, write-ahead notes, compaction defense, and cold-start procedure |
 
 Historical documents under `docs/2026-04-16-*` and `.claude/` are evidence only.
@@ -60,8 +59,8 @@ assumptions, previously completed work, and older product decisions.
   content, states, viewports, fidelity, weighted criteria, and hard-failure rules.
 - Codex performs the structured direction/task evaluation; no separate human pilot
   or in-product reviewer-feedback instrumentation is part of this program.
-- Fable 5 is an independent advisor, not an authority and not an implementation
-  instruction source.
+- Fable 5 is excluded from all remaining work by explicit owner instruction. No
+  external-advisor claim will be made.
 - The first authorized stopping point is a validated interactive prototype and
   production rebuild roadmap, not a production replacement.
 
@@ -78,12 +77,10 @@ reintroduced during execution.
 5. `findings-registry.md`
 6. `EVIDENCE-AND-GATES.md`
 7. `DECISIONS-RISKS-QUESTIONS.md`
-8. `FABLE5-PROTOCOL.md`
-9. `CONTEXT-RECOVERY.md`
+8. `CONTEXT-RECOVERY.md`
+9. `FABLE5-PROTOCOL.md` only when auditing historical P2 evidence
 
-## Activation Rule
+## Execution Rule
 
-Only an explicit owner greenlight may change the tracker from
-`PLAN_VALIDATED_AWAITING_GREENLIGHT` to `P0_IN_PROGRESS`.
-
-Until then, the correct next action is: **wait**.
+`TRACKER.md` is the status authority. Continue only its named next subphase, preserve
+the original checkpoint, and stop before any production replacement.

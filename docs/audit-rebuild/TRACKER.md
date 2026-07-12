@@ -2,15 +2,15 @@
 
 This file is the sole authority for execution status.
 
-Program state: `P2_BLOCKED`
+Program state: `P3_IN_PROGRESS`
 
-Current phase: `P2_SEALED_FABLE_REVIEW`
+Current phase: `P3_PRODUCT_AND_WORKFLOW_AUDIT`
 
-Current gate: `G2_BLOCKED`
+Current gate: `G3_NOT_EVALUATED`
 
-Next authorized action: `RESTORE_FABLE_5_USAGE_AND_RERUN_P2.3`
+Next authorized action: `P3.1_JOBS_AND_OPERATING_LOOP`
 
-Last execution update: 2026-07-12 16:13:53 PDT, America/Los_Angeles
+Last execution update: 2026-07-12 16:20:35 PDT, America/Los_Angeles
 
 Working branch: `codex/audit-mobile-first-2026-07-12`
 
@@ -21,14 +21,14 @@ Protected baseline: `CHECKPOINT-PRE-100K-MIGRATION-2026-07-12`
 | Item | Result |
 |---|---|
 | Plan gate | `GATE_PASSED` |
-| Plan revision | final gap-review scope disposition |
+| Plan revision | D-018 owner removal of Fable 5 and downstream dependency cleanup |
 | Plan content commit | `2f669d7e5873cd9f7a949ef560f85002557a9dc0` |
 | Plan validation checkpoint | `PLAN-MOBILE-FIRST-AUDIT-PROTOTYPE-FINAL-SCOPE-2026-07-12` |
 | Plan branch | `plan/mobile-first-audit-prototype-2026-07-12` |
 | Control documents | 7 present |
 | Program phases | 14 present, P0 through P13 |
 | Tracked subphases | 75 unique and matched between master plan/tracker |
-| Locked decisions | 17 unique |
+| Locked decisions | 18 unique; D-009/D-010 superseded by D-018 |
 | Final scope dispositions | 14 recorded: 1 included, 13 excluded |
 | Working assumptions | 9 unique |
 | Evidence questions | 13 unique |
@@ -36,7 +36,7 @@ Protected baseline: `CHECKPOINT-PRE-100K-MIGRATION-2026-07-12`
 | Markdown/diff validation | passed |
 | Application-source changes | 0 |
 | Audit evidence captured | 0 |
-| Fable 5 executions | 0 |
+| Fable 5 executions | 3 failed quota attempts; 0 substantive reviews; retired |
 | Prototype/staging work | 0 |
 | Protected checkpoint tree | verified unchanged: `c41314cdedb14c64e64386cbce7534de9a2002d5` |
 
@@ -79,8 +79,8 @@ gate actually passed.
 |---|---|---|---:|---|---|
 | P0 Activation and isolation | `GATE_PASSED` | G0 | 5 | `AUDIT-P00-GATE-PASSED-2026-07-12` | start P1 after tag |
 | P1 Forensic baseline | `GATE_PASSED` | G1 | 11 | `AUDIT-P01-GATE-PASSED-2026-07-12` | preserve baseline |
-| P2 Sealed Fable 5 review | `BLOCKED` | G2 | 3 | none | restore Fable usage and rerun sealed review |
-| P3 Product/workflow audit | `NOT_STARTED` | G3 | 0 | none | blocked by G2 |
+| P2 External-advisor scope disposition | `GATE_PASSED` | G2 | 4 | `AUDIT-P02-GATE-PASSED-2026-07-12` | preserve historical evidence |
+| P3 Product/workflow audit | `IN_PROGRESS` | G3 | 0 | none | audit jobs and operating loop |
 | P4 Mobile visual audit | `NOT_STARTED` | G4 | 0 | none | blocked by G3 |
 | P5 Frontend audit | `NOT_STARTED` | G5 | 0 | none | blocked by G4 |
 | P6 Backend/data/sync audit | `NOT_STARTED` | G6 | 0 | none | blocked by G5 |
@@ -106,11 +106,11 @@ gate actually passed.
 | P1.4 | Screenshot and video baseline | `EVIDENCE_READY` | raw capture corpus |
 | P1.5 | Objective measurement baseline | `EVIDENCE_READY` | raw metric dataset |
 | P1.6 | Standards and reference baseline | `EVIDENCE_READY` | dated primary-source index |
-| P2.1 | Neutral packet construction | `EVIDENCE_READY` | packet manifest |
-| P2.2 | Prompt contamination audit | `EVIDENCE_READY` | neutral-language check |
-| P2.3 | Fable execution | `BLOCKED` | sealed response and run metadata |
-| P2.4 | Seal verification | `NOT_STARTED` | hash and non-content validation |
-| P3.1 | Jobs and operating loop | `NOT_STARTED` | job/loop analysis |
+| P2.1 | Preserve neutral packet evidence | `EVIDENCE_READY` | packet manifest |
+| P2.2 | Preserve contamination-audit evidence | `EVIDENCE_READY` | neutral-language check |
+| P2.3 | Preserve failed execution evidence | `EVIDENCE_READY` | three quota-attempt records |
+| P2.4 | Owner scope removal and dependency cleanup | `EVIDENCE_READY` | decision and control-document audit |
+| P3.1 | Jobs and operating loop | `IN_PROGRESS` | job/loop analysis |
 | P3.2 | Information architecture | `NOT_STARTED` | IA findings |
 | P3.3 | Workflow scripts | `NOT_STARTED` | task timing/tap evidence |
 | P3.4 | Feature portfolio | `NOT_STARTED` | feature disposition matrix |
@@ -144,9 +144,9 @@ gate actually passed.
 | P8.3 | Accessibility | `NOT_STARTED` | scanner/manual results |
 | P8.4 | Browser/device compatibility | `NOT_STARTED` | compatibility matrix |
 | P8.5 | Resilience | `NOT_STARTED` | failure injection results |
-| P9.1 | Freeze Codex audit | `NOT_STARTED` | hashed independent report |
-| P9.2 | Unseal Fable 5 | `NOT_STARTED` | verified raw copy |
-| P9.3 | Confluence matrix | `NOT_STARTED` | overlap/conflict matrix |
+| P9.1 | Freeze complete audit | `NOT_STARTED` | hashed findings report |
+| P9.2 | Cross-domain contradiction audit | `NOT_STARTED` | contradiction register |
+| P9.3 | Evidence confluence matrix | `NOT_STARTED` | cross-domain matrix |
 | P9.4 | Prioritization | `NOT_STARTED` | scored findings registry |
 | P9.5 | Owner alignment gate | `NOT_STARTED` | recorded owner direction |
 | P10.1 | Information architecture | `NOT_STARTED` | approved IA spec |
@@ -164,7 +164,7 @@ gate actually passed.
 | P12.2 | Visual/device validation | `NOT_STARTED` | screenshot/regression corpus |
 | P12.3 | Performance/accessibility validation | `NOT_STARTED` | budget comparison |
 | P12.4 | Adversarial review | `NOT_STARTED` | failure/misuse report |
-| P12.5 | Independent prototype critique | `NOT_STARTED` | raw Fable critique/disposition |
+| P12.5 | Evidence-isolated second-pass critique | `NOT_STARTED` | internal critique/disposition |
 | P12.6 | Owner prototype review | `NOT_STARTED` | structured owner feedback |
 | P13.1 | Production architecture roadmap | `NOT_STARTED` | implementation waves |
 | P13.2 | Migration and rollback plan | `NOT_STARTED` | migration runbook |
@@ -178,8 +178,8 @@ gate actually passed.
 |---|---|---|---|---|---|
 | G0 | `GATE_PASSED` | `gates/GATE-P00.md` | `43dd70f` | `AUDIT-P00-GATE-PASSED-2026-07-12` | none |
 | G1 | `GATE_PASSED` | `gates/GATE-P01.md` | `f2dc485` | `AUDIT-P01-GATE-PASSED-2026-07-12` | none |
-| G2 | `BLOCKED` | `reports/P2.3-fable-usage-block.md` | none | none | Fable usage credits exhausted |
-| G3 | `NOT_STARTED` | none | none | none | none |
+| G2 | `GATE_PASSED` | `gates/GATE-P02.md` | pending content commit | `AUDIT-P02-GATE-PASSED-2026-07-12` | none |
+| G3 | `IN_PROGRESS` | pending | none | none | none |
 | G4 | `NOT_STARTED` | none | none | none | none |
 | G5 | `NOT_STARTED` | none | none | none | none |
 | G6 | `NOT_STARTED` | none | none | none | none |
@@ -201,12 +201,11 @@ gate actually passed.
 | `AUDIT-P00-GATE-PASSED-2026-07-12` | Safe audit activation boundary | `43dd70f` plus gate validation record | yes |
 | `AUDIT-P01-GATE-PASSED-2026-07-12` | Frozen forensic current-state baseline | `f2dc485` plus gate validation record | yes |
 | Remote G1 checkpoint branch | GitHub forensic-baseline recovery | `ef6af8c` / `5cb20aa` | yes by convention |
+| `AUDIT-P02-GATE-PASSED-2026-07-12` | Owner-approved removal of external-advisor dependency | pending validation commit | yes |
 
 ## Active Blockers
 
-Fable 5 usage credits are exhausted. P2.3 produced only a 98-byte quota response,
-not a substantive review. No configured Anthropic API key exists and no alternate
-model is authorized. Restore Fable 5 usage, then rerun the committed sealed runner.
+None. D-018 explicitly removes Fable 5 and authorizes all remaining non-Fable work.
 
 ## Current Breadcrumb
 
@@ -215,7 +214,7 @@ model is authorized. Restore Fable 5 usage, then rerun the committed sealed runn
 - G0 passed at local tag `AUDIT-P00-GATE-PASSED-2026-07-12`; remote recovery
   snapshot is `c1e79b5`, with marker issue `#3`.
 - P1.1-P1.6 evidence is indexed and G1 passed on
-  `codex/audit-mobile-first-2026-07-12`; P2.3 is blocked by Fable usage quota.
+  `codex/audit-mobile-first-2026-07-12`; P3.1 is active.
 - Reviewers are critics, not persistent multi-user account holders.
 - The `$100K` model is the planned product truth.
 - Final gap review includes only the controlled comparison of visual directions;
@@ -225,16 +224,11 @@ model is authorized. Restore Fable 5 usage, then rerun the committed sealed runn
 - The final plan suite remains preserved on its separate planning branch and tag.
 - Eleven P1 source/surface/data/visual/metric/reference evidence records are indexed;
   the 141-artifact manifest is verified and G1 is checkpointed.
-- P2.1 produced a 172-artifact neutral packet with 71 screenshots and 40 tracked
-  application files; P2.2 passed and froze the packet/prompt/runner hashes.
-- The first P2.3 process generated no review. Its quota response and metadata are
-  hashed; the successful sealed response path remains absent and retry-safe.
-- A second unchanged P2.3 invocation returned the identical quota response hash;
-  no substantive output was generated and the blocker remains external.
-- A third unchanged invocation repeated the same condition. The strict repeated-
-  blocker threshold is satisfied; the active execution goal is formally blocked
-  until Fable 5 usage is restored.
-- Fable 5 has not been invoked under this program.
+- P2 historical packet, contamination audit, and three failed quota attempts remain
+  preserved; no substantive external review exists.
+- Owner instruction `do everything else no fable 5 cause it's causing issues`
+  supersedes D-009/D-010 through D-018 and retires every later Fable dependency.
+- G2 passes only the scope-disposition gate; it makes no external-validation claim.
 - No prototype code or staging deployment exists.
 - Production remains unchanged.
 

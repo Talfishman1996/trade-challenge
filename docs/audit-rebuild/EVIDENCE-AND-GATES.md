@@ -13,7 +13,7 @@ decisions.
 6. A visual impression is labeled qualitative and cannot impersonate a measurement.
 7. Missing evidence is reported as missing, never inferred as passing.
 8. Later contradictory evidence reopens the affected finding or gate.
-9. Fable output is advisory evidence, not validation proof.
+9. Retired external-advisor artifacts are historical evidence, not validation proof.
 10. Production readiness cannot be inferred from prototype evidence.
 
 ## 2. Identifier System
@@ -338,7 +338,7 @@ A passed phase is reopened when:
 - a tool or fixture produced invalid measurements
 - model parity changes
 - prototype behavior exposes an architectural gap
-- Fable or reviewer feedback identifies a testable issue confirmed by evidence
+- owner or reviewer feedback identifies a testable issue confirmed by evidence
 
 Reopening does not rewrite the old checkpoint. It creates a new corrective record.
 

@@ -1,5 +1,10 @@
 # Fable 5 Independent Review Protocol
 
+Status: `RETIRED_BY_OWNER_2026-07-12`
+
+This file is preserved only as historical P2 evidence. Fable execution, unsealing,
+confluence, and prototype critique are excluded from all remaining work.
+
 Purpose: obtain a genuinely independent product, mobile UX, visual design, and
 architecture review from Fable 5 without leading it toward Codex conclusions and
 without allowing its output to influence the first Codex audit.

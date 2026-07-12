@@ -35,7 +35,7 @@ A new session must read these files before inspecting application code:
 8. `docs/audit-rebuild/findings-registry.md`, when it exists
 9. `docs/audit-rebuild/EVIDENCE-AND-GATES.md`
 10. `docs/audit-rebuild/DECISIONS-RISKS-QUESTIONS.md`
-11. `docs/audit-rebuild/FABLE5-PROTOCOL.md`
+11. `docs/audit-rebuild/FABLE5-PROTOCOL.md` only for historical P2 evidence
 12. the latest committed session log and prior gate report, when they exist
 
 Historical `.claude/` plans and `docs/2026-04-16-*` files are supporting evidence,
@@ -131,7 +131,7 @@ Chat updates do not satisfy this requirement.
 | Command passed but evidence not indexed | `IN_PROGRESS` |
 | Evidence exists but gate not audited | `EVIDENCE_READY` |
 | Visual review covers only one viewport | `IN_PROGRESS` |
-| Fable recommends a change without validation | finding/experiment, not complete |
+| An external recommendation appears without validation | historical evidence only, not complete |
 | Gate criteria fail | `GATE_FAILED` |
 | Gate passes and checkpoint exists | `GATE_PASSED` |
 | Later evidence contradicts a pass | `REOPENED` |
@@ -210,7 +210,7 @@ At plan creation, the intended state is:
 - production untouched
 - P0 not started
 - no audit evidence registered
-- no Fable 5 execution performed
+- no substantive Fable 5 review generated; all remaining Fable work retired by owner
 - no prototype code written
 - next action is owner greenlight
 
@@ -231,5 +231,5 @@ passed evidence gate and checkpoint.
 ## 13. Plan-Only Stop Rule
 
 While `TRACKER.md` says `PLAN_VALIDATED_AWAITING_GREENLIGHT`, a session may inspect
-or explain the plan but must not begin P0, capture audit evidence, invoke Fable 5,
+or explain the plan but must not begin P0, capture audit evidence, invoke a retired advisor,
 write prototype code, or deploy staging.
