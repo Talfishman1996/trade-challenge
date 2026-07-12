@@ -32,6 +32,8 @@ unless it is a short link to the authoritative source.
 |---|---|
 | `MASTER-PLAN.md` | Scope, phase order, subphases, dependencies, outputs, and stop points |
 | `TRACKER.md` | Current status, next action, gate state, checkpoint ledger, and completion truth |
+| `evidence-index.md` | Evidence IDs, artifact pointers, and frozen manifest hashes |
+| `findings-registry.md` | Evidence-backed findings, ownership, status, and reopen triggers |
 | `EVIDENCE-AND-GATES.md` | Evidence IDs, capture matrices, quality thresholds, gate packets, and proof rules |
 | `DECISIONS-RISKS-QUESTIONS.md` | Owner decisions, open questions, assumptions, risks, and mitigations |
 | `FABLE5-PROTOCOL.md` | Independent second-brain packet, neutral prompt, sealing, and confluence process |
@@ -72,10 +74,12 @@ reintroduced during execution.
 1. `README.md`
 2. `MASTER-PLAN.md`
 3. `TRACKER.md`
-4. `EVIDENCE-AND-GATES.md`
-5. `DECISIONS-RISKS-QUESTIONS.md`
-6. `FABLE5-PROTOCOL.md`
-7. `CONTEXT-RECOVERY.md`
+4. `evidence-index.md`
+5. `findings-registry.md`
+6. `EVIDENCE-AND-GATES.md`
+7. `DECISIONS-RISKS-QUESTIONS.md`
+8. `FABLE5-PROTOCOL.md`
+9. `CONTEXT-RECOVERY.md`
 
 ## Activation Rule
 

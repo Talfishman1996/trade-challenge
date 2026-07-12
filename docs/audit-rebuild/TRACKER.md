@@ -2,17 +2,17 @@
 
 This file is the sole authority for execution status.
 
-Program state: `PLAN_VALIDATED_AWAITING_GREENLIGHT`
+Program state: `P0_GATE_PASSED`
 
-Current phase: `NONE`
+Current phase: `P0_COMPLETE_AWAITING_P1_ACTIVATION`
 
-Current gate: `NONE`
+Current gate: `G0_GATE_PASSED`
 
-Next authorized action: `WAIT_FOR_OWNER_GREENLIGHT`
+Next authorized action: `CREATE_G0_TAG_THEN_START_P1.1`
 
-Last planning update: 2026-07-12, America/Los_Angeles
+Last execution update: 2026-07-12 14:38:35 PDT, America/Los_Angeles
 
-Working branch: `plan/mobile-first-audit-prototype-2026-07-12`
+Working branch: `codex/audit-mobile-first-2026-07-12`
 
 Protected baseline: `CHECKPOINT-PRE-100K-MIGRATION-2026-07-12`
 
@@ -43,6 +43,18 @@ Protected baseline: `CHECKPOINT-PRE-100K-MIGRATION-2026-07-12`
 The plan gate validates plan structure and safety only. It does not pass P0 or any
 execution phase.
 
+## Activation Authorization
+
+| Item | Record |
+|---|---|
+| Owner authorization, verbatim | `do it!` |
+| Received | 2026-07-12 14:38:35 PDT (`-0700`) |
+| Authorized scope | Begin and execute the validated P0-P13 audit/prototype program in gated order |
+| Starting plan commit | `706917dad68f00398754e0ea8e0cfa18d2174844` |
+| Audit branch | `codex/audit-mobile-first-2026-07-12` |
+| Production replacement authorization | not granted |
+| Protected-checkpoint modification authorization | not granted |
+
 ## Status Vocabulary
 
 Only these values are valid:
@@ -65,7 +77,7 @@ gate actually passed.
 
 | Phase | State | Gate | Evidence count | Checkpoint | Next action |
 |---|---|---|---:|---|---|
-| P0 Activation and isolation | `NOT_STARTED` | G0 | 0 | none | wait |
+| P0 Activation and isolation | `GATE_PASSED` | G0 | 5 | `AUDIT-P00-GATE-PASSED-2026-07-12` | start P1 after tag |
 | P1 Forensic baseline | `NOT_STARTED` | G1 | 0 | none | blocked by G0 |
 | P2 Sealed Fable 5 review | `NOT_STARTED` | G2 | 0 | none | blocked by G1 |
 | P3 Product/workflow audit | `NOT_STARTED` | G3 | 0 | none | blocked by G2 |
@@ -84,10 +96,10 @@ gate actually passed.
 
 | ID | Subphase | State | Required evidence |
 |---|---|---|---|
-| P0.1 | Authorization record | `NOT_STARTED` | authorization record |
-| P0.2 | Baseline protection verification | `NOT_STARTED` | ref/tree/archive verification |
-| P0.3 | Working branch isolation | `NOT_STARTED` | branch/environment map |
-| P0.4 | Toolchain and privacy boundary | `NOT_STARTED` | capability/privacy matrix |
+| P0.1 | Authorization record | `EVIDENCE_READY` | authorization record |
+| P0.2 | Baseline protection verification | `EVIDENCE_READY` | ref/tree/archive verification |
+| P0.3 | Working branch isolation | `EVIDENCE_READY` | branch/environment map |
+| P0.4 | Toolchain and privacy boundary | `EVIDENCE_READY` | capability/privacy matrix |
 | P1.1 | Repository and dependency inventory | `NOT_STARTED` | source/import/dependency maps |
 | P1.2 | Product surface inventory | `NOT_STARTED` | surface/state inventory |
 | P1.3 | Data and model inventory | `NOT_STARTED` | schema/data-flow/model map |
@@ -164,7 +176,7 @@ gate actually passed.
 
 | Gate | State | Gate report | Commit | Tag | Reopened by |
 |---|---|---|---|---|---|
-| G0 | `NOT_STARTED` | none | none | none | none |
+| G0 | `GATE_PASSED` | `gates/GATE-P00.md` | `43dd70f` | `AUDIT-P00-GATE-PASSED-2026-07-12` | none |
 | G1 | `NOT_STARTED` | none | none | none | none |
 | G2 | `NOT_STARTED` | none | none | none | none |
 | G3 | `NOT_STARTED` | none | none | none | none |
@@ -186,21 +198,24 @@ gate actually passed.
 | `CHECKPOINT-PRE-100K-MIGRATION-2026-07-12` | Exact original app | `ed845a5` / `c41314c` | yes |
 | GitHub protected branch | Remote exact original tree | `5a35dd9` / `c41314c` | yes |
 | Plan branch | Plan-only documents | `2f669d7` plus final validation checkpoint | no |
+| `AUDIT-P00-GATE-PASSED-2026-07-12` | Safe audit activation boundary | `43dd70f` plus gate validation record | yes |
 
 ## Active Blockers
 
-None. The program is intentionally waiting for greenlight.
+None. G0 passed; P1 remains unstarted until the gate tag is created.
 
 ## Current Breadcrumb
 
 - The original application checkpoint is protected and verified.
+- Owner greenlight `do it!` was received and recorded on 2026-07-12.
+- P0 is active on `codex/audit-mobile-first-2026-07-12`; no later phase has started.
 - Reviewers are critics, not persistent multi-user account holders.
 - The `$100K` model is the planned product truth.
 - Final gap review includes only the controlled comparison of visual directions;
   the other 13 proposed expansion programs are explicitly excluded.
 - Codex performs the structured evaluation and the owner remains the prototype
   approval authority; no external human pilot or reviewer telemetry is planned.
-- The final plan suite is validated on a separate branch and awaits greenlight.
+- The final plan suite remains preserved on its separate planning branch and tag.
 - No audit evidence has been captured under this program.
 - Fable 5 has not been invoked under this program.
 - No prototype code or staging deployment exists.

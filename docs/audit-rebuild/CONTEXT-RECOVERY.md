@@ -31,10 +31,12 @@ A new session must read these files before inspecting application code:
 4. `docs/audit-rebuild/README.md`
 5. `docs/audit-rebuild/MASTER-PLAN.md`
 6. `docs/audit-rebuild/TRACKER.md`
-7. `docs/audit-rebuild/EVIDENCE-AND-GATES.md`
-8. `docs/audit-rebuild/DECISIONS-RISKS-QUESTIONS.md`
-9. `docs/audit-rebuild/FABLE5-PROTOCOL.md`
-10. the latest committed session log and prior gate report, when they exist
+7. `docs/audit-rebuild/evidence-index.md`, when it exists
+8. `docs/audit-rebuild/findings-registry.md`, when it exists
+9. `docs/audit-rebuild/EVIDENCE-AND-GATES.md`
+10. `docs/audit-rebuild/DECISIONS-RISKS-QUESTIONS.md`
+11. `docs/audit-rebuild/FABLE5-PROTOCOL.md`
+12. the latest committed session log and prior gate report, when they exist
 
 Historical `.claude/` plans and `docs/2026-04-16-*` files are supporting evidence,
 not current truth.

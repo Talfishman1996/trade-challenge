@@ -15,3 +15,6 @@ liquid-glass-nav.html
 
 # Private checkpoint archives and cloud-data snapshots
 output/checkpoints/
+
+# Raw audit evidence, captures, metrics, and sealed advisor output
+output/audit-rebuild/
