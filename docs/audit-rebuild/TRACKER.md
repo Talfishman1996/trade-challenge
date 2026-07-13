@@ -212,6 +212,7 @@ gate actually passed.
 | `AUDIT-P10-GATE-PASSED-2026-07-12` | Frozen mobile IA, workflows, design system, architecture, fixtures, and acceptance contract | `ea68c56` plus gate validation record | yes |
 | `AUDIT-P11-GATE-PASSED-2026-07-12` | Frozen isolated Summit Ledger source, deterministic fixtures, build, and staging deployment | `6391eb7` source plus gate validation record | yes |
 | `AUDIT-P11-GATE-PASSED-R2-2026-07-12` | Corrected G11 after transparent W03-W10/W15-W17 contract repair | `1d07674` source plus R2 gate validation record | yes |
+| Remote prototype recovery branch | Squashed, byte-verified source and automated P12 dossier | `bb997ff2ccd4a02ee14827016747cd7dc8e8f14e` before final breadcrumb update | yes by convention |
 
 ## Active Blockers
 
@@ -249,6 +250,9 @@ dependency; no external-advisor work remains.
   deterministic fixtures, build, and separate Cloudflare staging deployment.
 - Prototype staging is `https://summit-ledger-prototype.pages.dev/`; it is not a
   production replacement and contains no production data connection.
+- GitHub recovery branch `codex/summit-ledger-prototype-2026-07-12` contains the
+  final source/evidence as a squashed API commit; sampled text and PNG hashes match
+  local files exactly even though local detailed history differs.
 - Production remains unchanged.
 
 ## Tracker Update Protocol

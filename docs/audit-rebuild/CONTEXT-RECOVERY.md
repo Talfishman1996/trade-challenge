@@ -198,23 +198,27 @@ Every passed phase must leave a handoff containing:
 
 ## 11. Current Recovery Fact
 
-At plan creation, the intended state is:
+As of 2026-07-12 after automated P12 validation:
 
-- plan suite written on a plan-only branch
-- final pre-greenlight gap review recorded as 14 binding scope dispositions:
-  structured visual-direction comparison included and the other 13 expansions
-  excluded
-- Codex is the structured evaluator, the owner is the approval authority, and no
-  external human pilot or in-product reviewer instrumentation is planned
-- original checkpoint untouched
-- production untouched
-- P0 not started
-- no audit evidence registered
-- no substantive Fable 5 review generated; all remaining Fable work retired by owner
-- no prototype code written
-- next action is owner greenlight
+- local working branch: `codex/summit-ledger-prototype-2026-07-12`
+- local evidence commit: `6caf0ca`; local automated-evidence tag:
+  `AUDIT-P12-AUTOMATED-EVIDENCE-READY-2026-07-12`
+- remote recovery branch with byte-verified final source/evidence:
+  `codex/summit-ledger-prototype-2026-07-12`
+- remote squashed recovery commit: `bb997ff2ccd4a02ee14827016747cd7dc8e8f14e`
+  before this final breadcrumb update; local and remote histories intentionally differ,
+  while sampled file hashes match exactly
+- stable staging URL: `https://summit-ledger-prototype.pages.dev/`
+- final staging deployment ID: `786fa9c7-497e-433e-8403-935396881aad`
+- original checkpoint tree remains
+  `c41314cdedb14c64e64386cbce7534de9a2002d5`; production was not replaced
+- P0-P7 and P9-P11 passed; P8 remains an intentional current-app quality failure
+- P12.1-P12.5 automated evidence passes; P12.6 and G12 await owner review
+- Fable 5 remains retired under D-018 and must not be reintroduced
+- P13 and all production replacement/migration work remain blocked until owner
+  prototype acceptance is recorded
 
-The tracker must be checked for any later state.
+The tracker remains the status authority if any later commit changes these facts.
 
 ## 12. Cold-Start Recovery Prompt
 
