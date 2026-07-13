@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
-import { rN, r$N, getPhase } from '../math/risk.js';
-import { MILES } from '../math/constants.js';
+import { getPhase, plannedRisk } from '../math/risk.js';
+import { MILES, START_EQUITY } from '../math/constants.js';
 import { pushToCloud, pullFromCloud } from '../sync.js';
 import { clearAllImages, deleteImage } from '../utils/imageDB.js';
 import {
@@ -10,6 +10,7 @@ import {
   mergeDatasets,
   normalizeDataset,
   readStoredDataset,
+  requireNonzeroPnl,
   todayLocalDate,
   writeStoredDataset,
 } from '../utils/tradeData.js';
@@ -32,19 +33,21 @@ const recalcTradeChain = (trades, baseEquity) => {
   const result = [...trades];
   for (let i = 0; i < result.length; i++) {
     const eqBefore = i > 0 ? result[i - 1].equityAfter : baseEquity;
+    const existingRiskDol = Number(result[i].riskDol);
+    const existingRiskPct = Number(result[i].riskPct);
     result[i] = {
       ...result[i],
       equityBefore: eqBefore,
       equityAfter: Math.max(1, eqBefore + result[i].pnl),
-      riskPct: rN(eqBefore),
-      riskDol: r$N(eqBefore),
-      phase: getPhase(eqBefore),
+      riskPct: Number.isFinite(existingRiskPct) ? existingRiskPct : null,
+      riskDol: Number.isFinite(existingRiskDol) ? existingRiskDol : null,
+      phase: result[i].phase || getPhase(eqBefore),
     };
   }
   return result;
 };
 
-export const useTrades = (initialEquity = 20000) => {
+export const useTrades = (initialEquity = START_EQUITY) => {
   const [data, setData] = useState(() => {
     const loaded = readStoredDataset(initialEquity);
     return {
@@ -97,10 +100,11 @@ export const useTrades = (initialEquity = 20000) => {
       ? currentData.trades[currentData.trades.length - 1].equityAfter
       : (currentData.initialEquity || initialEquity);
 
-    const { pnl } = tradeData;
+    const pnl = requireNonzeroPnl(tradeData.pnl);
     const equityAfter = Math.max(1, eq + pnl);
     const maxId = currentData.trades.length > 0 ? Math.max(...currentData.trades.map(t => t.id)) : 0;
     const now = Date.now();
+    const risk = plannedRisk(eq);
     const trade = {
       ...freshTradeDefaults(now),
       ...tradeData,
@@ -116,8 +120,11 @@ export const useTrades = (initialEquity = 20000) => {
       ticker: tradeData.ticker || '',
       equityBefore: eq,
       equityAfter,
-      riskPct: rN(eq),
-      riskDol: r$N(eq),
+      riskPct: risk.riskFraction,
+      riskDol: risk.dollarRisk,
+      modelId: risk.modelId,
+      modelStatus: risk.status,
+      revision: 1,
       phase: getPhase(eq),
       notes: tradeData.notes || '',
     };
@@ -141,6 +148,7 @@ export const useTrades = (initialEquity = 20000) => {
     if (idx === -1) return;
     const updated = [...currentData.trades];
     updated[idx] = { ...updated[idx] };
+    if (changes.pnl !== undefined) changes = { ...changes, pnl: requireNonzeroPnl(changes.pnl) };
     // Apply all provided fields
     const editableFields = [
       'pnl', 'notes', 'date', 'openDate', 'direction', 'ticker',
@@ -153,6 +161,7 @@ export const useTrades = (initialEquity = 20000) => {
       if (changes[key] !== undefined) updated[idx][key] = changes[key];
     }
     updated[idx].updatedAt = Date.now();
+    updated[idx].revision = (updated[idx].revision || 0) + 1;
     const baseEq = currentData.initialEquity || initialEquity;
     const recalced = recalcTradeChain(updated, baseEq);
     persist({ ...currentData, trades: recalced });
@@ -360,11 +369,17 @@ export const useTrades = (initialEquity = 20000) => {
   }, [peakEquity, currentEquity]);
 
   // Next trade risk
-  const nextRisk = useMemo(() => ({
-    pct: rN(currentEquity),
-    dol: r$N(currentEquity),
-    phase: getPhase(currentEquity),
-  }), [currentEquity]);
+  const nextRisk = useMemo(() => {
+    const risk = plannedRisk(currentEquity);
+    return {
+      pct: risk.riskFraction,
+      dol: risk.dollarRisk,
+      phase: getPhase(currentEquity),
+      status: risk.status,
+      segment: risk.segment,
+      modelId: risk.modelId,
+    };
+  }, [currentEquity]);
 
   // Milestone status
   const milestones = useMemo(() =>

@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { TARGET_RR } from '../math/risk.js';
+import { START_EQUITY, TARGET_RR } from '../math/risk.js';
 
-const STORAGE_KEY = 'risk-engine-settings';
+const STORAGE_KEY = 'tradevault-settings-100k-v1';
 
 const DEFAULTS = {
-  winRate: 60,
+  winRate: 70,
   rewardRatio: TARGET_RR,
-  initialEquity: 20000,
+  initialEquity: START_EQUITY,
   drawdownAlertPct: 20,
   maxRiskPct: 0,
   tiltLockEnabled: true,

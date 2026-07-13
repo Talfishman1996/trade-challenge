@@ -1,157 +1,59 @@
 # TradeVault
 
-Mobile-first trading risk dashboard with 2/3 Power Decay sizing and fixed 1:1 risk/reward. Personal tool for tracking the $20K to $10M equity challenge.
+Mobile-first personal trading dashboard for the `$100K -> $10M` challenge. This
+branch preserves the original mountain-led TradeVault design while replacing the
+legacy sizing engine with the canonical `100k-pchip-v1` model.
 
-## Stack
-
-- React 19 + Vite 7
-- Tailwind CSS v4 (via `@tailwindcss/vite`)
-- Recharts (charts/visualizations)
-- Framer Motion (animations)
-- Lucide React (icons)
-- localStorage for persistence, plus optional Cloudflare Worker sync
-
-## Quick Start
+## Commands
 
 ```bash
 npm install
-npm run dev       # http://localhost:5173/
-npm run build     # Production build -> dist/
+npm run dev
+npm run test
+npm run build
+npm run check
 ```
+
+## Canonical Model
+
+| Strategy equity | Risk | Planned dollar risk |
+|---:|---:|---:|
+| $100K | 15.0% | $15K |
+| $200K | 12.5% | $25K |
+| $500K | 10.0% | $50K |
+| $1M | 7.5% | $75K |
+| $2M | 6.0% | $120K |
+| $5M | 5.0% | $250K |
+| $10M | 3.0% | $300K |
+
+Dollar risk uses shape-preserving PCHIP interpolation against log equity. Between
+anchors, risk percentage never increases and planned dollar risk never decreases.
+Below `$100K`, planned risk is 15% of current strategy equity. At or above `$10M`,
+the challenge withholds further recommendations.
+
+The planning model uses gross `1:1` reward/risk and win/loss outcomes only. The
+journal requires manually entered nonzero net P&L, which should already include
+fees, funding, and slippage.
+
+## Data Integrity
+
+- New records store their execution-time model ID, risk percentage, and dollar risk.
+- Historical model snapshots are not rewritten when the equity chain is recalculated.
+- Every mutation saves locally before background cloud synchronization.
+- The prototype uses isolated local-storage and cloud-vault namespaces.
+- Record IDs, update timestamps, revisions, and tombstones support cross-device merges.
 
 ## Architecture
 
-```
-src/
-  main.jsx                  # Entry point
-  index.css                 # Tailwind + custom styles
-  sync.js                   # Cloud sync (Cloudflare Workers KV)
-  math/
-    constants.js            # Model constants, milestones, chart config
-    risk.js                 # 2/3 Power Decay model + fixed RR target (core math)
-    format.js               # Number formatting utilities
-    monte-carlo.js          # Monte Carlo simulation engine
-    analytics.js            # Trade analytics (streaks, R-multiples, etc.)
-    index.js                # Barrel export
-  store/
-    trades.js               # Trade state management + localStorage
-    settings.js             # Settings state + localStorage
-    tags.js                 # Tag definitions
-  utils/
-    dataIO.js               # JSON import/export
-    imageDB.js              # Trade image storage (IndexedDB)
-  components/
-    App.jsx                 # Root: navigation, tabs, layout, sync orchestration
-    Home.jsx                # Dashboard: equity display, stats, sparkline, summit tracker
-    Trades.jsx              # Trade log: grid/table views, stats bar, sorting
-    TradeEntry.jsx          # Trade form: win/loss, long/short, P&L, dates, notes
-    Analysis.jsx            # Analytics: milestones, risk curves, stress test, projections
-    Settings.jsx            # Settings: risk params, cloud sync, data management
-    EquityCurve.jsx         # Recharts equity curve with milestone markers
-    Heatmap.jsx             # Calendar heatmap of daily P&L
-    ScatterPlot.jsx         # R-multiple scatter plot
-    GPSJourney.jsx          # Visual equity funnel (danger zone -> goal)
-    FilterBar.jsx           # Date/tag/direction filters
-    MetricCard.jsx          # Reusable stat card component
-    Celebration.jsx         # Milestone achievement animation
-    TagPicker.jsx           # Multi-select tag picker
-worker/
-  src/index.js              # Cloudflare Worker (sync API)
-  wrangler.toml             # Worker config
+```text
+src/components/   Original TradeVault UI and workflows
+src/math/         Canonical sizing, simulations, analytics, and formatting
+src/store/        Settings and local-first trade state
+src/utils/        Data normalization, merge, import/export, and images
+worker/           Cloudflare Worker KV synchronization backend
+test/             Node model and data-integrity tests
 ```
 
-## Core Math Model: 2/3 Power Decay + 1:1 RR
-
-The position sizing engine still uses the original piecewise risk function `rN(equity)`. Only the reward ratio is fixed to `1.0:1`.
-
-| Equity Range | Risk % | 1:1 Outcome Behavior |
-|-------------|--------|----------------------|
-| $0 - $20K | 100% | A win can double the account; a loss can wipe to the app floor |
-| $20K - $50K | 100% -> 50% | Win and loss both use the same decay-sized 1R |
-| $50K - $87.5K | 50% -> 33% | Linear decrease to anchor risk |
-| $87.5K+ | 33% * (87500/E)^(2/3) | Risk decays smoothly as equity grows |
-
-**Key constants:**
-- Anchor equity (E0): $87,500 (risk = 33% here)
-- Reward ratio: 1.0:1
-- Start: $20,000
-- Target: $10,000,000
-
-The model keeps aggressive growth at low equity and capital preservation at high equity, while making each win/loss symmetric around the active decay-sized 1R amount.
-
-## Features
-
-### Dashboard (Home)
-- Current equity with animated display
-- 30-day P&L, best trade, current streak, win rate
-- Mini equity sparkline
-- Summit Tracker (milestone progress trail)
-- Phase indicator (Growth / Anchor / Decay)
-
-### Trade Logging
-- Win/Loss + Long/Short entry
-- Open date, close date, duration tracking
-- Notes and tags per trade
-- Undo/redo support
-- Grid view (cards) and Table view (sortable)
-
-### Analysis
-- **Milestones:** Progress toward $100K, $250K, $500K, $1M, $4M, $10M
-- **Data Matrix:** Risk/reward at various equity levels
-- **Risk Curves:** Visual comparison of 2/3 Power Decay vs alternatives
-- **Stress Test:** Consecutive win/loss streak simulator
-- **Projections:** Monte Carlo growth simulation
-- **Compare:** Side-by-side model comparison
-
-### Settings
-- Fixed 1:1 risk/reward display over the decay sizing engine
-- R-multiple toggle
-- Cloud sync management
-- Data import/export (JSON)
-- Clear data with confirmation
-
-### Cloud Sync
-- Cloudflare Pages frontend + Cloudflare Worker sync backend
-- Always-on shared sync vault for this internal app
-- Auto-sync on save/edit, focus return, and adaptive background intervals
-- Draft autosave while typing and edit autosave while modifying trades
-- Merge-aware reconciliation for local/cloud datasets
-- Visible sync status and recent sync activity
-- Legacy sync-link migration into the current shared vault
-- Last-write timestamps plus record-level merge handling
-
-## Design
-
-- Dark theme: slate-950 background
-- Semantic colors: emerald (positive/wins), rose/red (negative/losses), blue (UI chrome), amber (warnings)
-- JetBrains Mono for all numeric displays
-- Mobile-first: bottom tab navigation + center FAB for trade entry
-- Desktop: fixed left sidebar with icon navigation
-
-## Deployment
-
-The frontend now builds with `/` as the default base path, which is appropriate for Cloudflare Pages and other root-host deployments.
-
-If you need the old GitHub Pages subpath behavior, build with:
-
-```bash
-VITE_BASE_PATH=/trade-challenge/ npm run build
-```
-
-### Cloudflare handoff
-
-```bash
-npm run build
-npm run deploy:cloudflare
-npm run deploy:worker
-```
-
-- `deploy:cloudflare` uploads the frontend `dist/` build to Cloudflare Pages.
-- `deploy:worker` deploys the sync worker defined in `worker/wrangler.toml`.
-- Both commands require an authenticated Wrangler session.
-- Current canonical live frontend: `https://tradevault-b7t.pages.dev`
-- Current live sync worker: `https://tradevault-sync.talfishmanbusiness.workers.dev`
-
-## License
-
-ISC
+The immutable pre-migration checkpoint is
+`CHECKPOINT-PRE-100K-MIGRATION-2026-07-12`. Prototype work must never move or
+rewrite that tag and must deploy separately from the production Pages project.

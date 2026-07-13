@@ -83,11 +83,13 @@ export default function App() {
   const [tradeEntrySeed, setTradeEntrySeed] = useState(null);
   const [riskGate, setRiskGate] = useState(null);
   const [toast, setToast] = useState(null);
+  const [syncNotice, setSyncNotice] = useState(null);
   const [syncInfo, setSyncInfo] = useState(() => ensurePrimarySyncConfig());
   const [syncPillStatus, setSyncPillStatus] = useState(() => (navigator.onLine ? 'ready' : 'offline'));
   const [syncActivity, setSyncActivity] = useState(() => readSyncActivity());
   const [isForeground, setIsForeground] = useState(() => document.visibilityState === 'visible' && document.hasFocus());
   const toastTimer = useRef(null);
+  const syncNoticeTimer = useRef(null);
   const showToast = useCallback((msg, type = 'success') => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast({ msg, type });
@@ -97,6 +99,11 @@ export default function App() {
     const next = ensurePrimarySyncConfig();
     setSyncInfo(next);
     return next;
+  }, []);
+  const showSyncNotice = useCallback((message) => {
+    if (syncNoticeTimer.current) clearTimeout(syncNoticeTimer.current);
+    setSyncNotice(message);
+    syncNoticeTimer.current = setTimeout(() => setSyncNotice(null), 2600);
   }, []);
   const pushSyncActivity = useCallback((status, source, message) => {
     setSyncActivity(recordSyncActivity({ status, source, message }));
@@ -127,12 +134,14 @@ export default function App() {
         setSyncPillStatus('merged');
         pushSyncActivity('merged', reason, summary);
         if (!silent) showToast('Device changes merged');
+        if (silent) showSyncNotice('Device changes merged');
       } else if (result === 'pushed' || result === 'in_sync') {
         setSyncPillStatus('ready');
         if (!silent || result === 'pushed') pushSyncActivity(result === 'pushed' ? 'ready' : 'ready', reason, summary);
         if (!silent && reason === 'manual') {
           showToast(result === 'pushed' ? 'Sync complete' : 'Already up to date');
         }
+        if (silent && result === 'pushed') showSyncNotice('Saved across devices');
       } else {
         setSyncPillStatus('ready');
       }
@@ -143,7 +152,7 @@ export default function App() {
       if (!silent) showToast('Sync failed', 'error');
       return 'error';
     }
-  }, [pushSyncActivity, refreshSyncInfo, showToast, syncRef]);
+  }, [pushSyncActivity, refreshSyncInfo, showSyncNotice, showToast, syncRef]);
 
   // Auto-sync: always use one shared internal sync space and silently migrate legacy per-link syncs
   useEffect(() => {
@@ -398,7 +407,7 @@ export default function App() {
             return (
               <React.Fragment key={t.id}>
                 {i === 2 && (
-                  <button onClick={() => openTradeEntry()} className="relative -mt-5">
+                  <button onClick={() => openTradeEntry()} className="relative -mt-5" aria-label="Log Trade">
                     <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/25 active:scale-95 transition-transform">
                       <Plus className="w-7 h-7 text-white" strokeWidth={2.5} />
                     </div>
@@ -427,16 +436,23 @@ export default function App() {
         </div>
       </nav>
 
-      <div className="fixed bottom-20 right-3 z-50 md:hidden">
-        <SyncStatusPill
-          compact
-          status={syncPillStatus}
-          lastSync={syncInfo?.lastSync}
-          onClick={() => runSync({ silent: false, reason: 'manual' })}
-          disabled={syncPillStatus === 'syncing'}
-          className="h-9 w-9 rounded-full shadow-md ring-2 ring-deep"
-        />
-      </div>
+      <AnimatePresence>
+        {syncNotice && !showTradeEntry && (
+          <motion.button
+            type="button"
+            initial={{ opacity: 0, y: -8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            onClick={() => { setSyncNotice(null); setTab('settings'); }}
+            className="fixed right-3 z-50 flex min-h-11 items-center gap-2 rounded-full border border-blue-400/25 bg-deep/95 px-3.5 text-xs font-semibold text-blue-300 shadow-xl backdrop-blur-lg md:hidden"
+            style={{ top: 'max(12px, env(safe-area-inset-top))' }}
+            aria-label={`${syncNotice}. Open sync settings.`}
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            {syncNotice}
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Risk Gate Overlay (Tilt Lock / Daily Limit) */}
       <AnimatePresence>

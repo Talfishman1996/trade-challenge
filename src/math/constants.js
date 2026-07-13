@@ -1,59 +1,55 @@
-// Core model constants
-export const E0 = 87500;
-export const K0 = 0.33;
-export const SMIN = 20000;
-export const SMAX = 10000000;
+// Canonical $100K -> $10M challenge constants.
+export const MODEL_ID = '100k-pchip-v1';
+export const START_EQUITY = 100000;
+export const TARGET_EQUITY = 10000000;
+export const TARGET_RR = 1;
+
+// Backward-compatible aliases used by a few visual components.
+export const E0 = START_EQUITY;
+export const K0 = 0.15;
+export const SMIN = START_EQUITY;
+export const SMAX = TARGET_EQUITY;
 export const LOG_MIN = Math.log10(SMIN);
 export const LOG_MAX = Math.log10(SMAX);
 
-// Chart X-axis log ticks
-export const LXT = [20e3, 100e3, 250e3, 500e3, 1e6, 2.5e6, 5e6, 10e6].map(
-  v => Math.log10(Math.max(v, 1))
-);
+export const RISK_ANCHORS = Object.freeze([
+  Object.freeze({ equity: 100000, riskFraction: 0.15, dollarRisk: 15000, label: '$100K' }),
+  Object.freeze({ equity: 200000, riskFraction: 0.125, dollarRisk: 25000, label: '$200K' }),
+  Object.freeze({ equity: 500000, riskFraction: 0.10, dollarRisk: 50000, label: '$500K' }),
+  Object.freeze({ equity: 1000000, riskFraction: 0.075, dollarRisk: 75000, label: '$1M' }),
+  Object.freeze({ equity: 2000000, riskFraction: 0.06, dollarRisk: 120000, label: '$2M' }),
+  Object.freeze({ equity: 5000000, riskFraction: 0.05, dollarRisk: 250000, label: '$5M' }),
+  Object.freeze({ equity: 10000000, riskFraction: 0.03, dollarRisk: 300000, label: '$10M' }),
+]);
 
-// Quick-select equity presets
-export const QK = [
-  { v: 20000, l: '$20K' },
-  { v: 87500, l: '$87.5K' },
-  { v: 250000, l: '$250K' },
-  { v: 1000000, l: '$1M' },
-  { v: 5000000, l: '$5M' },
-  { v: 10000000, l: '$10M' },
-];
+export const LXT = RISK_ANCHORS.map(anchor => Math.log10(anchor.equity));
 
-// Full map equity levels
-export const FM = [
-  { v: 20000, l: '$20K', ph: 'pre' },
-  { v: 50000, l: '$50K', ph: 'pre' },
-  { v: 87500, l: '$87.5K', ph: 'anchor' },
-  { v: 100000, l: '$100K', ph: 'model' },
-  { v: 250000, l: '$250K', ph: 'model' },
-  { v: 500000, l: '$500K', ph: 'model' },
-  { v: 1000000, l: '$1M', ph: 'model' },
-  { v: 3000000, l: '$3M', ph: 'model' },
-  { v: 5000000, l: '$5M', ph: 'model' },
-  { v: 10000000, l: '$10M', ph: 'model' },
-];
+export const QK = RISK_ANCHORS.map(anchor => ({ v: anchor.equity, l: anchor.label }));
 
-// Milestone targets
+export const FM = RISK_ANCHORS.map((anchor, index) => ({
+  v: anchor.equity,
+  l: anchor.label,
+  ph: index === 0 ? 'anchor' : 'model',
+}));
+
+// The starting $100K is the trailhead rather than a milestone to re-achieve.
 export const MILES = [
-  { v: 100000, l: '$100K' },
-  { v: 250000, l: '$250K' },
+  { v: 200000, l: '$200K' },
   { v: 500000, l: '$500K' },
   { v: 1000000, l: '$1M' },
+  { v: 2000000, l: '$2M' },
   { v: 5000000, l: '$5M' },
   { v: 10000000, l: '$10M' },
 ];
 
-// GPS funnel zones
 export const GPS_Z = [
-  { eq: 20000, l: '$20K', s: '1-Loss Wipe', c: '#ef4444', tc: 'text-rose-400' },
-  { eq: 50000, l: '$50K', s: 'Danger Zone', c: '#eab308', tc: 'text-amber-400' },
-  { eq: 87500, l: '$87.5K', s: 'Basecamp', c: '#10b981', tc: 'text-emerald-400' },
-  { eq: 100000, l: '$100K', s: 'Goal', c: '#22c55e', tc: 'text-emerald-300' },
+  { eq: 100000, l: '$100K', s: 'Trailhead', c: '#10b981', tc: 'text-emerald-400' },
+  { eq: 200000, l: '$200K', s: 'Base Camp', c: '#22c55e', tc: 'text-emerald-300' },
+  { eq: 1000000, l: '$1M', s: 'High Country', c: '#38bdf8', tc: 'text-sky-300' },
+  { eq: 5000000, l: '$5M', s: 'Summit Push', c: '#f59e0b', tc: 'text-amber-400' },
+  { eq: 10000000, l: '$10M', s: 'Summit', c: '#facc15', tc: 'text-yellow-300' },
 ];
 
-// Chart styles
 export const TT = {
   backgroundColor: '#0D1117',
   border: '1px solid #2D3748',
@@ -72,12 +68,11 @@ export const AX = {
 
 export const CHART_MARGIN = { top: 10, right: 10, left: -20, bottom: 0 };
 
-// Analysis tab definitions (icons resolved in component)
 export const TAB_IDS = ['milestones', 'fullmap', 'curves', 'stress', 'growth', 'compare'];
 export const TAB_LABELS = {
   milestones: 'Milestones',
   fullmap: 'Data Matrix',
-  curves: 'Risk Curves',
+  curves: 'Risk Curve',
   stress: 'Stress Test',
   growth: 'Projections',
   compare: 'Compare',

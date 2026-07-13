@@ -13,7 +13,7 @@ export function exportJSON(trades) {
 }
 
 export function exportCSV(trades) {
-  const rows = [['Trade #', 'Date', 'Open Date', 'Direction', 'Ticker', 'Strategy', 'Contracts', 'Entry Price', 'Exit Price', 'P&L', 'Equity Before', 'Equity After', 'Risk %', 'Phase', 'Setup Tags', 'Emotion Tags', 'Mistakes', 'MAE', 'MFE', 'Notes']];
+  const rows = [['Trade #', 'Date', 'Open Date', 'Direction', 'Ticker', 'Strategy', 'Contracts', 'Entry Price', 'Exit Price', 'Net P&L', 'Equity Before', 'Equity After', 'Planned Risk $', 'Risk %', 'Model ID', 'Phase', 'Setup Tags', 'Emotion Tags', 'Mistakes', 'MAE', 'MFE', 'Notes']];
   for (const t of trades.trades) {
     const esc = (s) => s && s.includes(',') ? `"${s.replace(/"/g, '""')}"` : (s || '');
     const joinTags = (arr) => arr && arr.length > 0 ? `"${arr.join(', ')}"` : '';
@@ -30,7 +30,9 @@ export function exportCSV(trades) {
       t.pnl,
       t.equityBefore,
       t.equityAfter,
-      (t.riskPct * 100).toFixed(2) + '%',
+      t.riskDol ?? '',
+      t.riskPct == null ? '' : (t.riskPct * 100).toFixed(2) + '%',
+      t.modelId || 'legacy-unversioned',
       getPhaseName(t.phase),
       joinTags(t.setupTags),
       joinTags(t.emotionTags),

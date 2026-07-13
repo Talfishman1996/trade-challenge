@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { Zap, TrendingUp, Trophy, X, Info, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fmt } from '../math/format.js';
+import { e2s, fmt, s2e } from '../math/format.js';
 import { rN, r$N, getPhaseName, getPhase, riskSeverity } from '../math/risk.js';
-import { E0, MILES } from '../math/constants.js';
+import { MILES, START_EQUITY } from '../math/constants.js';
 import { localDateToTimestamp } from '../utils/tradeData.js';
 import EquityCurve from './EquityCurve.jsx';
 
@@ -26,44 +26,44 @@ const CAMP_NAMES = ['Base Camp', 'Camp I', 'Camp II', 'Camp III', 'High Camp', '
 */
 
 // Trail segment paths between milestones (6 segments for perspective taper)
-// Segment 0: Start (195,395) → $100K (280,345) — wide right swing
-// Segment 1: $100K (280,345) → $250K (110,300) — wide left swing
-// Segment 2: $250K (110,300) → $500K (275,258) — medium right swing
-// Segment 3: $500K (275,258) → $1M (130,218) — medium left swing
-// Segment 4: $1M (130,218) → $5M (250,165) — narrow right swing
+// Segment 0: $100K trailhead → $200K — wide right swing
+// Segment 1: $200K → $500K — wide left swing
+// Segment 2: $500K → $1M — medium right swing
+// Segment 3: $1M → $2M — medium left swing
+// Segment 4: $2M → $5M — narrow right swing
 // Segment 5: $5M (250,165) → $10M (195,95) — narrow center approach
 
 const TRAIL_SEGMENTS = [
   {
-    // Start → $100K (balanced curve — GPT 5.4 v3 moderated)
+    // $100K trailhead → $200K
     path: 'M 195 385 C 217 371, 300 341, 285 322',
     strokeWidth: 5.5,
     glowWidth: 10,
     len: 124,
   },
   {
-    // $100K → $250K (controlled left bend — GPT 5.4 v3 moderated)
+    // $200K → $500K
     path: 'M 285 322 C 270 303, 111 297, 108 275',
     strokeWidth: 5.5,
     glowWidth: 9.5,
     len: 196,
   },
   {
-    // $250K → $500K (controlled right bend — GPT 5.4 v3 moderated)
+    // $500K → $1M
     path: 'M 108 275 C 105 253, 264 250, 272 230',
     strokeWidth: 4.5,
     glowWidth: 8,
     len: 186,
   },
   {
-    // $500K → $1M (controlled left bend — GPT 5.4 v3 moderated)
+    // $1M → $2M
     path: 'M 272 230 C 280 210, 151 197, 145 178',
     strokeWidth: 3.5,
     glowWidth: 6.5,
     len: 154,
   },
   {
-    // $1M → $5M (curved summit approach)
+    // $2M → $5M
     path: 'M 145 178 C 134 155, 215 166, 245 152',
     strokeWidth: 2.5,
     glowWidth: 4.5,
@@ -82,12 +82,12 @@ const TRAIL_SEGMENTS = [
 // Combined full trail path (for reference / player position interpolation)
 const TRAIL_PATH = TRAIL_SEGMENTS.map(s => s.path).join(' ');
 
-// Trail milestones ($100K–$5M) — positioned on the compressed trail switchbacks
+// Trail milestones ($200K-$5M) positioned on the original switchbacks.
 const TRAIL_MILESTONES = [
-  { label: '$100K', camp: 'Base Camp', value: 100000,   x: 285, y: 322, labelSide: 'right' },
-  { label: '$250K', camp: 'Camp I',    value: 250000,   x: 108, y: 275, labelSide: 'left' },
-  { label: '$500K', camp: 'Camp II',   value: 500000,   x: 272, y: 230, labelSide: 'right' },
-  { label: '$1M',   camp: 'Camp III',  value: 1000000,  x: 145, y: 178, labelSide: 'left' },
+  { label: '$200K', camp: 'Base Camp', value: 200000,   x: 285, y: 322, labelSide: 'right' },
+  { label: '$500K', camp: 'Camp I',    value: 500000,   x: 108, y: 275, labelSide: 'left' },
+  { label: '$1M',   camp: 'Camp II',   value: 1000000,  x: 272, y: 230, labelSide: 'right' },
+  { label: '$2M',   camp: 'Camp III',  value: 2000000,  x: 145, y: 178, labelSide: 'left' },
   { label: '$5M',   camp: 'Camp IV',   value: 5000000,  x: 245, y: 152, labelSide: 'right' },
 ];
 
@@ -95,9 +95,9 @@ const TRAIL_MILESTONES = [
 const SUMMIT = { label: '$10M', value: 10000000, x: 195, y: 55 };
 
 const PHASE_INFO = {
-  pre: 'Aggressive growth mode. High risk compounds your account toward the $87.5K anchor. 1R reward now matches 1R risk.',
-  anchor: 'Balanced zone. Risk is at the Kelly-style 33% level, with reward fixed to 1:1.',
-  model: 'Decay active. Risk shrinks as portfolio grows, protecting gains while reward stays 1:1.',
+  pre: 'Recovery mode holds planned risk at 15% of current strategy equity. Losses never increase the risk percentage.',
+  anchor: 'Early ascent. The smooth curve starts at 15% at $100K and declines toward 10% at $500K.',
+  model: 'Preservation ascent. Risk percentage keeps falling while planned dollar risk rises smoothly toward the summit.',
 };
 
 /* ───────────────────────────────────────────
@@ -107,7 +107,7 @@ const PHASE_INFO = {
 function getPlayerPosition(eq) {
   // Trail ends at $5M — no segment past it, so cap waypoints there
   const waypoints = [
-    { value: 20000, x: 195, y: 385 },
+    { value: START_EQUITY, x: 195, y: 385 },
     ...TRAIL_MILESTONES.map(m => ({ value: m.value, x: m.x, y: m.y })),
   ];
 
@@ -161,7 +161,7 @@ const flameStyle = { animation: 'flameFlicker 2s ease-in-out infinite', transfor
    Sub-components
    ─────────────────────────────────────────── */
 
-function RiskGauge({ riskPct, riskDol }) {
+function RiskGauge({ riskPct = 0, riskDol = 0 }) {
   const sev = riskSeverity(riskPct);
   const textCls = sev === 'safe' ? 'text-amber-400' : sev === 'elevated' ? 'text-orange-400' : 'text-rose-400';
   const barCls = sev === 'safe' ? 'bg-amber-500' : sev === 'elevated' ? 'bg-orange-500' : 'bg-rose-500';
@@ -501,32 +501,29 @@ function MountainTrail({ summitData, eq }) {
 
       </g>{/* end feather mask */}
 
-      {/* ─── MILESTONES ($100K–$5M) ─── */}
+      {/* ─── MILESTONES ($200K-$5M) ─── */}
       {TRAIL_MILESTONES.map((ms, i) => {
         const mData = summitData.miles[i];
         const achieved = mData?.achieved;
         const isNext = mData?.isNext;
-        const is100k = ms.label === '$100K';
         // Sync milestone pop-in with trail reaching it (end of segment i)
         const totalLen = TRAIL_SEGMENTS.reduce((s, g) => s + g.len, 0);
         const totalTime = 2.0;
         const delay = 0.15 + TRAIL_SEGMENTS.slice(0, i + 1).reduce((s, g) => s + Math.max(0.08, (g.len / totalLen) * totalTime), 0);
-        // Per-milestone custom pill offsets (GPT 5.4 spatial analysis)
-        // Each offset places pill top-left at (dot.x + ox, dot.y + oy)
+        // Per-milestone pill offsets preserve the original mountain composition.
         const PILL_OFFSETS = {
-          '$100K': { ox: 2, oy: -47 },      // right of dot, right 1 down 1
-          '$250K': { ox: -89, oy: -27 },   // left of dot, up 3 right 2
-          '$500K': { ox: 12, oy: -32 },    // right of dot, pushed down 6
-          '$1M':   { ox: -94, oy: -27 },   // left of dot, compensate for dot+trail down 4
-          '$5M':   { ox: 16, oy: -15 },    // right of dot, pushed up 4
+          '$200K': { ox: 14, oy: -16 },
+          '$500K': { ox: 12, oy: -32 },
+          '$1M':   { ox: -94, oy: -27 },
+          '$2M':   { ox: 14, oy: -16 },
+          '$5M':   { ox: 16, oy: -15 },
         };
         const offset = PILL_OFFSETS[ms.label] || { ox: 14, oy: -16 };
         const pillRectX = ms.x + offset.ox;
         const pillRectY = ms.y + offset.oy;
         const pillCenterX = pillRectX + 38; // 76/2 = 38 (half pill width)
         const pillCenterY = pillRectY + 16; // 32/2 = 16 (half pill height)
-        // Force $100K to always be visible (persistent milestone)
-        const forceVisible = is100k && achieved;
+        const forceVisible = false;
         // Progressive sizing: $5M is baseline, each step down 7% bigger
         const lastIdx = TRAIL_MILESTONES.length - 1;
         const pillScale = Math.pow(1.03, lastIdx - i);
@@ -659,10 +656,10 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
   const [showCurve, setShowCurve] = useState(false);
   const [showPhaseInfo, setShowPhaseInfo] = useState(false);
   const [dismissAlert, setDismissAlert] = useState(() => sessionStorage.getItem('dd-dismiss') === '1');
-  const [exploreEq, setExploreEq] = useState(20000);
+  const [exploreEq, setExploreEq] = useState(START_EQUITY);
   const eq = trades.currentEquity;
   const phase = getPhase(eq);
-  const rPct = trades.nextRisk.pct * 100;
+  const rPct = (trades.nextRisk.pct || 0) * 100;
   const rSev = riskSeverity(rPct);
   const rColor = rSev === 'safe' ? 'text-amber-400' : rSev === 'elevated' ? 'text-orange-400' : 'text-red-500';
   const hasTrades = trades.stats.totalTrades > 0;
@@ -703,7 +700,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
 
   // Summit tracker — milestone trail data
   const summitData = useMemo(() => {
-    const start = 20000;
+    const start = START_EQUITY;
     const achievedCount = MILES.filter(m => eq >= m.v).length;
     const lastAchievedIdx = MILES.reduce((acc, m, i) => eq >= m.v ? i : acc, -1);
     const nextIdx = lastAchievedIdx + 1;
@@ -976,8 +973,8 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
               Portfolio Value
             </div>
             <div
-              className="font-bold font-mono tabular-nums text-white leading-none"
-              style={{ fontSize: '56px', letterSpacing: '-0.04em', textShadow: '0 2px 20px rgba(0,0,0,0.5)' }}
+              className="tradevault-hero-equity font-bold font-mono tabular-nums text-white leading-none"
+              style={{ letterSpacing: '-0.04em', textShadow: '0 2px 20px rgba(0,0,0,0.5)' }}
             >
               ${fmt(eq)}
             </div>
@@ -1083,16 +1080,16 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
               <div>
                 <input
                   type="range"
-                  min={20000}
-                  max={110000}
-                  step={500}
-                  value={exploreEq}
-                  onChange={e => setExploreEq(+e.target.value)}
+                  min={0}
+                  max={1000}
+                  step={1}
+                  value={e2s(exploreEq)}
+                  onChange={e => setExploreEq(s2e(+e.target.value))}
                   className="w-full accent-[#00e5cc] h-2 rounded-full appearance-none cursor-pointer"
                   style={{ background: '#1a2030' }}
                 />
                 <div className="flex justify-between text-[10px] text-slate-600 font-mono tabular-nums mt-1 px-0.5">
-                  <span>$20K</span><span>$100K</span>
+                  <span>$100K</span><span>$10M</span>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2 text-center">
@@ -1113,7 +1110,7 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
                 <div className="flex items-start gap-2 bg-amber-500/5 border border-amber-500/15 rounded-lg px-3 py-2">
                   <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
                   <p className="text-[11px] text-slate-400 leading-relaxed">
-                    Below $87.5K, decay sizing is aggressive by design. With 1:1 RR, the reward target matches the same 1R dollar risk.
+                    Early-stage sizing is intentionally aggressive. The percentage declines continuously as equity rises, while a gross 1R win matches the planned dollar risk.
                   </p>
                 </div>
               )}
@@ -1203,7 +1200,14 @@ export default function Home({ trades, settings, onOpenTradeEntry }) {
               </span>
             </div>
 
-            <RiskGauge riskPct={rPct} riskDol={trades.nextRisk.dol} />
+            {trades.nextRisk.status === 'target-reached' ? (
+              <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-4 text-center">
+                <div className="text-lg font-bold text-amber-300">Summit reached</div>
+                <p className="mt-1 text-xs text-slate-400">The challenge does not issue a post-target risk recommendation.</p>
+              </div>
+            ) : (
+              <RiskGauge riskPct={rPct} riskDol={trades.nextRisk.dol || 0} />
+            )}
 
             <button
               onClick={() => setShowPhaseInfo(!showPhaseInfo)}

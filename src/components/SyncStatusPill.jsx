@@ -42,7 +42,7 @@ export default function SyncStatusPill({
       disabled={disabled}
       aria-label={'Sync status: ' + copy + '. Click to sync now.'}
       title={copy + ' - click to sync now'}
-      className={'flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold shadow-lg backdrop-blur-sm transition-all disabled:opacity-60 ' + getSyncToneClasses(status) + ' ' + className}
+      className={'flex min-h-11 items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold shadow-lg backdrop-blur-sm transition-all disabled:opacity-60 ' + getSyncToneClasses(status) + ' ' + className}
     >
       <SyncStatusIcon status={status} />
       <span>{copy}</span>

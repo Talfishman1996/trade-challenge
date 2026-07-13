@@ -135,7 +135,7 @@ const mergeDatasets = (existingData, incomingData, now = Date.now()) => {
   const latestDataset = incoming.lastModified >= existing.lastModified ? incoming : existing;
   const merged = {
     ...latestDataset,
-    initialEquity: latestDataset.initialEquity || existing.initialEquity || incoming.initialEquity || 20000,
+    initialEquity: latestDataset.initialEquity || existing.initialEquity || incoming.initialEquity || 100000,
     trades: Array.from(tradeMap.values()),
     tombstones: Array.from(tombstoneMap.values()),
     lastModified: Math.max(existing.lastModified, incoming.lastModified, now),

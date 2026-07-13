@@ -36,7 +36,7 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
     const val = e.target.value.replace(/[^0-9]/g, '');
     setEqInput(val);
     const num = parseInt(val, 10);
-    if (!isNaN(num) && num >= 100 && num <= 10000000) {
+    if (!isNaN(num) && num >= 1000 && num <= 10000000) {
       settings.setInitialEquity(num);
       trades.setInitialEquity(num);
     }
@@ -168,7 +168,7 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
         <div>
           <div className="flex justify-between items-center mb-2">
             <div className="flex items-center gap-2">
-              <label className="text-sm text-slate-400">Max Risk Override</label>
+              <label className="text-sm text-slate-400">Max Risk Warning</label>
               <ControlModeBadge mode="Soft" />
             </div>
             <span className={'text-sm font-bold font-mono bg-deep px-2 py-0.5 rounded-md border border-line tabular-nums ' +
@@ -189,6 +189,7 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
             <span>Off</span>
             <span>20%</span>
           </div>
+          <p className="mt-1.5 text-[10px] leading-relaxed text-slate-500">Cosmetic warning threshold only. It never modifies the canonical sizing curve.</p>
         </div>
 
         {/* Tilt Lock */}
@@ -202,14 +203,17 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
               <p className="text-[10px] text-slate-500 mt-0.5">Warns before trading during a losing streak and adds override friction</p>
             </div>
             <button
+              type="button"
+              role="switch"
+              aria-label="Tilt Lock"
+              aria-checked={settings.tiltLockEnabled}
               onClick={() => settings.setTiltLockEnabled(!settings.tiltLockEnabled)}
-              className={'relative w-10 h-5 rounded-full transition-colors duration-200 ' +
-                (settings.tiltLockEnabled ? 'bg-blue-500' : 'bg-elevated border border-line')}
+              className="relative h-11 w-12 shrink-0"
             >
-              <div
-                className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-200"
-                style={{ left: settings.tiltLockEnabled ? 22 : 2 }}
-              />
+              <span className={'absolute inset-x-0 top-2 h-7 rounded-full transition-colors duration-200 ' +
+                (settings.tiltLockEnabled ? 'bg-blue-500' : 'bg-elevated border border-line')} />
+              <span className="absolute top-3 h-5 w-5 rounded-full bg-white shadow-sm transition-all duration-200"
+                style={{ left: settings.tiltLockEnabled ? 26 : 4 }} />
             </button>
           </div>
 
@@ -298,7 +302,7 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
               className="w-full bg-deep border border-line rounded-xl text-xl font-bold font-mono text-white py-3 pl-10 pr-4 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all tabular-nums"
             />
           </div>
-          <p className="text-[10px] text-slate-500 mt-1.5">Only affects new calculations if no trades logged.</p>
+          <p className="text-[10px] text-slate-500 mt-1.5">The canonical challenge starts at $100K. A lower value enters 15% recovery sizing; existing trade snapshots are never rewritten.</p>
         </div>
 
         <div className="border-t border-line/50 pt-4">
@@ -310,16 +314,16 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
           </div>
           <input
             type="range"
-            min={40}
-            max={75}
+            min={50}
+            max={85}
             step={1}
             value={settings.winRate}
             onChange={e => settings.setWinRate(+e.target.value)}
             className="w-full"
           />
           <div className="flex justify-between text-xs text-slate-600 mt-1">
-            <span>40%</span>
-            <span>75%</span>
+            <span>50%</span>
+            <span>85%</span>
           </div>
         </div>
 
@@ -331,7 +335,7 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
             </span>
           </div>
           <div className="bg-deep rounded-xl border border-line px-3 py-2 text-xs text-slate-500 leading-relaxed">
-            Fixed RR: the decay engine still sizes 1R, and wins/losses now use the same 1R dollar amount.
+            Gross 1:1 RR: a modeled win earns the same dollar amount placed at risk. Journal equity uses your manually entered net P&amp;L after fees, funding, and slippage.
           </div>
         </div>
       </div>
@@ -349,14 +353,17 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
             <p className="text-[10px] text-slate-500 mt-0.5">Show P&L as R-multiples (e.g. +2.1R) instead of dollars</p>
           </div>
           <button
+            type="button"
+            role="switch"
+            aria-label="R-Multiple Mode"
+            aria-checked={settings.rMultipleDisplay}
             onClick={() => settings.setRMultipleDisplay(!settings.rMultipleDisplay)}
-            className={'relative w-10 h-5 rounded-full transition-colors duration-200 ' +
-              (settings.rMultipleDisplay ? 'bg-blue-500' : 'bg-elevated border border-line')}
+            className="relative h-11 w-12 shrink-0"
           >
-            <div
-              className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-200"
-              style={{ left: settings.rMultipleDisplay ? 22 : 2 }}
-            />
+            <span className={'absolute inset-x-0 top-2 h-7 rounded-full transition-colors duration-200 ' +
+              (settings.rMultipleDisplay ? 'bg-blue-500' : 'bg-elevated border border-line')} />
+            <span className="absolute top-3 h-5 w-5 rounded-full bg-white shadow-sm transition-all duration-200"
+              style={{ left: settings.rMultipleDisplay ? 26 : 4 }} />
           </button>
         </div>
       </div>
@@ -392,11 +399,9 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
           </button>
         </div>
 
-        {syncConfig?.lastSync && (
-          <div className="text-xs text-slate-500 text-center">
-            Last background sync: {new Date(syncConfig.lastSync).toLocaleString()}
-          </div>
-        )}
+        <div className="text-xs text-slate-500 text-center">
+          Last successful sync: {syncConfig?.lastSync ? new Date(syncConfig.lastSync).toLocaleString() : 'Not yet'}
+        </div>
 
         <div className="flex justify-center">
           <SyncStatusPill
@@ -536,9 +541,9 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
         <div className="text-sm text-slate-400">
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-white font-bold tracking-widest">TRADEVAULT</span> <span className="text-slate-600">v3.0</span>
         </div>
-        <p className="text-xs text-slate-500 font-medium mt-0.5">$20K {'\u2192'} $10M</p>
+        <p className="text-xs text-slate-500 font-medium mt-0.5">$100K {'\u2192'} $10M</p>
         <p className="text-xs text-slate-500 leading-relaxed mt-1">
-          {'\u2154'} Power Decay position sizing with fixed 1:1 risk/reward. The decay engine sizes 1R; RR only controls the reward/loss symmetry.
+          Smooth `100k-pchip-v1` position sizing with fixed gross 1:1 risk/reward and win/loss-only trade outcomes.
           {' '}Trades and edits save locally first and sync into your shared cloud vault in the background.
         </p>
       </div>

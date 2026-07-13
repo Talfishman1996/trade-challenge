@@ -1,8 +1,74 @@
 @import "tailwindcss";
 
+html {
+  width: 100%;
+  min-height: 100%;
+  background: #0D1117;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body,
+#root {
+  width: 100%;
+  min-height: 100dvh;
+  margin: 0;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.tradevault-hero-equity {
+  font-size: clamp(2.65rem, 14vw, 3.5rem);
+}
+
 /* Safe area for iPhone notch/home indicator */
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media (max-width: 639px) and (pointer: coarse) {
+  button:not([role="switch"]),
+  select,
+  input:not([type="range"]):not([type="file"]) {
+    min-height: 44px;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 359px) {
+  .tradevault-hero-equity {
+    font-size: 2.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 @theme {

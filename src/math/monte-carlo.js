@@ -1,4 +1,4 @@
-import { E0, SMIN, FM, MILES } from './constants.js';
+import { START_EQUITY, TARGET_EQUITY, FM, MILES } from './constants.js';
 import { lg } from './format.js';
 import { TARGET_RR, rN, rO, rF, geoGrowth, lossesToWipe, calcStreak } from './risk.js';
 
@@ -93,17 +93,17 @@ export const computeHeavyMetrics = (dEq, dWr) => {
     };
   });
 
-  // Survival simulation (2000 paths from $20K to anchor)
+  // Challenge completion simulation from the canonical $100K trailhead.
   const SP = 2000, sr = mb32(777);
   let reached = 0;
   for (let i = 0; i < SP; i++) {
-    let ce = SMIN, alive = true;
-    for (let t = 0; t < 200 && alive; t++) {
+    let ce = START_EQUITY, active = true;
+    for (let t = 0; t < 400 && active; t++) {
       const cr = rN(ce);
       ce = sr() < w ? ce * (1 + cr * b) : ce * (1 - cr);
       ce = Math.max(ce, 1);
-      if (ce >= E0) { reached++; alive = false; }
-      if (ce <= 1) alive = false;
+      if (ce >= TARGET_EQUITY) { reached++; active = false; }
+      if (ce <= 1 || cr <= 0) active = false;
     }
   }
 
@@ -148,7 +148,7 @@ export const computeMilestones = (dEq, dWr, simSeed) => {
     return t;
   };
 
-  const NP = 500, MT = 400;
+  const NP = 2000, MT = 400;
 
   const runMC = (fn, seed) => {
     const rng = mb32(seed);

@@ -1,6 +1,6 @@
-const SYNC_KEY = 'tradevault-sync';
+const SYNC_KEY = 'tradevault-sync-100k-v1';
 const API = 'https://tradevault-sync.talfishmanbusiness.workers.dev';
-export const DEFAULT_SYNC_ID = 'tradevault-main';
+export const DEFAULT_SYNC_ID = 'tradevault-main-100k-v1';
 
 export const getSyncConfig = () => {
   try {

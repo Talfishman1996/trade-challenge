@@ -1,5 +1,6 @@
-export const DATA_STORAGE_KEY = 'risk-engine-data';
-export const DATA_SCHEMA_VERSION = 2;
+export const DATA_STORAGE_KEY = 'tradevault-data-100k-v1';
+export const DATA_SCHEMA_VERSION = 3;
+export const DEFAULT_INITIAL_EQUITY = 100000;
 
 const DAY_MS = 86400000;
 
@@ -9,6 +10,14 @@ const asNumber = (value, fallback = 0) => {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
 };
+
+export function requireNonzeroPnl(value) {
+  const pnl = Number(value);
+  if (!Number.isFinite(pnl) || pnl === 0) {
+    throw new Error('Trade P&L must be a nonzero number');
+  }
+  return pnl;
+}
 
 const normalizeStringArray = (value) => {
   if (!Array.isArray(value)) return [];
@@ -85,7 +94,7 @@ export function createTradeUid() {
 
 export function getClientId() {
   try {
-    const key = 'tradevault-client-id';
+    const key = 'tradevault-client-id-100k-v1';
     const existing = localStorage.getItem(key);
     if (existing) return existing;
     const next = createTradeUid().replace(/^trade:/, 'client:');
@@ -119,6 +128,9 @@ export function freshTradeDefaults(now = Date.now()) {
     direction: 'long',
     openDate: null,
     date: todayLocalDate(),
+    modelId: null,
+    modelStatus: null,
+    revision: 0,
   };
 }
 
@@ -159,6 +171,11 @@ export function normalizeTrade(rawTrade, now = Date.now()) {
   normalized.exitPrice = asNumber(raw.exitPrice, 0);
   normalized.mae = raw.mae == null ? null : asNumber(raw.mae, 0);
   normalized.mfe = raw.mfe == null ? null : asNumber(raw.mfe, 0);
+  normalized.modelId = typeof raw.modelId === 'string' && raw.modelId
+    ? raw.modelId
+    : (asNumber(raw.riskDol, 0) > 0 ? 'legacy-unversioned' : null);
+  normalized.modelStatus = typeof raw.modelStatus === 'string' ? raw.modelStatus : null;
+  normalized.revision = Math.max(0, Math.floor(asNumber(raw.revision, 0)));
 
   return normalized;
 }
@@ -207,7 +224,7 @@ function latestByUid(records, pickTimestamp) {
   return map;
 }
 
-export function normalizeDataset(rawData, fallbackInitialEquity = 20000) {
+export function normalizeDataset(rawData, fallbackInitialEquity = DEFAULT_INITIAL_EQUITY) {
   const raw = rawData || {};
   const now = Date.now();
   const normalizedTrades = sortTrades(
@@ -236,7 +253,7 @@ export function normalizeDataset(rawData, fallbackInitialEquity = 20000) {
   };
 }
 
-export function mergeDatasets(localData, remoteData, fallbackInitialEquity = 20000) {
+export function mergeDatasets(localData, remoteData, fallbackInitialEquity = DEFAULT_INITIAL_EQUITY) {
   const local = normalizeDataset(localData, fallbackInitialEquity);
   const remote = normalizeDataset(remoteData, fallbackInitialEquity);
 
@@ -266,7 +283,7 @@ export function mergeDatasets(localData, remoteData, fallbackInitialEquity = 200
   }, fallbackInitialEquity);
 }
 
-export function readStoredDataset(fallbackInitialEquity = 20000) {
+export function readStoredDataset(fallbackInitialEquity = DEFAULT_INITIAL_EQUITY) {
   try {
     const raw = localStorage.getItem(DATA_STORAGE_KEY);
     if (raw) return normalizeDataset(JSON.parse(raw), fallbackInitialEquity);
@@ -274,7 +291,7 @@ export function readStoredDataset(fallbackInitialEquity = 20000) {
   return normalizeDataset(null, fallbackInitialEquity);
 }
 
-export function writeStoredDataset(data, fallbackInitialEquity = 20000) {
+export function writeStoredDataset(data, fallbackInitialEquity = DEFAULT_INITIAL_EQUITY) {
   const normalized = normalizeDataset(data, fallbackInitialEquity);
   try {
     localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(normalized));

@@ -8,6 +8,8 @@ Thumbs.db
 
 # Temp artifacts
 *.png
+!docs/original-mobile-100k/evidence/*.png
+docs/original-mobile-100k/evidence/._*
 *.backup
 *.gpt54*
 screenshots.json

@@ -113,6 +113,7 @@ export default function TradeEntry({
 
   const inputRef = useRef(null);
   const imageInputRef = useRef(null);
+  const sheetRef = useRef(null);
 
   const applyEntrySeed = (seed = {}) => {
     const nextDirection = seed.direction || 'long';
@@ -280,6 +281,32 @@ export default function TradeEntry({
   }, [open, editData, entrySeed]);
 
   useEffect(() => {
+    if (!open) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const handleKeyDown = event => {
+      if (event.key === 'Escape') closeSheet();
+      if (event.key !== 'Tab' || !sheetRef.current) return;
+      const focusable = [...sheetRef.current.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')];
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open, isSubmitting]);
+
+  useEffect(() => {
     if (!open || !isEditMode || isSubmitting || !onEdit || !editData || !editSnapshot) return;
     const original = JSON.stringify({
       pnl: editData.pnl,
@@ -423,30 +450,30 @@ export default function TradeEntry({
 
           {/* Bottom sheet */}
           <motion.div
+            ref={sheetRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="trade-entry-title"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-            drag="y"
-            dragConstraints={{ top: 0 }}
-            dragElastic={0.2}
-            onDragEnd={(_, info) => { if (info.offset.y > 120) closeSheet(); }}
-            className="fixed bottom-0 inset-x-0 z-[60] bg-surface border-t border-line rounded-t-3xl max-h-[90vh] flex flex-col"
+            className="fixed inset-0 z-[60] flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-surface sm:inset-x-0 sm:bottom-0 sm:top-auto sm:h-auto sm:max-h-[92dvh] sm:rounded-t-3xl sm:border-t sm:border-line"
           >
             <div className="flex-1 overflow-y-auto min-h-0">
             <div className="p-5 pb-3 max-w-lg mx-auto">
               {/* Handle bar */}
-              <div className="flex justify-center mb-4">
+              <div className="hidden sm:flex justify-center mb-4">
                 <div className="w-10 h-1 bg-line rounded-full" />
               </div>
 
               {/* Header */}
-              <div className="flex justify-between items-center mb-5">
-                <h2 className="text-lg font-bold text-white">
+              <div className="sticky top-0 z-20 -mx-5 -mt-5 mb-5 flex items-center justify-between border-b border-line/60 bg-surface/95 px-5 pb-3 pt-[max(12px,env(safe-area-inset-top))] backdrop-blur-lg sm:static sm:mx-0 sm:mt-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pt-0 sm:backdrop-blur-none">
+                <h2 id="trade-entry-title" className="text-lg font-bold text-white">
                   {isEditMode ? 'Edit Trade' : 'Log Trade'}
                   {isEditMode && <span className="text-sm font-normal text-slate-500 ml-2">#{editData.id}</span>}
                 </h2>
-                <button onClick={closeSheet} className="p-3 text-slate-500 hover:text-white rounded-lg transition-colors">
+                <button type="button" onClick={closeSheet} aria-label="Close trade entry" className="p-3 text-slate-500 hover:text-white rounded-lg transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -522,7 +549,7 @@ export default function TradeEntry({
                   />
                 </div>
                 <p className="text-[10px] text-slate-500 mt-1.5">
-                  Type the actual dollar result. Use WIN/LOSS above to set the sign.
+                  Enter the final nonzero net result after fees, funding, and slippage. Use WIN/LOSS above to set the sign.
                 </p>
               </div>
 
@@ -788,11 +815,11 @@ export default function TradeEntry({
                   </div>
                   <div className="flex-1 bg-deep rounded-lg p-3 border border-line text-center">
                     <div className="text-slate-500 mb-1">1R Risk</div>
-                    <div className="text-red-400 font-bold">${fmt(nextRisk.dol)}</div>
+                    <div className="text-red-400 font-bold">{nextRisk.dol == null ? 'Complete' : '$' + fmt(nextRisk.dol)}</div>
                   </div>
                   <div className="flex-1 bg-deep rounded-lg p-3 border border-line text-center">
                     <div className="text-slate-500 mb-1">Risk %</div>
-                    <div className="text-red-400 font-bold">{(nextRisk.pct * 100).toFixed(1)}%</div>
+                    <div className="text-red-400 font-bold">{nextRisk.pct == null ? '--' : (nextRisk.pct * 100).toFixed(1) + '%'}</div>
                   </div>
                 </div>
               )}
@@ -800,7 +827,7 @@ export default function TradeEntry({
             </div>
             </div>
             {/* Fixed save button */}
-            <div className="shrink-0 px-5 pb-8 pt-3 max-w-lg mx-auto w-full border-t border-line/50">
+            <div className="w-full max-w-lg shrink-0 border-t border-line/50 bg-surface/95 px-5 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-lg sm:mx-auto sm:pb-8">
               <div className="space-y-2">
                 {isEditMode && onDelete && (
                   showDeleteConfirm ? (

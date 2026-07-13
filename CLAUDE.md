@@ -1,4 +1,4 @@
-# TradeVault - 20K to 10M Challenge
+# TradeVault - 100K to 10M Challenge
 
 ## Project Type
 React single-page app -- mobile-first trading risk dashboard with trade tracker.
@@ -21,11 +21,13 @@ npx vite preview     # Preview production build
 ```
 
 ## Architecture
-- **Math model:** 2/3 Power Decay position sizing with fixed 1:1 risk/reward.
-- **Key function:** `rN(equity)` returns the active decay risk fraction at the given equity level.
-- **Anchor equity:** $87,500, where active risk is about 33%.
-- **Trade outcome rule:** a win adds one decay-sized 1R amount; a loss subtracts the same decay-sized 1R amount.
-- **Plan:** `docs/2026-04-16-rebuild-plan.md` has the current implementation plan and recovery context.
+- **Math model:** `100k-pchip-v1` smooth dollar-risk interpolation with fixed gross 1:1 risk/reward.
+- **Key function:** `plannedRisk(equity)` returns status, dollar risk, risk fraction, segment, and model ID.
+- **Anchors:** $100K/15%, $200K/12.5%, $500K/10%, $1M/7.5%, $2M/6%, $5M/5%, $10M/3%.
+- **Trade outcome rule:** new entries are win or loss only and require manually entered nonzero net P&L.
+- **Plan:** `docs/original-mobile-100k/IMPLEMENTATION-PLAN.md` is the active implementation contract.
+- **Protected baseline:** never modify `CHECKPOINT-PRE-100K-MIGRATION-2026-07-12`.
+- **Advisor rule:** do not invoke Fable 5 for this program.
 
 ## File Layout
 ```
@@ -41,6 +43,6 @@ src/
 - Mobile-first responsive design (bottom tabs on mobile)
 - Dark theme (slate-950 background, emerald/rose/amber accents)
 - Monospace numbers (font-mono tabular-nums)
-- localStorage for local persistence (key: "risk-engine-data")
+- localStorage for local persistence (key: `tradevault-data-100k-v1`)
 - Cloudflare Worker sync is active for cross-device use
 - No user auth layer yet -- internal single-user tool

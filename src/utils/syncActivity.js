@@ -1,4 +1,4 @@
-const SYNC_ACTIVITY_KEY = 'tradevault-sync-activity';
+const SYNC_ACTIVITY_KEY = 'tradevault-sync-activity-100k-v1';
 const LIMIT = 12;
 
 export const readSyncActivity = () => {

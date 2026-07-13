@@ -10,7 +10,7 @@ export const Tip = ({ text }) => {
         type="button"
         onClick={() => setOpen(v => !v)}
         onBlur={() => setOpen(false)}
-        className="inline-flex items-center cursor-help"
+        className="inline-flex h-11 w-11 -m-4 items-center justify-center cursor-help"
         aria-label="Show help"
       >
         <Info className="w-3 h-3 text-slate-600 group-hover:text-blue-400 transition-colors" />
@@ -30,9 +30,9 @@ export const Tip = ({ text }) => {
 export const ChartLegend = () => (
   <div className="flex flex-wrap justify-center gap-5 mt-4">
     {[
-      { c: 'border-emerald-500', l: '\u2154 Power' },
-      { c: 'border-blue-500', l: '\u2153 Power' },
-      { c: 'border-amber-500 border-dashed', l: 'Fixed 33%' },
+      { c: 'border-emerald-500', l: 'Risk %' },
+      { c: 'border-amber-500', l: 'Dollar risk' },
+      { c: 'border-blue-500 border-dashed', l: 'PCHIP anchors' },
     ].map((x, i) => (
       <div key={i} className="flex items-center gap-2">
         <div className={'w-5 h-0 border-t-2 ' + x.c} />

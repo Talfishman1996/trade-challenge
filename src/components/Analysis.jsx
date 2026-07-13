@@ -24,6 +24,8 @@ const TABS = [
   { id: 'projections', l: 'Projections', s: 'Proj', ic: Rocket },
 ];
 
+const formatSimProbability = value => value >= 99.95 ? '>99.9%' : `${value.toFixed(1)}%`;
+
 function SectionDivider({ title, subtitle }) {
   return (
     <div className="pt-5 pb-2 border-t border-line/60 mt-5">
@@ -342,13 +344,31 @@ export default function Analysis({ trades, settings }) {
                         <span className="text-slate-500">Win Rate</span>
                         <span className="font-mono font-bold text-white">{projWr}%</span>
                       </div>
-                      <input type="range" min={30} max={90} step={1} value={projWr}
+                      <input type="range" min={50} max={85} step={1} value={projWr}
                         onChange={e => setProjWr(+e.target.value)} className="w-full" />
+                      <div className="mt-2 grid grid-cols-3 gap-2">
+                        {[65, 70, 75].map(rate => (
+                          <button
+                            key={rate}
+                            type="button"
+                            onClick={() => setProjWr(rate)}
+                            className={'min-h-11 rounded-lg border text-xs font-bold font-mono transition-colors ' +
+                              (projWr === rate ? 'border-blue-400/40 bg-blue-500/15 text-blue-300' : 'border-line bg-surface text-slate-400')}
+                          >
+                            {rate}% WR
+                          </button>
+                        ))}
+                      </div>
                     </div>
                     <div className="flex justify-between text-xs bg-surface rounded-lg border border-line px-3 py-2">
                       <span className="text-slate-500">Reward/Risk</span>
                       <span className="font-mono font-bold text-white">1.0:1</span>
                     </div>
+                    <div className="flex justify-between text-xs bg-surface rounded-lg border border-line px-3 py-2">
+                      <span className="text-slate-500">Planning cadence</span>
+                      <span className="font-mono font-bold text-white">3.5 trades/month</span>
+                    </div>
+                    <p className="text-[11px] leading-relaxed text-slate-500">Win/loss outcomes only. A gross win earns the same planned dollar amount placed at risk; actual journal equity always uses your manually entered net P&amp;L.</p>
                     <div className="flex justify-between text-xs text-slate-500">
                       <span>From ${fmt(realEq)}</span>
                       <button onClick={() => { setProjWr(wr); }} className="text-blue-400/60 hover:text-blue-400 transition-colors">
@@ -380,8 +400,8 @@ export default function Analysis({ trades, settings }) {
                   </div>
                   <div className="w-px h-6 bg-line/50" />
                   <div className="text-center">
-                    <div className={'font-bold tabular-nums ' + (ltw <= 3 ? 'text-red-500' : ltw <= 10 ? 'text-amber-400' : 'text-emerald-400')}>{ltw >= 200 ? '200+' : ltw}</div>
-                    <div className="text-[10px] text-slate-500 mt-0.5">ruin horizon<Tip text="Consecutive losing trades before your account reaches ~$0. Higher is safer." /></div>
+                    <div className={'font-bold tabular-nums ' + (ltw <= 3 ? 'text-red-500' : ltw <= 10 ? 'text-amber-400' : 'text-emerald-400')}>{ltw >= 500 ? '500+' : ltw}</div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">to $1<Tip text="Consecutive modeled losses before strategy equity reaches approximately $1. This is a mathematical horizon, not a liquidation forecast." /></div>
                   </div>
                 </div>
 
@@ -414,8 +434,8 @@ export default function Analysis({ trades, settings }) {
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-center">
                         <div className="bg-surface rounded-lg p-2.5"><div className="text-xl font-bold font-mono text-emerald-400 tabular-nums">{msF[0].bestN}</div><div className="text-[10px] text-slate-500 mt-0.5">wins min</div></div>
-                        <div className="bg-surface rounded-lg p-2.5"><div className="text-xl font-bold font-mono text-white tabular-nums">{msF[0].mcN.median != null ? '~' + msF[0].mcN.median : '\u2014'}</div><div className="text-[10px] text-slate-500 mt-0.5">trades exp</div>{msF[0].mcN.p25 != null && <div className="text-[10px] text-slate-600 font-mono mt-0.5">{msF[0].mcN.p25 + '\u2013' + msF[0].mcN.p75}</div>}</div>
-                        <div className="bg-surface rounded-lg p-2.5"><div className={'text-xl font-bold font-mono tabular-nums ' + (msF[0].mcN.reached > 60 ? 'text-emerald-400' : msF[0].mcN.reached > 30 ? 'text-amber-400' : 'text-red-400')}>{msF[0].mcN.reached.toFixed(0)}%</div><div className="text-[10px] text-slate-500 mt-0.5">probability</div></div>
+                        <div className="bg-surface rounded-lg p-2.5"><div className="text-xl font-bold font-mono text-white tabular-nums">{msF[0].mcN.median != null ? '~' + Math.round(msF[0].mcN.median / 3.5) : '\u2014'}</div><div className="text-[10px] text-slate-500 mt-0.5">months exp</div>{msF[0].mcN.p25 != null && <div className="text-[10px] text-slate-600 font-mono mt-0.5">{Math.round(msF[0].mcN.p25 / 3.5) + '\u2013' + Math.round(msF[0].mcN.p75 / 3.5) + ' mo'}</div>}</div>
+                        <div className="bg-surface rounded-lg p-2.5"><div className={'text-xl font-bold font-mono tabular-nums ' + (msF[0].mcN.reached > 60 ? 'text-emerald-400' : msF[0].mcN.reached > 30 ? 'text-amber-400' : 'text-red-400')}>{formatSimProbability(msF[0].mcN.reached)}</div><div className="text-[10px] text-slate-500 mt-0.5">sim reach</div></div>
                       </div>
                     </div>
 
@@ -428,8 +448,8 @@ export default function Analysis({ trades, settings }) {
                             <div className="h-1 bg-elevated rounded-full overflow-hidden mb-2"><div className="h-full bg-emerald-500/60 rounded-full" style={{ width: Math.max(0.5, m.progress) + '%' }} /></div>
                             <div className="grid grid-cols-3 gap-2 text-center text-xs">
                               <div><span className="font-bold font-mono text-emerald-400 tabular-nums">{m.bestN}</span> <span className="text-slate-500">wins</span></div>
-                              <div><span className="font-bold font-mono text-slate-300 tabular-nums">{m.mcN.median != null ? '~' + m.mcN.median : '\u2014'}</span> <span className="text-slate-500">trades</span></div>
-                              <div><span className={'font-bold font-mono tabular-nums ' + (m.mcN.reached > 60 ? 'text-emerald-400' : m.mcN.reached > 30 ? 'text-amber-400' : 'text-red-400')}>{m.mcN.reached.toFixed(0)}%</span> <span className="text-slate-500">reach</span></div>
+                              <div><span className="font-bold font-mono text-slate-300 tabular-nums">{m.mcN.median != null ? '~' + Math.round(m.mcN.median / 3.5) : '\u2014'}</span> <span className="text-slate-500">months</span></div>
+                              <div><span className={'font-bold font-mono tabular-nums ' + (m.mcN.reached > 60 ? 'text-emerald-400' : m.mcN.reached > 30 ? 'text-amber-400' : 'text-red-400')}>{formatSimProbability(m.mcN.reached)}</span> <span className="text-slate-500">sim reach</span></div>
                             </div>
                           </div>
                         ))}
@@ -444,7 +464,7 @@ export default function Analysis({ trades, settings }) {
                   </div>
                 )}
 
-                <p className="text-xs text-slate-500 text-center font-mono">500 paths {'\u00D7'} 200 trades {'\u00B7'} Seed #{simSeed}</p>
+                <p className="text-xs text-slate-500 text-center font-mono">2,000 paths {'\u00D7'} 400 trades {'\u00B7'} Seed #{simSeed}</p>
               </div>
             )}
 
@@ -452,7 +472,7 @@ export default function Analysis({ trades, settings }) {
         </AnimatePresence>
       </div>
 
-      <p className="text-center text-slate-500 text-xs font-mono">{wr}% WR {'\u00B7'} {TARGET_RR.toFixed(1)} RR {'\u00B7'} {'\u2154'} Power Decay</p>
+      <p className="text-center text-slate-500 text-xs font-mono">{wr}% WR {'\u00B7'} {TARGET_RR.toFixed(1)}:1 gross RR {'\u00B7'} 100k-pchip-v1</p>
     </div>
   );
 }
