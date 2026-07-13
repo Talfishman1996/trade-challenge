@@ -15,7 +15,7 @@ const SIGNATURE_KEY = 'tradevault-sync-signatures-100k-v3';
 const ASSET_STATE_KEY = 'tradevault-sync-assets-100k-v1';
 const CLIENT_KEY = 'tradevault-client-id-100k-v1';
 const MAX_BATCH_SIZE = 500;
-const CANONICAL_APP_URL = 'https://tradevault100k.pages.dev/';
+const CANONICAL_APP_URL = 'https://vault100k.pages.dev/';
 
 const bundledSharedCapability = () => {
   try {

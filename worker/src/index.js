@@ -10,6 +10,7 @@ const LEGACY_API_ENABLED = false;
 
 const ALLOWED_ORIGINS = new Set([
   'https://tradevault-100k-prototype.pages.dev',
+  'https://vault100k.pages.dev',
   'https://tradevault100k.pages.dev',
   'https://tradevault-b7t.pages.dev',
   'http://127.0.0.1:5173',
@@ -17,7 +18,7 @@ const ALLOWED_ORIGINS = new Set([
 ]);
 
 const isAllowedOrigin = (origin) => !origin || ALLOWED_ORIGINS.has(origin) ||
-  /^https:\/\/[a-z0-9-]+\.(?:tradevault-100k-prototype|tradevault100k|tradevault-b7t)\.pages\.dev$/.test(origin);
+  /^https:\/\/[a-z0-9-]+\.(?:tradevault-100k-prototype|vault100k|tradevault100k|tradevault-b7t)\.pages\.dev$/.test(origin);
 
 const corsHeadersFor = (origin) => ({
   'Access-Control-Allow-Origin': origin || '*',

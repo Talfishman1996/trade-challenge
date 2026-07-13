@@ -5,14 +5,15 @@ Status: v3.2 zero-setup shared release live; immutable original checkpoint prese
 
 ## Production Map
 
-- Canonical Pages origin: `https://tradevault100k.pages.dev/`
-- Compatibility origin: `https://tradevault-b7t.pages.dev/`
+- Canonical Pages origin: `https://vault100k.pages.dev/`
+- Compatibility origins: `https://tradevault100k.pages.dev/`, `https://tradevault-b7t.pages.dev/`
 - Worker API: `https://tradevault-sync.talfishmanbusiness.workers.dev`
-- Cloudflare Pages project: `tradevault100k`
+- Canonical Cloudflare Pages project: `vault100k`
 - Worker: `tradevault-sync`
-- Worker version: `3acd0bbe-bedf-4979-ac44-78a5f23417a8`
-- Pages deployment: `https://8146301a.tradevault100k.pages.dev/`
-- Compatibility deployment: `https://2cf30c5f.tradevault-b7t.pages.dev/`
+- Worker version: `5e415d25-784d-4947-b1f9-641dc78791c9`
+- Canonical deployment: `https://0971bdde.vault100k.pages.dev/`
+- Legacy canonical deployment: `https://207c886e.tradevault100k.pages.dev/`
+- Compatibility deployment: `https://b0cc686b.tradevault-b7t.pages.dev/`
 - Durable Object binding/class: `TRADE_VAULTS` / `TradeVault`
 - Shared-vault build configuration: `tmp/tradevault-production.local` (Git-ignored)
 - Git branch: `codex/tradevault-original-mobile-100k`
@@ -36,7 +37,7 @@ Never use destructive reset or checkout commands in the active dirty worktree.
 
 ## Device Access
 
-Open `https://tradevault100k.pages.dev/` on any device. A production build reads
+Open `https://vault100k.pages.dev/` on any device. A production build reads
 the shared-vault configuration at build time, connects before React mounts, and
 routes directly to Home. There is no login, private-link paste, fragment, or
 first-device setup flow. Settings copies and shares only the clean canonical URL.
@@ -117,20 +118,19 @@ handling, downgrade blocking, backup download, restore, and asset retention:
 ```bash
 npm run deploy:worker
 npm run test:sync-backend
-npm run deploy:cloudflare
-npm run deploy:compatibility
+npm run deploy:pages
 ```
 
 `npm run deploy:all` executes that sequence. Wrangler must use `--branch master`
-for both Pages projects; otherwise a local `codex/...` branch becomes only a
-preview deployment. Keep both origins on the same build until compatibility is
+for all Pages projects; otherwise a local `codex/...` branch becomes only a
+preview deployment. Keep all three origins on the same build until compatibility is
 formally retired.
 
 ## Post-Deploy Smoke
 
 ```bash
 curl -fsS https://tradevault-sync.talfishmanbusiness.workers.dev/health
-curl -fsS https://tradevault100k.pages.dev/ | \
+curl -fsS https://vault100k.pages.dev/ | \
   rg 'TradeVault - \$100K to \$10M|manifest.webmanifest|index-.*\.js'
 ```
 
@@ -151,7 +151,7 @@ trade after both devices agree.
 - Fresh-browser clean-URL smoke opened Home and Settings without a setup gate,
   recorded successful real-vault sync, had no fragment or lateral overflow at
   390x844, and logged zero console errors.
-- Canonical and compatibility origins serve the same production asset hash.
+- Canonical and both compatibility origins serve the same production asset hash.
 - The production service worker precaches HTML plus every hashed JS/CSS chunk and
   serves cached navigation immediately while revalidating in the background.
 
@@ -165,5 +165,5 @@ trade after both devices agree.
   collector, so abandoned image storage can grow over time.
 - A downloaded backup contains encrypted records, while image ciphertext remains
   in the vault asset store.
-- The compatibility origin stays live until every device is confirmed on the
+- Both compatibility origins stay live until every device is confirmed on the
   canonical origin.

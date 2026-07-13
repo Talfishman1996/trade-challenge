@@ -17,7 +17,7 @@ const API = process.env.TRADEVAULT_SYNC_API ||
 const vaultId = generateVaultSecret(24);
 const secret = generateVaultSecret(32);
 const endpoint = `${API}/v3/vault/${vaultId}`;
-const origin = 'https://tradevault100k.pages.dev';
+const origin = 'https://vault100k.pages.dev';
 
 const request = async (path, { token = secret, method = 'GET', body } = {}) => {
   const response = await fetch(`${endpoint}/${path}`, {

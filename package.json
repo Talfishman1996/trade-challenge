@@ -13,9 +13,10 @@
     "check": "npm run test && npm run test:worker-local && npm run test:e2e && npm audit --audit-level=high",
     "build": "vite build && node scripts/inject-sw-assets.mjs",
     "preview": "vite preview",
-    "deploy:cloudflare": "wrangler pages deploy dist --project-name tradevault100k --branch master",
+    "deploy:cloudflare": "wrangler pages deploy dist --project-name vault100k --branch master",
+    "deploy:legacy-canonical": "wrangler pages deploy dist --project-name tradevault100k --branch master",
     "deploy:compatibility": "wrangler pages deploy dist --project-name tradevault --branch master",
-    "deploy:pages": "npm run build && npm run deploy:cloudflare && npm run deploy:compatibility",
+    "deploy:pages": "npm run build && npm run deploy:cloudflare && npm run deploy:legacy-canonical && npm run deploy:compatibility",
     "deploy:prototype": "wrangler pages deploy dist --project-name tradevault-100k-prototype",
     "deploy:worker": "wrangler deploy --config worker/wrangler.toml",
     "deploy:all": "npm run check && npm run deploy:worker && npm run test:sync-backend && npm run deploy:pages"

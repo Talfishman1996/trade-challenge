@@ -63,5 +63,5 @@ e2e/              Playwright mobile, PWA, export, and zero-setup sync tests
 
 The immutable pre-migration checkpoint is
 `CHECKPOINT-PRE-100K-MIGRATION-2026-07-12`. Current production is Cloudflare
-Pages at `https://tradevault100k.pages.dev/`; GitHub Actions verifies the build
+Pages at `https://vault100k.pages.dev/`; GitHub Actions verifies the build
 but does not host or deploy it.

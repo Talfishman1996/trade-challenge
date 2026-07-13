@@ -4,8 +4,8 @@ Captured: 2026-07-13 PDT
 
 ## Release Under Test
 
-- Canonical production: `https://tradevault100k.pages.dev/`
-- Compatibility origin: `https://tradevault-b7t.pages.dev/`
+- Canonical production: `https://vault100k.pages.dev/`
+- Compatibility origins: `https://tradevault100k.pages.dev/` and `https://tradevault-b7t.pages.dev/`
 - Worker: `https://tradevault-sync.talfishmanbusiness.workers.dev`
 - Protected checkpoint: `CHECKPOINT-PRE-100K-MIGRATION-2026-07-12`
 - Protected commit/tree: `ed845a576e38741c9d7b70888774cc9fe623bc6f` /
@@ -45,6 +45,7 @@ Current evidence:
 - `evidence-hardening/05-home-landscape-844x390.jpg`
 - `evidence-hardening/06-live-production-v3-settings.png`
 - `evidence-hardening/07-live-zero-setup-settings.png`
+- `evidence-hardening/08-live-vault100k-settings.png`
 
 The current visual browser audit produced no console warnings or errors. The
 settings screenshot intentionally shows a sync error because it was rendered
@@ -53,7 +54,7 @@ mocked and local v3 automated flows pass.
 
 ## Live Production Verification
 
-- Worker version `3acd0bbe-bedf-4979-ac44-78a5f23417a8` reports
+- Worker version `5e415d25-784d-4947-b1f9-641dc78791c9` reports
   `tradevault-sync-v3` with encrypted assets/backups enabled and legacy API off.
 - Isolated remote smoke passed ciphertext trade/image round trips, wrong-secret
   rejection, v2 downgrade blocking, encrypted backup/restore, stale-edit
@@ -65,10 +66,10 @@ mocked and local v3 automated flows pass.
 - A fresh browser at the clean canonical URL receives the shared configuration,
   reaches Home and synced Settings without setup, has no fragment or horizontal
   overflow, and emits zero console errors.
-- Cloudflare Pages immutable deployment:
-  `https://8146301a.tradevault100k.pages.dev/`.
-- Compatibility deployment `https://2cf30c5f.tradevault-b7t.pages.dev/` serves
-  the same JS bundle and service worker as the canonical origin.
+- Canonical immutable deployment: `https://0971bdde.vault100k.pages.dev/`.
+- Legacy canonical deployment: `https://207c886e.tradevault100k.pages.dev/`.
+- Compatibility deployment: `https://b0cc686b.tradevault-b7t.pages.dev/`.
+- All three origins serve the same JS bundle and service worker.
 
 ## Data Guarantees Exercised
 
