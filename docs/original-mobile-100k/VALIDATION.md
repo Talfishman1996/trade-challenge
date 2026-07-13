@@ -65,6 +65,8 @@ mocked and local v3 automated flows pass.
   one backup card, no horizontal overflow, and zero console errors.
 - Cloudflare Pages immutable deployment:
   `https://287e240f.tradevault100k.pages.dev/`.
+- Compatibility deployment `https://96b81c73.tradevault-b7t.pages.dev/` serves
+  the same JS bundle and service worker as the canonical origin.
 
 ## Data Guarantees Exercised
 

@@ -12,6 +12,7 @@ Status: v3 hardened release live; immutable original checkpoint preserved
 - Worker: `tradevault-sync`
 - Worker version: `3acd0bbe-bedf-4979-ac44-78a5f23417a8`
 - Pages deployment: `https://287e240f.tradevault100k.pages.dev/`
+- Compatibility deployment: `https://96b81c73.tradevault-b7t.pages.dev/`
 - Durable Object binding/class: `TRADE_VAULTS` / `TradeVault`
 - Private capability source: `tmp/tradevault-production.local` (Git-ignored)
 - Git branch: `codex/tradevault-original-mobile-100k`
@@ -130,11 +131,13 @@ handling, downgrade blocking, backup download, restore, and asset retention:
 npm run deploy:worker
 npm run test:sync-backend
 npm run deploy:cloudflare
+npm run deploy:compatibility
 ```
 
 `npm run deploy:all` executes that sequence. Wrangler must use `--branch master`
-for the canonical Pages deployment; otherwise a local `codex/...` branch becomes
-only a preview deployment.
+for both Pages projects; otherwise a local `codex/...` branch becomes only a
+preview deployment. Keep both origins on the same build until compatibility is
+formally retired.
 
 ## Post-Deploy Smoke
 
