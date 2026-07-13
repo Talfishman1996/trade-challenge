@@ -4,13 +4,30 @@ dist/
 *.local
 .DS_Store
 ._*
+**/._*
 Thumbs.db
 
 # Temp artifacts
 *.png
+!public/tradevault-icon-192.png
+!public/tradevault-icon-512.png
 !docs/original-mobile-100k/evidence/*.png
 docs/original-mobile-100k/evidence/._*
+!docs/original-mobile-100k/evidence-audit/*.png
+docs/original-mobile-100k/evidence-audit/._*
+!docs/original-mobile-100k/evidence-hardening/*.png
+docs/original-mobile-100k/evidence-hardening/._*
 *.backup
 *.gpt54*
 screenshots.json
 liquid-glass-nav.html
+
+# Local generation and validation workspaces
+/.codex/
+/dist-prototype/
+/output/
+/tmp/
+/worker/.wrangler/
+/worker/tmp/
+/docs/model-analysis/
+/docs/20k-to-10mil Challenge Model Analysis.pdf

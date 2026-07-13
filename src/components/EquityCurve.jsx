@@ -107,7 +107,7 @@ export default function EquityCurve({ trades, height = 280 }) {
 
       {/* Main equity chart — step line */}
       <div style={{ height: mainHeight }}>
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} initialDimension={{ width: 320, height: mainHeight }}>
           <AreaChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
             <defs>
               <linearGradient id="eqFill" x1="0" y1="0" x2="0" y2="1">
@@ -154,7 +154,7 @@ export default function EquityCurve({ trades, height = 280 }) {
 
       {/* Drawdown underwater chart */}
       <div style={{ height: ddHeight }} className="mt-1">
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} initialDimension={{ width: 320, height: ddHeight }}>
           <AreaChart data={chartData} margin={{ top: 0, right: 10, left: -10, bottom: 0 }}>
             <defs>
               <linearGradient id="ddFill" x1="0" y1="0" x2="0" y2="1">

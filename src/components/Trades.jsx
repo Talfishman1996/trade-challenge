@@ -105,20 +105,20 @@ export default function Trades({ trades, settings, onOpenTradeEntry, onDuplicate
   return (
     <div className="px-4 pt-4 md:pt-6 pb-6 max-w-lg md:max-w-3xl mx-auto space-y-4">
       {/* Header + Log Trade */}
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-bold text-white">Trade History</h2>
-        <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-base font-bold text-white min-[360px]:text-lg">Trade History</h2>
+        <div className="flex shrink-0 items-center gap-1.5 min-[360px]:gap-2">
           {latestTrade && (
             <button
               onClick={onDuplicateLastTrade}
-              className="flex items-center gap-1.5 px-3 py-2 bg-surface text-slate-300 text-sm font-semibold rounded-xl border border-line active:scale-[0.97] hover:bg-elevated transition-all"
+              className="flex items-center gap-1 px-2 py-2 text-xs font-semibold text-slate-300 bg-surface rounded-xl border border-line active:scale-[0.97] hover:bg-elevated transition-all min-[360px]:gap-1.5 min-[360px]:px-3 min-[360px]:text-sm"
             >
-              <CopyPlus className="w-4 h-4" /> Repeat Last
+              <CopyPlus className="w-4 h-4" /> <span className="min-[360px]:hidden">Repeat</span><span className="hidden min-[360px]:inline">Repeat Last</span>
             </button>
           )}
           <button
             onClick={() => onOpenTradeEntry()}
-            className="flex items-center gap-1.5 px-3 py-2 bg-blue-500 text-white text-sm font-semibold rounded-xl active:scale-[0.97] hover:bg-blue-400 transition-all"
+            className="flex items-center gap-1 px-2.5 py-2 bg-blue-500 text-white text-xs font-semibold rounded-xl active:scale-[0.97] hover:bg-blue-400 transition-all min-[360px]:gap-1.5 min-[360px]:px-3 min-[360px]:text-sm"
           >
             <Plus className="w-4 h-4" /> Log
           </button>

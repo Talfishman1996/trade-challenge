@@ -3,8 +3,8 @@ import { Home as HomeIcon, List, BarChart3, Settings as SettingsIcon, AlertTrian
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSettings } from '../store/settings.js';
 import { useTrades } from '../store/trades.js';
-import { DEFAULT_SYNC_ID, ensurePrimarySyncConfig, getSyncConfig, pullFromBlobId, pushToBlobId, saveSyncConfig } from '../sync.js';
-import { mergeDatasets, normalizeDataset, readStoredDataset, writeStoredDataset, todayLocalDate } from '../utils/tradeData.js';
+import { ensurePrimarySyncConfig, hasVaultCapability, saveSyncConfig, setVaultCapability } from '../sync.js';
+import { todayLocalDate } from '../utils/tradeData.js';
 import { recordSyncActivity, readSyncActivity } from '../utils/syncActivity.js';
 import Home from './Home.jsx';
 import SyncStatusPill from './SyncStatusPill.jsx';
@@ -19,9 +19,9 @@ class ErrorBoundary extends Component {
         <div className="flex flex-col items-center justify-center p-8 text-center">
           <AlertTriangle className="w-8 h-8 text-amber-400 mb-3" />
           <p className="text-sm text-slate-400 mb-4">Something went wrong rendering this view.</p>
-          <button onClick={() => this.setState({ error: null })}
+          <button onClick={() => window.location.reload()}
             className="px-4 py-2 text-sm font-medium bg-elevated text-white rounded-lg hover:bg-line transition-colors">
-            Try Again
+            Reload App
           </button>
         </div>
       );
@@ -30,11 +30,28 @@ class ErrorBoundary extends Component {
   }
 }
 
-const Trades = React.lazy(() => import('./Trades.jsx'));
-const Analysis = React.lazy(() => import('./Analysis.jsx'));
-const Settings = React.lazy(() => import('./Settings.jsx'));
-const Celebration = React.lazy(() => import('./Celebration.jsx'));
-const TradeEntry = React.lazy(() => import('./TradeEntry.jsx'));
+const lazyWithDeployRecovery = (load, name) => React.lazy(async () => {
+  const recoveryKey = `tradevault-chunk-recovery-${name}`;
+  try {
+    const module = await load();
+    sessionStorage.removeItem(recoveryKey);
+    return module;
+  } catch (error) {
+    // A tab left open during a Pages deployment can reference a retired hashed chunk.
+    if (!sessionStorage.getItem(recoveryKey)) {
+      sessionStorage.setItem(recoveryKey, '1');
+      window.location.reload();
+      return new Promise(() => {});
+    }
+    throw error;
+  }
+});
+
+const Trades = lazyWithDeployRecovery(() => import('./Trades.jsx'), 'trades');
+const Analysis = lazyWithDeployRecovery(() => import('./Analysis.jsx'), 'analysis');
+const Settings = lazyWithDeployRecovery(() => import('./Settings.jsx'), 'settings');
+const Celebration = lazyWithDeployRecovery(() => import('./Celebration.jsx'), 'celebration');
+const TradeEntry = lazyWithDeployRecovery(() => import('./TradeEntry.jsx'), 'trade-entry');
 
 const TABS = [
   { id: 'home', label: 'Home', icon: HomeIcon },
@@ -49,9 +66,9 @@ const buildRapidEntrySeed = (trade) => {
     direction: trade.direction || 'long',
     isWin: trade.pnl >= 0,
     ticker: trade.ticker || '',
-    strategy: trade.strategy || '',
-    contracts: trade.contracts ? String(trade.contracts) : '',
-    setupTags: trade.setupTags || [],
+    contracts: '',
+    strategy: '',
+    setupTags: [],
     emotionTags: [],
     mistakes: [],
     tradeDate: todayLocalDate(),
@@ -77,6 +94,8 @@ const ViewLoader = ({ compact = false }) => (
 export default function App() {
   const [tab, setTab] = useState('home');
   const settings = useSettings();
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
   const trades = useTrades(settings.initialEquity);
   const [showTradeEntry, setShowTradeEntry] = useState(false);
   const [editTradeData, setEditTradeData] = useState(null);
@@ -87,6 +106,9 @@ export default function App() {
   const [syncInfo, setSyncInfo] = useState(() => ensurePrimarySyncConfig());
   const [syncPillStatus, setSyncPillStatus] = useState(() => (navigator.onLine ? 'ready' : 'offline'));
   const [syncActivity, setSyncActivity] = useState(() => readSyncActivity());
+  const [vaultReady, setVaultReady] = useState(() => hasVaultCapability());
+  const [privateLinkInput, setPrivateLinkInput] = useState('');
+  const [privateLinkError, setPrivateLinkError] = useState('');
   const [isForeground, setIsForeground] = useState(() => document.visibilityState === 'visible' && document.hasFocus());
   const toastTimer = useRef(null);
   const syncNoticeTimer = useRef(null);
@@ -113,6 +135,7 @@ export default function App() {
   const syncRef = trades.syncRef;
 
   const runSync = useCallback(async ({ silent = false, reason = 'manual' } = {}) => {
+    if (!hasVaultCapability()) return 'missing_capability';
     refreshSyncInfo();
     if (!navigator.onLine) {
       setSyncPillStatus('offline');
@@ -127,8 +150,22 @@ export default function App() {
       pushSyncActivity('syncing', reason, 'Manual sync started');
     }
     try {
-      const result = await syncRef.current?.();
-      refreshSyncInfo();
+      const response = await syncRef.current?.(settingsRef.current.syncPreferences);
+      const result = typeof response === 'string' ? response : response?.status;
+      if (response?.preferences) settingsRef.current.applySyncedPreferences(response.preferences);
+      if (response?.initialEquity) settingsRef.current.applySyncedInitialEquity(response.initialEquity);
+      if (result === 'error') {
+        setSyncPillStatus('error');
+        pushSyncActivity('error', reason, 'Sync failed');
+        if (!silent) showToast('Sync failed', 'error');
+        return 'error';
+      }
+      const successfulSync = {
+        ...ensurePrimarySyncConfig(),
+        lastSync: Date.now(),
+      };
+      saveSyncConfig(successfulSync);
+      setSyncInfo(successfulSync);
       const summary = describeSyncResult(result || 'in_sync');
       if (result === 'merged') {
         setSyncPillStatus('merged');
@@ -154,58 +191,34 @@ export default function App() {
     }
   }, [pushSyncActivity, refreshSyncInfo, showSyncNotice, showToast, syncRef]);
 
-  // Auto-sync: always use one shared internal sync space and silently migrate legacy per-link syncs
+  // The capability was captured from the private URL before React mounted.
   useEffect(() => {
-    const initSync = async () => {
-      const hash = window.location.hash;
-      const match = hash.match(/sync=([a-zA-Z0-9-]+)/);
-      const config = getSyncConfig();
-      const legacyBlobId = match?.[1] && match[1] !== DEFAULT_SYNC_ID
-        ? match[1]
-        : (config?.blobId && config.blobId !== DEFAULT_SYNC_ID ? config.blobId : null);
-
-      ensurePrimarySyncConfig();
-      refreshSyncInfo();
-
-      if (window.location.hash) {
-        window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
-      }
-
-      if (legacyBlobId) {
-        try {
-          const legacyCloud = await pullFromBlobId(legacyBlobId);
-          if (legacyCloud && Array.isArray(legacyCloud.trades)) {
-            const { lastModified, ...rest } = legacyCloud;
-            const localData = readStoredDataset(trades.initialEquity);
-            const merged = mergeDatasets(
-              localData,
-              normalizeDataset({ ...rest, _lastModified: lastModified || Date.now() }, trades.initialEquity),
-              trades.initialEquity
-            );
-            writeStoredDataset({ ...merged, _lastModified: Date.now() }, trades.initialEquity);
-            await pushToBlobId(DEFAULT_SYNC_ID, merged);
-            saveSyncConfig({ blobId: DEFAULT_SYNC_ID, lastSync: Date.now() });
-            refreshSyncInfo();
-            pushSyncActivity('merged', 'boot', 'Migrated legacy sync into the always-on vault');
-          }
-        } catch {}
-      }
-
-      runSync({ silent: true, reason: 'boot' }).catch(() => {});
-    };
-    initSync();
+    if (!vaultReady) return;
+    ensurePrimarySyncConfig();
+    refreshSyncInfo();
+    runSync({ silent: true, reason: 'boot' }).catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const syncIntervalMs = showTradeEntry ? 15000 : 30000;
+  const preferenceSyncStarted = useRef(false);
+
+  useEffect(() => {
+    if (!vaultReady) return;
+    if (!preferenceSyncStarted.current) {
+      preferenceSyncStarted.current = true;
+      return;
+    }
+    runSync({ silent: true, reason: 'settings' }).catch(() => {});
+  }, [runSync, settings.preferencesUpdatedAt, vaultReady]);
 
   // Adaptive periodic sync — fast while actively entering trades, slower while browsing, off in background
   useEffect(() => {
-    if (!isForeground || !navigator.onLine) return undefined;
+    if (!vaultReady || !isForeground || !navigator.onLine) return undefined;
     const id = setInterval(() => {
       runSync({ silent: true, reason: 'interval' }).catch(() => {});
     }, syncIntervalMs);
     return () => clearInterval(id);
-  }, [isForeground, runSync, syncIntervalMs]);
+  }, [isForeground, runSync, syncIntervalMs, vaultReady]);
 
   useEffect(() => {
     const handleForegroundState = () => {
@@ -225,7 +238,7 @@ export default function App() {
       window.removeEventListener('focus', handleForegroundState);
       window.removeEventListener('blur', handleForegroundState);
     };
-  }, [runSync]);
+  }, [runSync, vaultReady]);
 
   useEffect(() => {
     const handleConnectivity = () => {
@@ -237,6 +250,7 @@ export default function App() {
       refreshSyncInfo();
       setSyncPillStatus('ready');
       pushSyncActivity('ready', 'connectivity', 'Device is back online');
+      runSync({ silent: true, reason: 'connectivity' }).catch(() => {});
     };
     window.addEventListener('online', handleConnectivity);
     window.addEventListener('offline', handleConnectivity);
@@ -244,7 +258,7 @@ export default function App() {
       window.removeEventListener('online', handleConnectivity);
       window.removeEventListener('offline', handleConnectivity);
     };
-  }, [pushSyncActivity, refreshSyncInfo]);
+  }, [pushSyncActivity, refreshSyncInfo, runSync]);
 
   const openTradeEntry = (trade = null, options = {}) => {
     const seededEntry = !!options.entrySeed;
@@ -312,6 +326,55 @@ export default function App() {
       showToast('Could not delete trade', 'error');
     }
   };
+
+  const connectPrivateLink = () => {
+    if (!setVaultCapability(privateLinkInput)) {
+      setPrivateLinkError('That private app link is incomplete or invalid.');
+      return;
+    }
+    setPrivateLinkError('');
+    setVaultReady(true);
+    window.location.reload();
+  };
+
+  if (!vaultReady) {
+    return (
+      <div className="min-h-screen bg-deep text-slate-200 flex items-center justify-center px-5 py-10">
+        <div className="w-full max-w-sm rounded-3xl border border-line bg-surface p-6 shadow-2xl">
+          <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-blue-500/20 bg-blue-500/10">
+            <Shield className="h-6 w-6 text-blue-400" />
+          </div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">Private Vault</p>
+          <h1 className="text-2xl font-bold text-white">Open your private app link</h1>
+          <p className="mt-2 text-sm leading-relaxed text-slate-400">
+            This device has not been connected yet. Paste the full private TradeVault link once; future visits on this device open Home automatically.
+          </p>
+          <input
+            type="url"
+            value={privateLinkInput}
+            onChange={event => { setPrivateLinkInput(event.target.value); setPrivateLinkError(''); }}
+            onKeyDown={event => { if (event.key === 'Enter') connectPrivateLink(); }}
+            placeholder="Paste private TradeVault link"
+            autoCapitalize="none"
+            autoCorrect="off"
+            className="mt-5 min-h-12 w-full rounded-xl border border-line bg-deep px-3.5 text-sm text-white outline-none transition-all placeholder:text-slate-600 focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/15"
+          />
+          {privateLinkError && <p className="mt-2 text-xs text-red-400">{privateLinkError}</p>}
+          <button
+            type="button"
+            onClick={connectPrivateLink}
+            disabled={!privateLinkInput.trim()}
+            className="mt-3 min-h-12 w-full rounded-xl bg-blue-500 px-4 text-sm font-bold text-white transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Open TradeVault
+          </button>
+          <p className="mt-4 text-center text-[11px] leading-relaxed text-slate-600">
+            No account or login. Anyone with the private link can access this vault, so keep it private.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-deep text-slate-200 flex flex-col md:flex-row">
@@ -391,7 +454,7 @@ export default function App() {
                 {tab === 'home' && <Home trades={trades} settings={settings} onOpenTradeEntry={openTradeEntry} />}
                 {tab === 'trades' && <Trades trades={trades} settings={settings} onOpenTradeEntry={openTradeEntry} onDuplicateLastTrade={() => openRapidEntryFromTrade(trades.trades[trades.trades.length - 1])} showToast={showToast} />}
                 {tab === 'analysis' && <Analysis trades={trades} settings={settings} />}
-                {tab === 'settings' && <Settings settings={settings} trades={trades} showToast={showToast} syncInfo={syncInfo} syncStatus={syncPillStatus} syncActivity={syncActivity} onRunSync={() => runSync({ silent: false, reason: 'settings' })} />}
+                {tab === 'settings' && <Settings settings={settings} trades={trades} showToast={showToast} syncInfo={syncInfo} syncStatus={syncPillStatus} syncActivity={syncActivity} onRunSync={() => runSync({ silent: false, reason: 'manual' })} />}
               </Suspense>
             </ErrorBoundary>
           </motion.div>

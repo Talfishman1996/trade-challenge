@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
 import { getPhase, plannedRisk } from '../math/risk.js';
 import { MILES, START_EQUITY } from '../math/constants.js';
-import { pushToCloud, pullFromCloud } from '../sync.js';
+import { pushToCloud, pullFromCloud, waitForPendingPushes } from '../sync.js';
 import { clearAllImages, deleteImage } from '../utils/imageDB.js';
 import {
   createTradeUid,
@@ -63,7 +63,7 @@ export const useTrades = (initialEquity = START_EQUITY) => {
 
   dataRef.current = data;
 
-  const persist = useCallback(newData => {
+  const persist = useCallback((newData, { sync = true } = {}) => {
     const normalized = normalizeDataset(newData, initialEquity);
     const stamped = {
       ...normalized,
@@ -73,7 +73,7 @@ export const useTrades = (initialEquity = START_EQUITY) => {
     const stored = writeStoredDataset(stamped, initialEquity);
     dataRef.current = stored;
     setData(stored);
-    pushToCloud(stored).catch(() => {});
+    if (sync) pushToCloud(stored).catch(() => {});
     return stored;
   }, [initialEquity]);
 
@@ -102,7 +102,9 @@ export const useTrades = (initialEquity = START_EQUITY) => {
 
     const pnl = requireNonzeroPnl(tradeData.pnl);
     const equityAfter = Math.max(1, eq + pnl);
-    const maxId = currentData.trades.length > 0 ? Math.max(...currentData.trades.map(t => t.id)) : 0;
+    const maxId = currentData.trades.length > 0
+      ? Math.max(0, ...currentData.trades.map(t => Number.isFinite(Number(t.id)) ? Number(t.id) : 0))
+      : 0;
     const now = Date.now();
     const risk = plannedRisk(eq);
     const trade = {
@@ -182,6 +184,8 @@ export const useTrades = (initialEquity = START_EQUITY) => {
       uid: trade.uid,
       deletedAt: Date.now(),
       updatedAt: Date.now(),
+      serverRevision: trade.serverRevision || 0,
+      serverUpdatedAt: trade.serverUpdatedAt || 0,
     };
     persist({
       ...currentData,
@@ -197,9 +201,21 @@ export const useTrades = (initialEquity = START_EQUITY) => {
     setData(prev => {
       if (prev.trades.length === 0) return prev;
       const removed = prev.trades[prev.trades.length - 1];
-      undoStackRef.current = [...undoStackRef.current, removed];
+      const deletedAt = Date.now();
+      undoStackRef.current = [...undoStackRef.current, { trade: removed, deletedAt }];
       setUndoStackLen(undoStackRef.current.length);
-      const next = { ...prev, trades: prev.trades.slice(0, -1), _lastModified: Date.now() };
+      const next = {
+        ...prev,
+        trades: prev.trades.slice(0, -1),
+        tombstones: upsertTombstone(prev.tombstones, {
+          uid: removed.uid,
+          deletedAt,
+          updatedAt: deletedAt,
+          serverRevision: removed.serverRevision || 0,
+          serverUpdatedAt: removed.serverUpdatedAt || 0,
+        }),
+        _lastModified: deletedAt,
+      };
       writeStoredDataset(next, initialEquity);
       dataRef.current = next;
       pushToCloud(next).catch(() => {});
@@ -212,11 +228,23 @@ export const useTrades = (initialEquity = START_EQUITY) => {
   const redoLastTrade = useCallback(() => {
     const stack = undoStackRef.current;
     if (stack.length === 0) return;
-    const trade = stack[stack.length - 1];
+    const { trade } = stack[stack.length - 1];
     undoStackRef.current = stack.slice(0, -1);
     setUndoStackLen(undoStackRef.current.length);
     setData(prev => {
-      const next = { ...prev, trades: [...prev.trades, trade], _lastModified: Date.now() };
+      const updatedAt = Date.now();
+      const revived = {
+        ...trade,
+        deletedAt: null,
+        updatedAt,
+        revision: (trade.revision || 0) + 1,
+      };
+      const next = {
+        ...prev,
+        trades: recalcTradeChain([...prev.trades, revived], prev.initialEquity || initialEquity),
+        tombstones: (prev.tombstones || []).filter(item => item.uid !== revived.uid),
+        _lastModified: updatedAt,
+      };
       writeStoredDataset(next, initialEquity);
       dataRef.current = next;
       pushToCloud(next).catch(() => {});
@@ -254,7 +282,9 @@ export const useTrades = (initialEquity = START_EQUITY) => {
       const parsed = JSON.parse(json);
       if (parsed && Array.isArray(parsed.trades)) {
         undoStackRef.current = []; setUndoStackLen(0);
-        persist(normalizeDataset(parsed, initialEquity));
+        const currentData = dataRef.current;
+        const imported = normalizeDataset(parsed, initialEquity);
+        persist(mergeDatasets(currentData, imported, initialEquity));
         return true;
       }
       return false;
@@ -391,17 +421,20 @@ export const useTrades = (initialEquity = START_EQUITY) => {
   [currentEquity]);
 
   // Cloud sync: pull from cloud and merge
-  const syncFromCloud = useCallback(async () => {
-    const cloud = await pullFromCloud();
+  const syncFromCloud = useCallback(async (preferences = null) => {
+    const requestedData = dataRef.current;
+    const cloud = await pullFromCloud({ ...requestedData, preferences });
     const currentData = dataRef.current;
     if (!cloud || !Array.isArray(cloud.trades)) {
-      // No cloud data — push local up
-      if (currentData.trades.length > 0 || (currentData.tombstones || []).length > 0) {
-        const pushed = await pushToCloud(currentData);
-        return pushed ? 'pushed' : 'error';
-      }
-      return 'in_sync';
+      return { status: 'error' };
     }
+
+    const result = status => ({
+      status,
+      preferences: cloud.preferences || null,
+      initialEquity: cloud.initialEquity,
+    });
+
     const localData = normalizeDataset(currentData, initialEquity);
     const remoteData = normalizeDataset({
       ...cloud,
@@ -414,16 +447,16 @@ export const useTrades = (initialEquity = START_EQUITY) => {
     const mergedSig = datasetSignature(merged);
 
     if (mergedSig !== localSig) {
-      persist(merged);
-      return 'merged';
+      persist(merged, { sync: false });
+      return result('merged');
     }
 
     if (mergedSig !== remoteSig) {
       const pushed = await pushToCloud(localData);
-      return pushed ? 'pushed' : 'error';
+      return result(pushed ? 'pushed' : 'error');
     }
 
-    return 'in_sync';
+    return result('in_sync');
   }, [initialEquity, persist]);
 
   // Ref that always points to latest syncFromCloud (avoids stale closures in intervals)
@@ -431,6 +464,7 @@ export const useTrades = (initialEquity = START_EQUITY) => {
   syncRef.current = syncFromCloud;
 
   return {
+    syncDataset: data,
     trades: data.trades,
     currentEquity,
     peakEquity,

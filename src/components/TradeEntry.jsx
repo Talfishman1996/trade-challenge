@@ -2,8 +2,6 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, TrendingUp, TrendingDown, Calendar, ArrowUpRight, ArrowDownRight, Clock, ChevronDown, ImagePlus, Trash2, CopyPlus } from 'lucide-react';
 import { fmt } from '../math/format.js';
-import TagPicker from './TagPicker.jsx';
-import { SETUP_TAGS, EMOTION_TAGS, MISTAKE_TAGS, STRATEGY_OPTIONS } from '../store/tags.js';
 import { compressImage, saveImage, getImage, deleteImage } from '../utils/imageDB.js';
 import { daysBetweenLocalDates, todayLocalDate, toLocalDateString } from '../utils/tradeData.js';
 
@@ -74,13 +72,12 @@ export default function TradeEntry({
   const [amount, setAmount] = useState('');
   const [ticker, setTicker] = useState('');
 
-  // Strategy fields
+  // Retained internally so editing an older trade never erases hidden metadata.
   const [strategy, setStrategy] = useState('');
   const [contracts, setContracts] = useState('');
   const [entryPrice, setEntryPrice] = useState('');
   const [exitPrice, setExitPrice] = useState('');
 
-  // Tag fields
   const [setupTags, setSetupTags] = useState([]);
   const [emotionTags, setEmotionTags] = useState([]);
   const [mistakes, setMistakes] = useState([]);
@@ -103,8 +100,6 @@ export default function TradeEntry({
   const [notes, setNotes] = useState('');
 
   // Section toggles
-  const [strategyOpen, setStrategyOpen] = useState(false);
-  const [tagsOpen, setTagsOpen] = useState(false);
   const [mediaOpen, setMediaOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -114,6 +109,7 @@ export default function TradeEntry({
   const inputRef = useRef(null);
   const imageInputRef = useRef(null);
   const sheetRef = useRef(null);
+  const submittingRef = useRef(false);
 
   const applyEntrySeed = (seed = {}) => {
     const nextDirection = seed.direction || 'long';
@@ -151,8 +147,6 @@ export default function TradeEntry({
     setMae(seed.mae != null && seed.mae !== '' ? String(seed.mae) : '');
     setMfe(seed.mfe != null && seed.mfe !== '' ? String(seed.mfe) : '');
     setNotes(seed.notes || '');
-    setStrategyOpen(!!(nextStrategy || nextContracts || nextEntryPrice || nextExitPrice));
-    setTagsOpen(!!(nextSetupTags.length || nextEmotionTags.length || nextMistakes.length));
     setMediaOpen(!!nextImageKeys.length);
     setAdvancedOpen(!!((seed.mae != null && seed.mae !== '') || (seed.mfe != null && seed.mfe !== '')));
   };
@@ -161,9 +155,6 @@ export default function TradeEntry({
     direction,
     isWin,
     ticker,
-    strategy,
-    contracts,
-    setupTags,
     tradeDate: todayLocalDate(),
     openDate: '',
     entryTime: '',
@@ -181,10 +172,6 @@ export default function TradeEntry({
 
   const recentTickers = useMemo(
     () => buildRecentValues(recentTrades, trade => [trade.ticker]),
-    [recentTrades]
-  );
-  const recentSetupTags = useMemo(
-    () => buildRecentValues(recentTrades, trade => trade.setupTags || [], 8),
     [recentTrades]
   );
   const numericAmount = parseFloat((amount || '').replace(/,/g, ''));
@@ -275,6 +262,7 @@ export default function TradeEntry({
         setLastAutoSaveAt(null);
       }
       setIsSubmitting(false);
+      submittingRef.current = false;
       setShowDeleteConfirm(false);
       setTimeout(() => inputRef.current?.focus(), 300);
     }
@@ -339,7 +327,7 @@ export default function TradeEntry({
 
   const commitTrade = async (closeAfterSave = true) => {
     const num = numericAmount;
-    if (isNaN(num) || num <= 0 || isSubmitting) return;
+    if (isNaN(num) || num <= 0 || isSubmitting || submittingRef.current) return;
     const pnl = isWin ? num : -num;
 
     const tradeFields = {
@@ -355,6 +343,7 @@ export default function TradeEntry({
       mfe: mfe ? parseFloat(mfe) : null,
     };
 
+    submittingRef.current = true;
     setIsSubmitting(true);
     try {
       if (isEditMode && onEdit) {
@@ -372,6 +361,7 @@ export default function TradeEntry({
       setShowDeleteConfirm(false);
       setTimeout(() => inputRef.current?.focus(), 0);
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -418,19 +408,18 @@ export default function TradeEntry({
 
   const duration = calcDuration(openDate, tradeDate);
 
-  const tagCount = setupTags.length + emotionTags.length + mistakes.length;
-  const strategyCount = [strategy, contracts, entryPrice, exitPrice].filter(Boolean).length;
-
   const handleDelete = async () => {
-    if (!editData || !onDelete) return;
+    if (!editData || !onDelete || submittingRef.current) return;
     if (!showDeleteConfirm) {
       setShowDeleteConfirm(true);
       return;
     }
+    submittingRef.current = true;
     setIsSubmitting(true);
     try {
       await onDelete(editData.id);
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -460,7 +449,7 @@ export default function TradeEntry({
             transition={{ type: 'spring', stiffness: 400, damping: 35 }}
             className="fixed inset-0 z-[60] flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-surface sm:inset-x-0 sm:bottom-0 sm:top-auto sm:h-auto sm:max-h-[92dvh] sm:rounded-t-3xl sm:border-t sm:border-line"
           >
-            <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
             <div className="p-5 pb-3 max-w-lg mx-auto">
               {/* Handle bar */}
               <div className="hidden sm:flex justify-center mb-4">
@@ -582,99 +571,11 @@ export default function TradeEntry({
                 )}
               </div>
 
-              {/* === STRATEGY SECTION (collapsible) === */}
-              <Section title="Strategy & Sizing" open={strategyOpen} onToggle={() => setStrategyOpen(!strategyOpen)} count={strategyCount}>
-                <div className="space-y-3">
-                  {/* Strategy dropdown */}
-                  <div>
-                    <label className="text-[10px] text-slate-500 font-medium mb-1 block">Strategy</label>
-                    <select
-                      value={strategy}
-                      onChange={e => setStrategy(e.target.value)}
-                      className="w-full bg-surface border border-line rounded-lg text-sm text-white py-2.5 px-3 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all [color-scheme:dark]"
-                    >
-                      <option value="">Select strategy...</option>
-                      {STRATEGY_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </div>
-                  {/* Contracts + Entry/Exit Price — 2-column grid */}
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <label className="text-[10px] text-slate-500 font-medium mb-1 block">Size</label>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={contracts}
-                        onChange={e => setContracts(e.target.value.replace(/[^0-9]/g, ''))}
-                        placeholder="0"
-                        className="w-full bg-surface border border-line rounded-lg text-sm font-mono text-white py-2.5 px-2.5 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all tabular-nums placeholder:text-slate-700"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-slate-500 font-medium mb-1 block">Entry $</label>
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={entryPrice}
-                        onChange={handleDecimalInput(setEntryPrice)}
-                        placeholder="0.00"
-                        className="w-full bg-surface border border-line rounded-lg text-sm font-mono text-white py-2.5 px-2.5 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all tabular-nums placeholder:text-slate-700"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-slate-500 font-medium mb-1 block">Exit $</label>
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={exitPrice}
-                        onChange={handleDecimalInput(setExitPrice)}
-                        placeholder="0.00"
-                        className="w-full bg-surface border border-line rounded-lg text-sm font-mono text-white py-2.5 px-2.5 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all tabular-nums placeholder:text-slate-700"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </Section>
-
-              {/* === TAGS SECTION (collapsible) === */}
-              <Section title="Tags" open={tagsOpen} onToggle={() => setTagsOpen(!tagsOpen)} count={tagCount}>
-                <div className="space-y-4">
-                  {recentSetupTags.length > 0 && (
-                    <div>
-                      <div className="text-[10px] text-slate-500 font-medium mb-2 block">Recent Setup Shortcuts</div>
-                      <div className="flex flex-wrap gap-2">
-                        {recentSetupTags.map(tag => {
-                          const active = setupTags.includes(tag);
-                          return (
-                            <button
-                              key={tag}
-                              type="button"
-                              onClick={() => setSetupTags(prev => (
-                                prev.includes(tag) ? prev.filter(item => item !== tag) : [...prev, tag]
-                              ))}
-                              className={'px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all ' +
-                                (active
-                                  ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                                  : 'bg-surface text-slate-400 border-line hover:text-slate-200')}
-                            >
-                              {tag}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                  <TagPicker tags={SETUP_TAGS} selected={setupTags} onChange={setSetupTags} color="emerald" label="Setup" />
-                  <TagPicker tags={EMOTION_TAGS} selected={emotionTags} onChange={setEmotionTags} color="amber" label="Emotion" />
-                  <TagPicker tags={MISTAKE_TAGS} selected={mistakes} onChange={setMistakes} color="rose" label="Mistakes" />
-                </div>
-              </Section>
-
               {/* === TIMING SECTION (always visible) === */}
               <div className="mb-4 space-y-2">
                 <div className="text-xs text-slate-500 font-medium">Timing</div>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5 w-16 shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="flex w-14 shrink-0 items-center gap-1">
                     <Calendar className="w-3.5 h-3.5 text-slate-600" />
                     <span className="text-xs text-slate-500 font-medium">Opened</span>
                   </div>
@@ -683,17 +584,17 @@ export default function TradeEntry({
                     value={openDate}
                     onChange={e => setOpenDate(e.target.value)}
                     max={tradeDate || todayLocalDate()}
-                    className="flex-1 bg-deep border border-line rounded-lg text-base text-white py-2.5 px-3 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all [color-scheme:dark]"
+                    className="min-w-0 flex-1 bg-deep border border-line rounded-lg text-base text-white py-2.5 px-2 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all [color-scheme:dark]"
                   />
                   <input
                     type="time"
                     value={entryTime}
                     onChange={e => setEntryTime(e.target.value)}
-                    className="w-24 bg-deep border border-line rounded-lg text-sm font-mono text-white py-2.5 px-2 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all [color-scheme:dark]"
+                    className="w-20 shrink-0 bg-deep border border-line rounded-lg text-sm font-mono text-white py-2.5 px-1.5 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all [color-scheme:dark]"
                   />
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5 w-16 shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="flex w-14 shrink-0 items-center gap-1">
                     <Calendar className="w-3.5 h-3.5 text-slate-600" />
                     <span className="text-xs text-slate-500 font-medium">Closed</span>
                   </div>
@@ -703,13 +604,13 @@ export default function TradeEntry({
                     onChange={e => setTradeDate(e.target.value)}
                     min={openDate || undefined}
                     max={todayLocalDate()}
-                    className="flex-1 bg-deep border border-line rounded-lg text-base text-white py-2.5 px-3 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all [color-scheme:dark]"
+                    className="min-w-0 flex-1 bg-deep border border-line rounded-lg text-base text-white py-2.5 px-2 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all [color-scheme:dark]"
                   />
                   <input
                     type="time"
                     value={exitTime}
                     onChange={e => setExitTime(e.target.value)}
-                    className="w-24 bg-deep border border-line rounded-lg text-sm font-mono text-white py-2.5 px-2 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all [color-scheme:dark]"
+                    className="w-20 shrink-0 bg-deep border border-line rounded-lg text-sm font-mono text-white py-2.5 px-1.5 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all [color-scheme:dark]"
                   />
                 </div>
                 {duration && (
@@ -720,8 +621,11 @@ export default function TradeEntry({
               </div>
 
               {/* === MEDIA SECTION (collapsible) === */}
-              <Section title="Chart Screenshots" open={mediaOpen} onToggle={() => setMediaOpen(!mediaOpen)} count={imageKeys.length}>
+              <Section title="Chart Images" open={mediaOpen} onToggle={() => setMediaOpen(!mediaOpen)} count={imageKeys.length}>
                 <div className="space-y-3">
+                  <p className="text-[11px] leading-relaxed text-blue-400/70">
+                    Images are encrypted on this device before syncing to your private vault.
+                  </p>
                   {/* Image previews */}
                   {imagePreviews.length > 0 && (
                     <div className="flex gap-2 flex-wrap">

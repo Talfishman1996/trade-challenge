@@ -1,22 +1,40 @@
 import { getPhaseName } from '../math/risk.js';
 import { todayLocalDate, toLocalDateString } from './tradeData.js';
 
-export function exportJSON(trades) {
-  const json = trades.exportJSON();
-  const blob = new Blob([json], { type: 'application/json' });
+export const downloadBlob = (blob, filename) => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `tradevault-${todayLocalDate()}.json`;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
+export const downloadJSONValue = (value, filename) => {
+  const blob = new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' });
+  downloadBlob(blob, filename);
+};
+
+export function exportJSON(trades) {
+  const json = trades.exportJSON();
+  const blob = new Blob([json], { type: 'application/json' });
+  downloadBlob(blob, `tradevault-${todayLocalDate()}.json`);
 }
 
-export function exportCSV(trades) {
+export function buildCSV(tradeList) {
   const rows = [['Trade #', 'Date', 'Open Date', 'Direction', 'Ticker', 'Strategy', 'Contracts', 'Entry Price', 'Exit Price', 'Net P&L', 'Equity Before', 'Equity After', 'Planned Risk $', 'Risk %', 'Model ID', 'Phase', 'Setup Tags', 'Emotion Tags', 'Mistakes', 'MAE', 'MFE', 'Notes']];
-  for (const t of trades.trades) {
-    const esc = (s) => s && s.includes(',') ? `"${s.replace(/"/g, '""')}"` : (s || '');
-    const joinTags = (arr) => arr && arr.length > 0 ? `"${arr.join(', ')}"` : '';
+  const esc = (value) => {
+    if (value == null) return '';
+    const isText = typeof value === 'string';
+    let text = String(value);
+    if (isText && /^[=+\-@]/.test(text)) text = `'${text}`;
+    return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  };
+  for (const t of tradeList) {
+    const joinTags = (arr) => arr && arr.length > 0 ? arr.join(', ') : '';
     rows.push([
       t.id,
       toLocalDateString(t.date),
@@ -39,17 +57,16 @@ export function exportCSV(trades) {
       joinTags(t.mistakes),
       t.mae != null ? t.mae : '',
       t.mfe != null ? t.mfe : '',
-      esc(t.notes),
+      t.notes,
     ]);
   }
-  const csv = rows.map(r => r.join(',')).join('\n');
+  return rows.map(r => r.map(esc).join(',')).join('\r\n');
+}
+
+export function exportCSV(trades) {
+  const csv = buildCSV(trades.trades);
   const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `tradevault-${todayLocalDate()}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadBlob(blob, `tradevault-${todayLocalDate()}.csv`);
 }
 
 export function importJSON(file, trades, onError) {

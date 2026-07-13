@@ -1,8 +1,16 @@
-import React, { useState, useRef } from 'react';
-import { Download, Upload, Trash2, FileSpreadsheet, Cloud, Copy, Check, Link2, Loader2, Share2 } from 'lucide-react';
-import { buildSyncUrl, DEFAULT_SYNC_ID, ensurePrimarySyncConfig, extractBlobId, pullFromBlobId, pushToBlobId, saveSyncConfig } from '../sync.js';
-import { exportJSON, exportCSV, importJSON } from '../utils/dataIO.js';
-import { mergeDatasets, normalizeDataset, readStoredDataset, writeStoredDataset } from '../utils/tradeData.js';
+import React, { useEffect, useState, useRef } from 'react';
+import { Archive, Check, Cloud, Copy, Download, FileSpreadsheet, RefreshCw, RotateCcw, Share2, ShieldCheck, Trash2, Upload } from 'lucide-react';
+import {
+  buildSyncUrl,
+  createVaultBackup,
+  downloadVaultBackup,
+  ensurePrimarySyncConfig,
+  listVaultBackups,
+  restoreVaultBackup,
+  rotateVaultCapability,
+} from '../sync.js';
+import { downloadJSONValue, exportJSON, exportCSV, importJSON } from '../utils/dataIO.js';
+import { todayLocalDate } from '../utils/tradeData.js';
 import SyncStatusPill from './SyncStatusPill.jsx';
 import { describeSyncResult } from '../utils/syncStatus.js';
 
@@ -28,9 +36,23 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
   const [syncMsg, setSyncMsg] = useState('');
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
-  const [showLegacyImport, setShowLegacyImport] = useState(false);
-  const [legacyInput, setLegacyInput] = useState('');
-  const [legacyStatus, setLegacyStatus] = useState(''); // '', 'connecting', 'error'
+  const [backups, setBackups] = useState([]);
+  const [backupBusy, setBackupBusy] = useState('');
+  const [backupError, setBackupError] = useState('');
+  const [rotatedLink, setRotatedLink] = useState('');
+
+  const refreshBackups = async () => {
+    try {
+      setBackups(await listVaultBackups());
+      setBackupError('');
+    } catch (error) {
+      setBackupError(error.message || 'Backup status unavailable');
+    }
+  };
+
+  useEffect(() => {
+    refreshBackups();
+  }, []);
 
   const handleEqChange = e => {
     const val = e.target.value.replace(/[^0-9]/g, '');
@@ -64,44 +86,10 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
     setSyncMsg('');
     try {
       const result = onRunSync ? await onRunSync() : await trades.syncFromCloud();
-      setSyncMsg(describeSyncResult(result));
+      setSyncMsg(describeSyncResult(typeof result === 'string' ? result : result?.status));
       setSyncConfig(ensurePrimarySyncConfig());
     } catch { setSyncMsg('Sync failed'); }
     setSyncing(false);
-  };
-
-  const handleLegacyImport = async () => {
-    const blobId = extractBlobId(legacyInput);
-    if (!blobId) { setLegacyStatus('error'); setSyncMsg('Invalid legacy sync link'); return; }
-    setLegacyStatus('connecting');
-    setSyncMsg('');
-    try {
-      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000));
-      const cloud = await Promise.race([pullFromBlobId(blobId), timeout]);
-      if (!cloud || !Array.isArray(cloud.trades)) {
-        setLegacyStatus('error');
-        setSyncMsg('Legacy sync not found. Check the link and try again.');
-        return;
-      }
-      const { lastModified, ...rest } = cloud;
-      const localData = readStoredDataset(trades.initialEquity);
-      const merged = mergeDatasets(
-        localData,
-        normalizeDataset({ ...rest, _lastModified: lastModified || Date.now() }, trades.initialEquity),
-        trades.initialEquity
-      );
-      writeStoredDataset({ ...merged, _lastModified: Date.now() }, trades.initialEquity);
-      await pushToBlobId(DEFAULT_SYNC_ID, merged);
-      saveSyncConfig({ blobId: DEFAULT_SYNC_ID, lastSync: Date.now() });
-      setSyncConfig(ensurePrimarySyncConfig());
-      setLegacyStatus('');
-      setLegacyInput('');
-      setShowLegacyImport(false);
-      setSyncMsg('Legacy sync imported into the always-on vault');
-    } catch {
-      setLegacyStatus('error');
-      setSyncMsg('Connection timed out. Check your internet and try again.');
-    }
   };
 
   const handleCopyLink = () => {
@@ -128,6 +116,94 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
   };
 
   const handleCSVExport = () => exportCSV(trades);
+
+  const handleCreateBackup = async () => {
+    setBackupBusy('create');
+    setBackupError('');
+    try {
+      if (onRunSync) await onRunSync();
+      await createVaultBackup();
+      await refreshBackups();
+      showToast?.('Encrypted backup created');
+    } catch (error) {
+      setBackupError(error.message || 'Backup failed');
+      showToast?.('Backup failed', 'error');
+    } finally {
+      setBackupBusy('');
+    }
+  };
+
+  const handleDownloadBackup = async backupId => {
+    setBackupBusy(`download:${backupId}`);
+    setBackupError('');
+    try {
+      const backup = await downloadVaultBackup(backupId);
+      downloadJSONValue(backup, `tradevault-encrypted-backup-${todayLocalDate()}.json`);
+      showToast?.('Encrypted backup downloaded');
+    } catch (error) {
+      setBackupError(error.message || 'Backup download failed');
+    } finally {
+      setBackupBusy('');
+    }
+  };
+
+  const handleRestoreBackup = async backupId => {
+    setBackupBusy(`restore:${backupId}`);
+    setBackupError('');
+    try {
+      await restoreVaultBackup(backupId);
+      const result = onRunSync ? await onRunSync() : await trades.syncFromCloud();
+      if ((typeof result === 'string' ? result : result?.status) === 'error') {
+        throw new Error('Backup restored in the vault, but this device has not refreshed yet');
+      }
+      setShowConfirm(null);
+      await refreshBackups();
+      showToast?.('Backup restored and synced');
+    } catch (error) {
+      setBackupError(error.message || 'Restore failed');
+      showToast?.('Restore failed', 'error');
+    } finally {
+      setBackupBusy('');
+    }
+  };
+
+  const handleRotateVault = async () => {
+    setBackupBusy('rotate');
+    setBackupError('');
+    try {
+      const result = await rotateVaultCapability({
+        ...trades.syncDataset,
+        preferences: settings.syncPreferences,
+      });
+      setRotatedLink(result.privateLink);
+      setShowConfirm(null);
+      setSyncConfig(ensurePrimarySyncConfig());
+      showToast?.('New private vault link is ready');
+    } catch (error) {
+      setBackupError(error.message || 'Private link rotation failed');
+      showToast?.('Private link rotation failed', 'error');
+    } finally {
+      setBackupBusy('');
+    }
+  };
+
+  const handleCopyRotatedLink = () => {
+    navigator.clipboard.writeText(rotatedLink).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleClearAll = async () => {
+    await trades.clearTrades();
+    setShowConfirm(null);
+    const response = onRunSync ? await onRunSync() : await trades.syncFromCloud();
+    const result = typeof response === 'string' ? response : response?.status;
+    if (result === 'error' || result === 'offline') {
+      showToast?.('Data cleared locally; cloud sync is pending', 'error');
+      return;
+    }
+    showToast?.('All trade data cleared and synced');
+  };
 
   return (
     <div className="px-4 pt-4 md:pt-6 pb-6 max-w-lg md:max-w-2xl mx-auto space-y-5">
@@ -379,7 +455,7 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
         </div>
 
         <p className="text-xs text-slate-500 leading-relaxed">
-          This internal app uses one shared background vault across your devices. Open the same app link everywhere and it should land on Home, then sync quietly behind the scenes.
+          Your private app link connects every device to one strongly consistent vault. Trades and chart images are encrypted on your device before upload. Saves happen locally first, retry automatically if the connection drops, and sync quietly in the background.
         </p>
 
         <div className="grid grid-cols-2 gap-2">
@@ -402,6 +478,12 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
         <div className="text-xs text-slate-500 text-center">
           Last successful sync: {syncConfig?.lastSync ? new Date(syncConfig.lastSync).toLocaleString() : 'Not yet'}
         </div>
+
+        {(syncInfo || syncConfig)?.pendingOperations > 0 && (
+          <div className="text-xs text-amber-400/80 text-center">
+            {(syncInfo || syncConfig).pendingOperations} change{(syncInfo || syncConfig).pendingOperations === 1 ? '' : 's'} waiting to sync
+          </div>
+        )}
 
         <div className="flex justify-center">
           <SyncStatusPill
@@ -434,45 +516,159 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
           </div>
         )}
 
-        {showLegacyImport ? (
-          <div className="space-y-2 pt-1">
-            <input
-              type="text"
-              value={legacyInput}
-              onChange={e => { setLegacyInput(e.target.value); setLegacyStatus(''); setSyncMsg(''); }}
-              placeholder="Paste old sync link if you need to import legacy data"
-              className="w-full bg-deep border border-line rounded-xl text-xs text-white py-2.5 px-3 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all placeholder:text-slate-700"
-            />
-            {legacyStatus === 'error' && (
-              <p className="text-xs text-red-400">Invalid legacy link or sync not found. Check and try again.</p>
-            )}
-            <div className="flex gap-2">
+        <p className="text-center text-[10px] leading-relaxed text-slate-600">
+          The private link is the key to this vault. Keep it private; anyone who has it can open the data.
+        </p>
+      </div>
+
+      {/* Encrypted Recovery */}
+      <div className="bg-surface rounded-2xl p-4 border border-line space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <div className="text-xs text-slate-500 font-medium">Encrypted Recovery</div>
+          </div>
+          <button
+            type="button"
+            onClick={refreshBackups}
+            disabled={Boolean(backupBusy)}
+            aria-label="Refresh backups"
+            className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl text-slate-500 active:scale-95 disabled:opacity-40"
+          >
+            <RefreshCw className={`w-4 h-4 ${backupBusy ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+
+        <p className="text-xs text-slate-500 leading-relaxed">
+          The vault keeps a rolling encrypted daily backup after successful syncs. Cloudflare stores ciphertext only; your private app link is required to read it.
+        </p>
+
+        <button
+          type="button"
+          onClick={handleCreateBackup}
+          disabled={Boolean(backupBusy)}
+          className="w-full min-h-11 flex items-center justify-center gap-2 bg-deep text-slate-300 text-xs font-medium rounded-xl border border-line active:scale-[0.98] disabled:opacity-40 transition-all"
+        >
+          <Archive className="w-4 h-4" />
+          {backupBusy === 'create' ? 'Creating Backup...' : 'Create Backup Now'}
+        </button>
+
+        {backups.length > 0 ? (
+          <div className="space-y-2">
+            {backups.slice(0, 3).map(backup => (
+              <div key={backup.backup_id} className="rounded-xl border border-line bg-deep p-3 space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-xs text-slate-300 font-medium">
+                      {backup.backup_id.startsWith('daily:')
+                        ? 'Daily Backup'
+                        : backup.backup_id.startsWith('manual:') ? 'Manual Backup' : 'Pre-Restore Backup'}
+                    </div>
+                    <div className="text-[10px] text-slate-600 mt-0.5">
+                      {new Date(backup.created_at).toLocaleString()} · revision {backup.server_revision}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadBackup(backup.backup_id)}
+                    disabled={Boolean(backupBusy)}
+                    aria-label="Download encrypted backup"
+                    className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl border border-line text-slate-400 active:scale-95 disabled:opacity-40"
+                  >
+                    <Download className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {showConfirm === `restore:${backup.backup_id}` ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleRestoreBackup(backup.backup_id)}
+                      disabled={Boolean(backupBusy)}
+                      className="min-h-11 rounded-xl border border-rose-500/30 bg-rose-500/10 text-xs font-semibold text-rose-400 disabled:opacity-40"
+                    >
+                      {backupBusy === `restore:${backup.backup_id}` ? 'Restoring...' : 'Confirm Restore'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirm(null)}
+                      disabled={Boolean(backupBusy)}
+                      className="min-h-11 rounded-xl border border-line text-xs font-medium text-slate-400 disabled:opacity-40"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm(`restore:${backup.backup_id}`)}
+                    disabled={Boolean(backupBusy)}
+                    className="w-full min-h-11 flex items-center justify-center gap-2 rounded-xl text-xs text-slate-500 active:bg-slate-800 disabled:opacity-40"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" /> Restore This Backup
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-line bg-deep/50 p-3 text-center text-[11px] text-slate-600">
+            No encrypted backup has been created yet.
+          </div>
+        )}
+
+        {backupError && <div role="alert" className="text-[11px] text-rose-400/80 text-center">{backupError}</div>}
+
+        <div className="pt-3 border-t border-line space-y-2">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Private Link Rotation</div>
+          <p className="text-[11px] leading-relaxed text-slate-600">
+            Use only if the private link may have leaked. TradeVault copies and verifies everything in a new encrypted vault; the old vault is retained for rollback.
+          </p>
+
+          {rotatedLink ? (
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 space-y-2">
+              <div className="text-[11px] leading-relaxed text-emerald-400/80">
+                Rotation succeeded. Copy this new link to every device before leaving this screen.
+              </div>
               <button
-                onClick={handleLegacyImport}
-                disabled={!legacyInput.trim() || legacyStatus === 'connecting'}
-                className={'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-xl transition-all ' +
-                  (legacyInput.trim() && legacyStatus !== 'connecting'
-                    ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30 active:scale-[0.98]'
-                    : 'bg-elevated text-slate-600 border border-line cursor-not-allowed')}
+                type="button"
+                onClick={handleCopyRotatedLink}
+                className="w-full min-h-11 flex items-center justify-center gap-2 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-xs font-semibold text-emerald-400"
               >
-                {legacyStatus === 'connecting' ? <><Loader2 className="w-3 h-3 animate-spin" /> Importing...</> : 'Import Legacy Sync'}
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copied ? 'New Link Copied' : 'Copy New Private Link'}
+              </button>
+            </div>
+          ) : showConfirm === 'rotate-vault' ? (
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={handleRotateVault}
+                disabled={Boolean(backupBusy)}
+                className="min-h-11 rounded-xl border border-amber-500/30 bg-amber-500/10 text-xs font-semibold text-amber-400 disabled:opacity-40"
+              >
+                {backupBusy === 'rotate' ? 'Verifying...' : 'Confirm Rotation'}
               </button>
               <button
-                onClick={() => { setShowLegacyImport(false); setLegacyInput(''); setLegacyStatus(''); }}
-                className="flex-1 py-2 text-xs font-medium text-slate-500 bg-deep rounded-xl border border-line active:scale-[0.98] transition-all"
+                type="button"
+                onClick={() => setShowConfirm(null)}
+                disabled={Boolean(backupBusy)}
+                className="min-h-11 rounded-xl border border-line text-xs font-medium text-slate-400 disabled:opacity-40"
               >
                 Cancel
               </button>
             </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => setShowLegacyImport(true)}
-            className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] text-slate-500 hover:text-blue-400 transition-colors"
-          >
-            <Link2 className="w-3 h-3" /> Import Legacy Sync Link
-          </button>
-        )}
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowConfirm('rotate-vault')}
+              disabled={Boolean(backupBusy)}
+              className="w-full min-h-11 flex items-center justify-center gap-2 rounded-xl border border-line text-xs text-slate-500 disabled:opacity-40"
+            >
+              <RotateCcw className="w-3.5 h-3.5" /> Rotate Private Link
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Data Management */}
@@ -511,7 +707,7 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
             {showConfirm === 'clear' ? (
               <div className="flex gap-2">
                 <button
-                  onClick={() => { trades.clearTrades(); setShowConfirm(null); }}
+                  onClick={handleClearAll}
                   className="flex-1 py-3 bg-rose-500/15 text-rose-400 text-sm font-semibold rounded-xl border border-rose-500/30 active:scale-[0.98] transition-all"
                 >
                   Yes, Clear Everything
@@ -539,7 +735,7 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
       <div className="bg-surface rounded-2xl p-4 border border-line space-y-2">
         <div className="text-xs text-slate-500 font-medium">About</div>
         <div className="text-sm text-slate-400">
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-white font-bold tracking-widest">TRADEVAULT</span> <span className="text-slate-600">v3.0</span>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-white font-bold tracking-widest">TRADEVAULT</span> <span className="text-slate-600">v3.1</span>
         </div>
         <p className="text-xs text-slate-500 font-medium mt-0.5">$100K {'\u2192'} $10M</p>
         <p className="text-xs text-slate-500 leading-relaxed mt-1">

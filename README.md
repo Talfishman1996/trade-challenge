@@ -12,6 +12,7 @@ npm run dev
 npm run test
 npm run build
 npm run check
+npm run test:sync-backend
 ```
 
 ## Canonical Model
@@ -40,8 +41,11 @@ fees, funding, and slippage.
 - New records store their execution-time model ID, risk percentage, and dollar risk.
 - Historical model snapshots are not rewritten when the equity chain is recalculated.
 - Every mutation saves locally before background cloud synchronization.
-- The prototype uses isolated local-storage and cloud-vault namespaces.
+- Every cloud record and chart image is encrypted in the browser before upload.
+- The app uses isolated local-storage and cloud-vault namespaces.
 - Record IDs, update timestamps, revisions, and tombstones support cross-device merges.
+- Rolling encrypted backups, guarded restore, and verified capability rotation live in Settings.
+- The installable PWA shell supports offline relaunch while the local outbox preserves disconnected edits.
 
 ## Architecture
 
@@ -49,11 +53,14 @@ fees, funding, and slippage.
 src/components/   Original TradeVault UI and workflows
 src/math/         Canonical sizing, simulations, analytics, and formatting
 src/store/        Settings and local-first trade state
-src/utils/        Data normalization, merge, import/export, and images
-worker/           Cloudflare Worker KV synchronization backend
+src/crypto/       Vault-scoped key derivation and AES-256-GCM encryption
+src/utils/        Data normalization, merge, import/export, and image caching
+worker/           Cloudflare Worker + SQLite Durable Object vault backend
 test/             Node model and data-integrity tests
+e2e/              Playwright mobile, PWA, export, and rotation tests
 ```
 
 The immutable pre-migration checkpoint is
-`CHECKPOINT-PRE-100K-MIGRATION-2026-07-12`. Prototype work must never move or
-rewrite that tag and must deploy separately from the production Pages project.
+`CHECKPOINT-PRE-100K-MIGRATION-2026-07-12`. Current production is Cloudflare
+Pages at `https://tradevault100k.pages.dev/`; GitHub Actions verifies the build
+but does not host or deploy it.

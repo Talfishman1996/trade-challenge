@@ -52,7 +52,7 @@ export default function ScatterPlot({
 
   return (
     <div style={{ height }}>
-      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+      <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} initialDimension={{ width: 320, height }}>
         <ScatterChart margin={{ ...cm, left: -10 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
           <XAxis

@@ -1,6 +1,14 @@
 name = "tradevault-sync"
 main = "src/index.js"
-compatibility_date = "2024-01-01"
+compatibility_date = "2026-04-22"
+
+[[durable_objects.bindings]]
+name = "TRADE_VAULTS"
+class_name = "TradeVault"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["TradeVault"]
 
 [[kv_namespaces]]
 binding = "SYNC_KV"

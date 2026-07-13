@@ -1,6 +1,6 @@
 # TradeVault Original Design Restoration Plan
 
-Status: PROTOTYPE DEPLOYED - AWAITING OWNER REVIEW
+Status: HARDENED PRODUCTION RELEASE IN PROGRESS
 
 ## Immutable Baseline
 
@@ -56,7 +56,20 @@ evidence source only; its visual design is not carried into this build.
 6. Surface local-only, synced, merged, offline, and error states without blocking
    navigation.
 
-## Phase 4 - Verification Gates
+## Phase 4 - Encryption, Recovery, and Offline Continuity
+
+1. Encrypt records, preferences, initial equity, backups, and chart images in the
+   browser before upload.
+2. Keep the capability secret out of Worker storage and normal request URLs.
+3. Add encrypted asset upload/download with IndexedDB as the local cache.
+4. Add rolling daily/manual backups, backup download, guarded restore, and
+   pre-restore recovery points.
+5. Add verified private-link rotation that retains the old vault for rollback.
+6. Add an installable PWA shell whose generated cache follows hashed build assets.
+7. Add repeatable Playwright coverage for mobile overflow, downloads, rotation,
+   and offline relaunch.
+
+## Phase 5 - Verification Gates
 
 - G1: protected checkpoint hashes unchanged.
 - G2: canonical anchors and interpolation invariants pass automated tests.
@@ -67,11 +80,15 @@ evidence source only; its visual design is not carried into this build.
 - G6: Home, Trades, Analysis, Settings, and Trade Entry are visually checked at
   representative phone sizes.
 - G7: sync status is nonblocking and manual sync remains available in Settings.
-- G8: deploy to a separate Cloudflare Pages prototype project; do not modify the
-  production `tradevault-b7t` project.
+- G8: encrypted Worker integration proves ciphertext-only records/images, backup,
+  restore, and stale-write rejection.
+- G9: installable application shell reloads offline after initial online control.
+- G10: deploy Worker first, pass the isolated remote v3 smoke test, then deploy the
+  canonical Cloudflare Pages project.
 
 ## Deployment Contract
 
-The prototype receives its own Cloudflare Pages project and URL. Production data,
-production frontend deployment, and the protected checkpoint remain unchanged
-until explicit owner approval.
+Cloudflare is the only application host. GitHub stores source and runs verification
+but does not deploy Pages. Preserve `tradevault-b7t.pages.dev` as a compatibility
+origin until every physical device has opened the canonical private link once.
+Production promotion never moves or rewrites the protected checkpoint.

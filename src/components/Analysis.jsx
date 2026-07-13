@@ -163,27 +163,27 @@ export default function Analysis({ trades, settings }) {
             {tab === 'performance' && hasTrades && (
               <div className="space-y-4">
                 {/* Summary strip */}
-                <div className="grid grid-cols-4 gap-2">
-                  <div className="bg-deep rounded-xl p-2.5 text-center border border-line">
-                    <div className={'text-lg font-bold font-mono tabular-nums ' + (trades.stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>
+                <div className="grid grid-cols-4 gap-1.5 min-[400px]:gap-2">
+                  <div className="bg-deep rounded-xl p-1.5 text-center border border-line min-[400px]:p-2">
+                    <div className={'text-xs font-bold font-mono tabular-nums min-[360px]:text-sm min-[400px]:text-base sm:text-lg ' + (trades.stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>
                       {trades.stats.totalPnl >= 0 ? '+$' : '-$'}{fmt(Math.abs(trades.stats.totalPnl))}
                     </div>
                     <div className="text-[10px] text-slate-500 mt-0.5">Total P&L</div>
                   </div>
-                  <div className="bg-deep rounded-xl p-2.5 text-center border border-line">
-                    <div className={'text-lg font-bold font-mono tabular-nums ' + (trades.stats.winRate >= 50 ? 'text-emerald-400' : 'text-amber-400')}>
+                  <div className="bg-deep rounded-xl p-1.5 text-center border border-line min-[400px]:p-2">
+                    <div className={'text-xs font-bold font-mono tabular-nums min-[360px]:text-sm min-[400px]:text-base sm:text-lg ' + (trades.stats.winRate >= 50 ? 'text-emerald-400' : 'text-amber-400')}>
                       {trades.stats.winRate.toFixed(0)}%
                     </div>
                     <div className="text-[10px] text-slate-500 mt-0.5">Win Rate</div>
                   </div>
-                  <div className="bg-deep rounded-xl p-2.5 text-center border border-line">
-                    <div className="text-lg font-bold font-mono tabular-nums text-amber-400">
+                  <div className="bg-deep rounded-xl p-1.5 text-center border border-line min-[400px]:p-2">
+                    <div className="text-xs font-bold font-mono tabular-nums text-amber-400 min-[360px]:text-sm min-[400px]:text-base sm:text-lg">
                       ${fmt(trades.peakEquity)}
                     </div>
                     <div className="text-[10px] text-slate-500 mt-0.5">Peak</div>
                   </div>
-                  <div className="bg-deep rounded-xl p-2.5 text-center border border-line">
-                    <div className="text-lg font-bold font-mono tabular-nums text-red-400">
+                  <div className="bg-deep rounded-xl p-1.5 text-center border border-line min-[400px]:p-2">
+                    <div className="text-xs font-bold font-mono tabular-nums text-red-400 min-[360px]:text-sm min-[400px]:text-base sm:text-lg">
                       {trades.stats.maxDrawdownPct > 0 ? '-' + trades.stats.maxDrawdownPct.toFixed(1) + '%' : '--'}
                     </div>
                     <div className="text-[10px] text-slate-500 mt-0.5">Max DD</div>
@@ -227,7 +227,7 @@ export default function Analysis({ trades, settings }) {
                     <div className="pt-2">
                       <SectionDivider title="R-Multiple Distribution" subtitle="Each trade measured in risk units." />
                       <div className="h-40">
-                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} initialDimension={{ width: 320, height: 160 }}>
                           <BarChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                             <XAxis dataKey="range" tick={{ fill: '#64748b', fontSize: 9 }} axisLine={false} tickLine={false} />
                             <YAxis tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
@@ -325,7 +325,7 @@ export default function Analysis({ trades, settings }) {
                 {!hasTagData && maeData.length === 0 && durationData.length === 0 && (
                   <div className="pt-5">
                     <p className="text-xs text-slate-500 text-center">
-                      Add tags, entry times, and MAE/MFE data to your trades to see behavioral patterns.
+                      Add entry times and MAE/MFE data to your trades to see behavioral patterns.
                     </p>
                   </div>
                 )}

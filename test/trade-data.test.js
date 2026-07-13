@@ -33,6 +33,12 @@ test('zero-P&L historical records remain readable but are not reclassified', () 
   assert.equal(trade.modelId, null);
 });
 
+test('numeric trade fields are normalized before equity-chain math', () => {
+  const trade = normalizeTrade({ uid: 'trade:string-numbers', id: '7', pnl: '-600.25' }, 1000);
+  assert.equal(trade.id, 7);
+  assert.equal(trade.pnl, -600.25);
+});
+
 test('newer record and tombstone win deterministic merges', () => {
   const base = {
     initialEquity: 100000,
@@ -55,4 +61,90 @@ test('newer record and tombstone win deterministic merges', () => {
   assert.equal(merged.trades[0].pnl, 200);
   assert.equal(merged.tombstones[0].uid, 'trade:gone');
   assert.equal(merged.initialEquity, 100000);
+});
+
+test('undo tombstones delete remotely known trades and a newer redo revives them', () => {
+  const remoteTrade = { uid: 'trade:undo', id: 1, pnl: 100, updatedAt: 100, createdAt: 50, date: '2026-07-01' };
+  const deleted = mergeDatasets(
+    { initialEquity: 100000, trades: [], tombstones: [{ uid: 'trade:undo', deletedAt: 200, updatedAt: 200 }] },
+    { initialEquity: 100000, trades: [remoteTrade], tombstones: [] }
+  );
+  assert.equal(deleted.trades.length, 0);
+
+  const revived = mergeDatasets(
+    deleted,
+    { initialEquity: 100000, trades: [{ ...remoteTrade, updatedAt: 300, revision: 2 }], tombstones: [] }
+  );
+  assert.equal(revived.trades.length, 1);
+  assert.equal(revived.trades[0].updatedAt, 300);
+});
+
+test('server revision wins over a misleading device clock', () => {
+  const staleDevice = {
+    initialEquity: 100000,
+    trades: [{
+      uid: 'trade:clock-skew', id: 1, pnl: 100, createdAt: 10, updatedAt: 999999,
+      serverRevision: 4, date: '2026-07-01',
+    }],
+    tombstones: [],
+  };
+  const server = {
+    initialEquity: 100000,
+    serverRevision: 5,
+    trades: [{
+      uid: 'trade:clock-skew', id: 1, pnl: 250, createdAt: 10, updatedAt: 200,
+      serverRevision: 5, date: '2026-07-01',
+    }],
+    tombstones: [],
+  };
+
+  const merged = mergeDatasets(staleDevice, server);
+  assert.equal(merged.trades[0].pnl, 250);
+  assert.equal(merged.trades[0].serverRevision, 5);
+});
+
+test('a local edit based on the same server revision remains mergeable until uploaded', () => {
+  const local = {
+    initialEquity: 100000,
+    trades: [{
+      uid: 'trade:pending', id: 1, pnl: 300, createdAt: 10, updatedAt: 300,
+      serverRevision: 7, date: '2026-07-01',
+    }],
+    tombstones: [],
+  };
+  const server = {
+    initialEquity: 100000,
+    serverRevision: 7,
+    trades: [{
+      uid: 'trade:pending', id: 1, pnl: 100, createdAt: 10, updatedAt: 100,
+      serverRevision: 7, date: '2026-07-01',
+    }],
+    tombstones: [],
+  };
+
+  assert.equal(mergeDatasets(local, server).trades[0].pnl, 300);
+});
+
+test('newer server image references replace stale device-only references', () => {
+  const local = {
+    initialEquity: 100000,
+    trades: [{
+      uid: 'trade:images', id: 1, pnl: 100, createdAt: 10, updatedAt: 100,
+      serverRevision: 4, images: ['img-stale'], date: '2026-07-01',
+    }],
+    tombstones: [],
+  };
+  const server = {
+    initialEquity: 100000,
+    serverRevision: 5,
+    trades: [{
+      uid: 'trade:images', id: 1, pnl: 100, createdAt: 10, updatedAt: 200,
+      serverRevision: 5, images: ['img-synced'], date: '2026-07-01',
+    }],
+    tombstones: [],
+  };
+
+  assert.deepEqual(mergeDatasets(local, server).trades[0].images, ['img-synced']);
+  server.trades[0].images = [];
+  assert.deepEqual(mergeDatasets(local, server).trades[0].images, []);
 });

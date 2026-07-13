@@ -6,14 +6,26 @@
   "scripts": {
     "dev": "vite",
     "test": "node --test test/*.test.js",
-    "check": "npm run test && npm run build",
-    "build": "vite build",
+    "test:worker-local": "node scripts/verify-v3-local.mjs",
+    "test:e2e": "playwright test",
+    "test:sync-backend": "node scripts/verify-sync-backend.mjs",
+    "migrate:legacy-sync": "node scripts/migrate-legacy-sync.mjs",
+    "check": "npm run test && npm run test:worker-local && npm run test:e2e && npm audit --audit-level=high",
+    "build": "vite build && node scripts/inject-sw-assets.mjs",
     "preview": "vite preview",
-    "deploy:cloudflare": "wrangler pages deploy dist --project-name tradevault",
+    "deploy:cloudflare": "wrangler pages deploy dist --project-name tradevault100k --branch master",
+    "deploy:prototype": "wrangler pages deploy dist --project-name tradevault-100k-prototype",
     "deploy:worker": "wrangler deploy --config worker/wrangler.toml",
-    "deploy:all": "npm run build && npm run deploy:cloudflare"
+    "deploy:all": "npm run check && npm run deploy:worker && npm run test:sync-backend && npm run deploy:cloudflare"
   },
-  "keywords": ["trading", "risk-management", "position-sizing", "dashboard", "react", "vite"],
+  "keywords": [
+    "trading",
+    "risk-management",
+    "position-sizing",
+    "dashboard",
+    "react",
+    "vite"
+  ],
   "author": "Talfishman1996",
   "license": "ISC",
   "type": "module",
@@ -25,6 +37,7 @@
     "recharts": "^3.7.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/vite": "^4.2.0",
     "@vitejs/plugin-react": "^5.1.4",
     "tailwindcss": "^4.2.0",

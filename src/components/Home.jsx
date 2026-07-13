@@ -83,12 +83,14 @@ const TRAIL_SEGMENTS = [
 const TRAIL_PATH = TRAIL_SEGMENTS.map(s => s.path).join(' ');
 
 // Trail milestones ($200K-$5M) positioned on the original switchbacks.
+// Label offsets belong to the physical waypoint, not the dollar label. This
+// preserves the alternating composition when milestone values change.
 const TRAIL_MILESTONES = [
-  { label: '$200K', camp: 'Base Camp', value: 200000,   x: 285, y: 322, labelSide: 'right' },
-  { label: '$500K', camp: 'Camp I',    value: 500000,   x: 108, y: 275, labelSide: 'left' },
-  { label: '$1M',   camp: 'Camp II',   value: 1000000,  x: 272, y: 230, labelSide: 'right' },
-  { label: '$2M',   camp: 'Camp III',  value: 2000000,  x: 145, y: 178, labelSide: 'left' },
-  { label: '$5M',   camp: 'Camp IV',   value: 5000000,  x: 245, y: 152, labelSide: 'right' },
+  { label: '$200K', camp: 'Base Camp', value: 200000,  x: 285, y: 322, labelOffset: { x: 2, y: -47 } },
+  { label: '$500K', camp: 'Camp I',    value: 500000,  x: 108, y: 275, labelOffset: { x: -89, y: -27 } },
+  { label: '$1M',   camp: 'Camp II',   value: 1000000, x: 272, y: 230, labelOffset: { x: 12, y: -32 } },
+  { label: '$2M',   camp: 'Camp III',  value: 2000000, x: 145, y: 178, labelOffset: { x: -94, y: -27 } },
+  { label: '$5M',   camp: 'Camp IV',   value: 5000000, x: 245, y: 152, labelOffset: { x: 16, y: -15 } },
 ];
 
 // $10M summit — massive golden text above temple
@@ -510,17 +512,8 @@ function MountainTrail({ summitData, eq }) {
         const totalLen = TRAIL_SEGMENTS.reduce((s, g) => s + g.len, 0);
         const totalTime = 2.0;
         const delay = 0.15 + TRAIL_SEGMENTS.slice(0, i + 1).reduce((s, g) => s + Math.max(0.08, (g.len / totalLen) * totalTime), 0);
-        // Per-milestone pill offsets preserve the original mountain composition.
-        const PILL_OFFSETS = {
-          '$200K': { ox: 14, oy: -16 },
-          '$500K': { ox: 12, oy: -32 },
-          '$1M':   { ox: -94, oy: -27 },
-          '$2M':   { ox: 14, oy: -16 },
-          '$5M':   { ox: 16, oy: -15 },
-        };
-        const offset = PILL_OFFSETS[ms.label] || { ox: 14, oy: -16 };
-        const pillRectX = ms.x + offset.ox;
-        const pillRectY = ms.y + offset.oy;
+        const pillRectX = ms.x + ms.labelOffset.x;
+        const pillRectY = ms.y + ms.labelOffset.y;
         const pillCenterX = pillRectX + 38; // 76/2 = 38 (half pill width)
         const pillCenterY = pillRectY + 16; // 32/2 = 16 (half pill height)
         const forceVisible = false;

@@ -30,21 +30,30 @@ export async function saveImage(key, blob) {
   });
 }
 
-// Retrieve an image as a blob URL (caller must revoke when done)
-export async function getImage(key) {
+export async function getImageBlob(key) {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly');
     const req = tx.objectStore(STORE_NAME).get(key);
-    req.onsuccess = () => {
-      if (req.result) {
-        resolve(URL.createObjectURL(req.result));
-      } else {
-        resolve(null);
-      }
-    };
+    req.onsuccess = () => resolve(req.result || null);
     req.onerror = () => reject(req.error);
   });
+}
+
+export async function hasImage(key) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const req = tx.objectStore(STORE_NAME).count(key);
+    req.onsuccess = () => resolve(req.result > 0);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// Retrieve an image as a blob URL (caller must revoke when done)
+export async function getImage(key) {
+  const blob = await getImageBlob(key);
+  return blob ? URL.createObjectURL(blob) : null;
 }
 
 // Delete a single image

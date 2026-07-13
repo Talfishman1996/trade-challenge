@@ -1,8 +1,25 @@
 export const DATA_STORAGE_KEY = 'tradevault-data-100k-v1';
-export const DATA_SCHEMA_VERSION = 3;
+export const DATA_SCHEMA_VERSION = 4;
 export const DEFAULT_INITIAL_EQUITY = 100000;
 
+const LEGACY_DATA_STORAGE_KEY = 'risk-engine-data';
+const LEGACY_MIGRATION_KEY = 'tradevault-legacy-local-migrated-100k-v1';
+const CAPABILITY_KEY = 'tradevault-capability-100k-v1';
+
 const DAY_MS = 86400000;
+
+const activeVaultId = () => {
+  try {
+    const raw = localStorage.getItem(CAPABILITY_KEY) || '';
+    const candidate = raw.split('.')[0];
+    return /^[A-Za-z0-9_-]{16,80}$/.test(candidate) ? candidate : 'unbound';
+  } catch {
+    return 'unbound';
+  }
+};
+
+const scopedDataStorageKey = () => `${DATA_STORAGE_KEY}:${activeVaultId()}`;
+const scopedMigrationKey = () => `${LEGACY_MIGRATION_KEY}:${activeVaultId()}`;
 
 const pad2 = (value) => String(value).padStart(2, '0');
 
@@ -131,6 +148,8 @@ export function freshTradeDefaults(now = Date.now()) {
     modelId: null,
     modelStatus: null,
     revision: 0,
+    serverRevision: 0,
+    serverUpdatedAt: 0,
   };
 }
 
@@ -153,7 +172,8 @@ export function normalizeTrade(rawTrade, now = Date.now()) {
   };
 
   normalized.uid = raw.uid || createLegacyUid(raw);
-  normalized.id = raw.id ?? normalized.id ?? 0;
+  normalized.id = Math.max(0, Math.floor(asNumber(raw.id, 0)));
+  normalized.pnl = asNumber(raw.pnl, 0);
   normalized.createdAt = asNumber(raw.createdAt, asNumber(raw.updatedAt, now));
   normalized.updatedAt = asNumber(raw.updatedAt, normalized.createdAt);
   normalized.deletedAt = raw.deletedAt ? asNumber(raw.deletedAt, null) : null;
@@ -176,6 +196,8 @@ export function normalizeTrade(rawTrade, now = Date.now()) {
     : (asNumber(raw.riskDol, 0) > 0 ? 'legacy-unversioned' : null);
   normalized.modelStatus = typeof raw.modelStatus === 'string' ? raw.modelStatus : null;
   normalized.revision = Math.max(0, Math.floor(asNumber(raw.revision, 0)));
+  normalized.serverRevision = Math.max(0, Math.floor(asNumber(raw.serverRevision, 0)));
+  normalized.serverUpdatedAt = Math.max(0, asNumber(raw.serverUpdatedAt, 0));
 
   return normalized;
 }
@@ -189,6 +211,8 @@ function normalizeTombstone(rawTombstone, now = Date.now()) {
     uid,
     deletedAt,
     updatedAt: asNumber(rawTombstone.updatedAt, deletedAt),
+    serverRevision: Math.max(0, Math.floor(asNumber(rawTombstone.serverRevision, 0))),
+    serverUpdatedAt: Math.max(0, asNumber(rawTombstone.serverUpdatedAt, 0)),
   };
 }
 
@@ -212,12 +236,21 @@ export function sortTrades(trades) {
   });
 }
 
-function latestByUid(records, pickTimestamp) {
+function compareVersion(left, right) {
+  const maxLength = Math.max(left.length, right.length);
+  for (let index = 0; index < maxLength; index += 1) {
+    const difference = asNumber(left[index], 0) - asNumber(right[index], 0);
+    if (difference !== 0) return difference;
+  }
+  return 0;
+}
+
+function latestByUid(records, pickVersion) {
   const map = new Map();
   for (const record of records) {
     if (!record?.uid) continue;
     const prev = map.get(record.uid);
-    if (!prev || pickTimestamp(record) >= pickTimestamp(prev)) {
+    if (!prev || compareVersion(pickVersion(record), pickVersion(prev)) >= 0) {
       map.set(record.uid, record);
     }
   }
@@ -238,17 +271,19 @@ export function normalizeDataset(rawData, fallbackInitialEquity = DEFAULT_INITIA
       (Array.isArray(raw.tombstones) ? raw.tombstones : [])
         .map(tombstone => normalizeTombstone(tombstone, now))
         .filter(Boolean),
-      item => item.deletedAt
+      item => [item.serverRevision, item.deletedAt]
     ).values()
   );
 
   return {
     version: DATA_SCHEMA_VERSION,
     schemaVersion: DATA_SCHEMA_VERSION,
-    initialEquity: asNumber(raw.initialEquity, fallbackInitialEquity),
+    initialEquity: Math.max(1, asNumber(raw.initialEquity, fallbackInitialEquity)),
     trades: normalizedTrades,
     tombstones,
     clientId: raw.clientId || getClientId(),
+    serverRevision: Math.max(0, Math.floor(asNumber(raw.serverRevision, 0))),
+    initialEquityRevision: Math.max(0, Math.floor(asNumber(raw.initialEquityRevision, 0))),
     _lastModified: asNumber(raw._lastModified, now),
   };
 }
@@ -259,34 +294,71 @@ export function mergeDatasets(localData, remoteData, fallbackInitialEquity = DEF
 
   const tradeMap = latestByUid(
     [...local.trades, ...remote.trades],
-    trade => trade.updatedAt
+    trade => [trade.serverRevision, trade.updatedAt]
   );
   const tombstoneMap = latestByUid(
     [...local.tombstones, ...remote.tombstones],
-    tombstone => tombstone.deletedAt
+    tombstone => [tombstone.serverRevision, tombstone.deletedAt]
   );
 
   for (const [uid, tombstone] of tombstoneMap.entries()) {
     const trade = tradeMap.get(uid);
-    if (trade && tombstone.deletedAt >= trade.updatedAt) {
+    if (trade && compareVersion(
+      [tombstone.serverRevision, tombstone.deletedAt],
+      [trade.serverRevision, trade.updatedAt]
+    ) >= 0) {
       tradeMap.delete(uid);
     }
   }
 
-  const latestDataset = remote._lastModified >= local._lastModified ? remote : local;
+  const latestDataset = compareVersion(
+    [remote.serverRevision, remote._lastModified],
+    [local.serverRevision, local._lastModified]
+  ) >= 0 ? remote : local;
   return normalizeDataset({
     ...latestDataset,
     initialEquity: latestDataset.initialEquity || local.initialEquity || remote.initialEquity || fallbackInitialEquity,
     trades: Array.from(tradeMap.values()),
     tombstones: Array.from(tombstoneMap.values()),
+    serverRevision: Math.max(local.serverRevision, remote.serverRevision),
+    initialEquityRevision: Math.max(local.initialEquityRevision, remote.initialEquityRevision),
     _lastModified: Math.max(local._lastModified, remote._lastModified),
   }, fallbackInitialEquity);
 }
 
 export function readStoredDataset(fallbackInitialEquity = DEFAULT_INITIAL_EQUITY) {
   try {
-    const raw = localStorage.getItem(DATA_STORAGE_KEY);
-    if (raw) return normalizeDataset(JSON.parse(raw), fallbackInitialEquity);
+    const raw = localStorage.getItem(scopedDataStorageKey());
+    const current = raw ? normalizeDataset(JSON.parse(raw), fallbackInitialEquity) : null;
+    if (localStorage.getItem(scopedMigrationKey())) {
+      return current || normalizeDataset(null, fallbackInitialEquity);
+    }
+
+    const prior100kRaw = localStorage.getItem(DATA_STORAGE_KEY);
+    const legacyRaw = localStorage.getItem(LEGACY_DATA_STORAGE_KEY);
+    if (!legacyRaw && !prior100kRaw) return current || normalizeDataset(null, fallbackInitialEquity);
+
+    const sources = [current];
+    for (const sourceRaw of [prior100kRaw, legacyRaw]) {
+      if (!sourceRaw) continue;
+      sources.push(normalizeDataset({
+        ...JSON.parse(sourceRaw),
+        initialEquity: DEFAULT_INITIAL_EQUITY,
+      }, DEFAULT_INITIAL_EQUITY));
+    }
+    const combined = sources.filter(Boolean).reduce(
+      (result, source) => result ? mergeDatasets(result, source, DEFAULT_INITIAL_EQUITY) : source,
+      null
+    );
+    const migrated = normalizeDataset({
+      ...combined,
+      initialEquity: DEFAULT_INITIAL_EQUITY,
+      _lastModified: Date.now(),
+    }, DEFAULT_INITIAL_EQUITY);
+
+    localStorage.setItem(scopedDataStorageKey(), JSON.stringify(migrated));
+    localStorage.setItem(scopedMigrationKey(), String(Date.now()));
+    return migrated;
   } catch {}
   return normalizeDataset(null, fallbackInitialEquity);
 }
@@ -294,7 +366,7 @@ export function readStoredDataset(fallbackInitialEquity = DEFAULT_INITIAL_EQUITY
 export function writeStoredDataset(data, fallbackInitialEquity = DEFAULT_INITIAL_EQUITY) {
   const normalized = normalizeDataset(data, fallbackInitialEquity);
   try {
-    localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(normalized));
+    localStorage.setItem(scopedDataStorageKey(), JSON.stringify(normalized));
   } catch {}
   return normalized;
 }

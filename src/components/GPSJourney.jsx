@@ -106,7 +106,7 @@ export default function ProbabilityCone({ equity, winRate, seed = 555, numTrades
   return (
     <div>
       <div style={{ height: 260 }}>
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} initialDimension={{ width: 320, height: 260 }}>
           <ComposedChart data={coneData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
             <defs>
               <linearGradient id="coneWide" x1="0" y1="0" x2="0" y2="1">

@@ -15,7 +15,8 @@ export const fmt = v => {
 export const fmtPnl = (pnl, riskDol, rMode) => {
   if (rMode && riskDol > 0) {
     const r = pnl / riskDol;
-    return (r >= 0 ? '+' : '') + r.toFixed(1) + 'R';
+    const decimals = r !== 0 && Math.abs(r) < 0.1 ? 2 : 1;
+    return (r >= 0 ? '+' : '') + r.toFixed(decimals) + 'R';
   }
   return (pnl >= 0 ? '+$' : '-$') + fmt(Math.abs(pnl));
 };
