@@ -123,7 +123,8 @@ npx wrangler deploy --config worker/wrangler.toml --dry-run
 `npm run check` covers 21 Node tests, the local encrypted Worker black-box suite,
 8 Playwright mobile/PWA/export/rotation tests, a production build, and dependency
 audit. After deploying the Worker, run the isolated remote v3 smoke test before
-deploying Pages:
+deploying Pages. It exercises ciphertext records/images, authorization, conflict
+handling, downgrade blocking, backup download, restore, and asset retention:
 
 ```bash
 npm run deploy:worker

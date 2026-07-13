@@ -97,6 +97,11 @@ assert.equal(
   privateSentinel
 );
 
+const staleV2Client = await fetch(`${API}/v2/vault/${vaultId}/snapshot`, {
+  headers: { Authorization: `Bearer ${secret}`, Origin: origin },
+});
+assert.equal(staleV2Client.status, 426);
+
 const unauthorized = await request('snapshot', { token: generateVaultSecret(32) });
 assert.equal(unauthorized.response.status, 401);
 
@@ -144,15 +149,34 @@ const stale = await sync('remote-smoke-a', [await operation({
 })]);
 assert.equal(stale.json.acknowledged[0].status, 'conflict');
 
+const restored = await request('restore', {
+  method: 'POST',
+  body: { backupId: manualBackup.json.backupId, confirmation: 'RESTORE' },
+});
+assert.equal(restored.response.status, 200, restored.text);
+const restoredRecord = restored.json.snapshot.trades.find(item => item.uid === tradeUid);
+const restoredTrade = await openVaultJson(
+  restoredRecord.sealed,
+  secret,
+  context('trade', tradeUid)
+);
+assert.equal(restoredTrade.pnl, firstTrade.pnl);
+assert.equal(restoredTrade.notes, privateSentinel);
+const retainedImage = await request(assetPath);
+assert.equal(retainedImage.response.status, 200, retainedImage.text);
+
 process.stdout.write(`${JSON.stringify({
   ok: true,
   apiVersion: health.version,
   checks: [
     'ciphertext-only trade roundtrip',
     'invalid capability rejected',
+    'v2 plaintext downgrade blocked',
     'encrypted image roundtrip',
     'encrypted backup download',
     'stale edit rejected',
+    'encrypted restore roundtrip',
+    'image retained through restore',
   ],
-  finalServerRevision: stale.json.snapshot.serverRevision,
+  finalServerRevision: restored.json.snapshot.serverRevision,
 })}\n`);

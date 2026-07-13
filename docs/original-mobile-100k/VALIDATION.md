@@ -55,7 +55,8 @@ mocked and local v3 automated flows pass.
 - Worker version `3acd0bbe-bedf-4979-ac44-78a5f23417a8` reports
   `tradevault-sync-v3` with encrypted assets/backups enabled and legacy API off.
 - Isolated remote smoke passed ciphertext trade/image round trips, wrong-secret
-  rejection, encrypted backup download, and stale-edit rejection.
+  rejection, v2 downgrade blocking, encrypted backup/restore, stale-edit
+  rejection, and image retention through restore.
 - The real vault matched the private pre-cutover snapshot before migration.
 - Two legacy settings records were encrypted; 16 tombstones were preserved; the
   server revision advanced from 18 to 20; an encrypted daily backup was created.
