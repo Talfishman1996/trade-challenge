@@ -112,6 +112,10 @@ by confidence or a proposed fix; closure requires the stated validation evidence
   a pull/merge sync after save, edit, autosave, or delete
 - Impact: redundant traffic and race-sensitive feedback can report success against
   a different ordering than the user mutation
+- P3 workflow impact: `EV-P3-MET-001` observed equity updated by 100 ms while Trade
+  Entry remained locked at 2,600 ms and closed only after roughly 5,300 ms under a
+  deterministic 2.5-second/request delay; the accepted local action waits on two
+  added Worker requests before releasing the sheet
 - Status: `OPEN`
 - Full owner phase: P6.2-P6.4
 - Closure evidence: serialized mutation queue/outbox tests and truthful UI states
@@ -185,7 +189,9 @@ by confidence or a proposed fix; closure requires the stated validation evidence
 - Evidence: `EV-P1-MET-003`; 43/79 visible M04 controls under 44 px in at least one
   dimension and 19 without a detected programmatic name
 - Impact: precision tapping and screen-reader ambiguity in frequent workflows
-- Status: `EXPERIMENT_REQUIRED`
+- P8 confirmation: `EV-P8-A11Y-003` manually confirms unassociated labels, unnamed
+  icon controls, missing dialog semantics, and no chart alternatives
+- Status: `OPEN`
 - Full owner phase: P4.4 and P8.3
 - Closure evidence: manual association audit plus scanner and target-geometry pass
 
@@ -253,6 +259,299 @@ by confidence or a proposed fix; closure requires the stated validation evidence
 - Status: `OPEN`
 - Full owner phase: P6.3-P6.4 and P8.5
 - Closure evidence: explicit durability state machine and storage-failure tests
+
+## P3 Product and Workflow Findings
+
+### F-UX-HIGH-001: A new trade silently defaults to a winning long outcome
+
+- Domain: repeated trade-capture correctness
+- Severity: High
+- Frequency: every new trade entry
+- Evidence: `EV-P3-SRC-001`, `EV-P3-MET-001`; Trade Entry initializes `isWin=true`
+  and `direction=long`, and the deterministic basic-win path accepted only an amount
+- Impact: a missed outcome/direction decision can record a loss as a win, changing
+  equity, streaks, drawdown, progress, projections, and every later risk calculation
+- Distinction: this is input-decision integrity, not the separate zero-P&L semantic
+  conflict in `F-MODEL-HIGH-002`
+- Status: `OPEN`
+- Full owner phase: P3.3, P7.3, P10.2, and P11.3
+- Closure evidence: explicit outcome selection or signed-P&L contract plus tests that
+  prohibit accidental default submission for win, loss, and break-even
+
+### F-IA-HIGH-001: Navigation and analysis context exist only in transient component state
+
+- Domain: information architecture and interruption recovery
+- Severity: High
+- Frequency: every destination switch, reload, browser Back action, or interrupted
+  analysis task
+- Evidence: `EV-P3-SRC-002`, `EV-P3-MET-002`; destination URL never changes,
+  Behavior resets to Performance after leaving, Projections reloads to Home, and
+  Home scroll returned from 602 px to the top
+- Impact: mobile interruption and task switching discard the user's location,
+  filter/subtab context, and navigation history; browser/hardware Back cannot express
+  in-app navigation
+- Status: `OPEN`
+- Full owner phase: P3.3, P5.2-P5.3, P10.1-P10.2, P11.2
+- Closure evidence: route/state restoration contract and reload/Back/tab-switch tests
+
+### F-IA-HIGH-002: Destination ownership is blurred by repeated actions and summaries
+
+- Domain: information architecture and cognitive load
+- Severity: High
+- Frequency: every Home/History/Analysis review cycle
+- Evidence: `EV-P1-SRC-003`, `EV-P3-SRC-002`; capture appears in at least five
+  affordances, performance in three destinations, and equity/progress/risk/sync
+  objects each span multiple surfaces
+- Impact: scanning cost grows while the app lacks one explicit post-action change
+  summary; users must decide which copy is authoritative and where to continue
+- Status: `OPEN`
+- Full owner phase: P3.4, P4.1, P10.1-P10.2
+- Closure evidence: approved destination ownership matrix plus task tests showing
+  each repeated representation answers a distinct, evidenced question
+
+### F-UX-HIGH-002: Explicit delete cannot be recovered by the adjacent Undo action
+
+- Domain: destructive-action integrity
+- Severity: High
+- Frequency: every explicit trade deletion
+- Evidence: `EV-P3-SRC-003`, `EV-P3-MET-003`; deleting an edited record removed it
+  immediately, while `undoLastTrade` only removes the last added trade and has no
+  deleted-record recovery payload
+- Impact: the interface implies a nearby recovery path that would instead delete a
+  different valid record; an accidental delete is irreversible
+- Distinction: `F-SYNC-HIGH-004` concerns cloud resurrection of an undone addition,
+  not recovery of an explicit deletion
+- Status: `OPEN`
+- Full owner phase: P5.2-P5.3, P6.2-P6.3, P10.2, P11.4
+- Closure evidence: object-specific reversible delete/tombstone contract and tests
+  proving Undo restores exactly the deleted UID across local and cloud state
+
+### F-UX-HIGH-003: Trade history has no scalable record-search path
+
+- Domain: journal retrieval
+- Severity: High
+- Frequency: every attempt to retrieve an old or partially remembered record
+- Evidence: `EV-P1-MET-002`, `EV-P3-MET-003`; 500 records produce a 39,961 px
+  surface, while the journal offers categorical filters but no text, notes, date, or
+  range search
+- Impact: review cost increases with account lifetime and a record cannot be found
+  from the details most likely to be remembered
+- Status: `OPEN`
+- Full owner phase: P3.4, P5.3-P5.4, P8.2, P10.1-P10.2, P11.4
+- Closure evidence: indexed search/filter contract plus 500/5,000-record retrieval
+  and accessibility tests
+
+### F-SYNC-HIGH-008: Reconnection announces readiness without starting convergence
+
+- Domain: offline recovery and sync truth
+- Severity: High
+- Frequency: every offline write followed by restored connectivity without a focus
+  transition
+- Evidence: `EV-P3-SRC-003`, `EV-P3-MET-003`; offline capture committed locally,
+  but the `online` handler only sets Ready and records activity without calling
+  `runSync`
+- Impact: an offline-created trade can remain device-local until a later interval or
+  focus event even though recovery has been announced
+- Distinction: `F-SYNC-CRITICAL-006` covers a failed attempted sync mislabeled as
+  Synced; this finding covers the absence of an immediate reconnect attempt
+- Status: `OPEN`
+- Full owner phase: P6.2-P6.4, P8.4-P8.5, P10.2-P10.4
+- Closure evidence: reconnect-triggered outbox flush with deterministic offline,
+  online, retry, duplicate, and cross-device convergence tests
+
+### F-CONTENT-CRITICAL-001: The app communicates incompatible challenge and model identities
+
+- Domain: product/model truth
+- Severity: Critical
+- Frequency: every sizing, projection, Settings, and progress interpretation
+- Evidence: `EV-P1-DATA-001`, `EV-P3-COPY-005`; rendered Settings shows Starting
+  Equity `$100,000` while About still says `$20K -> $10M` and `⅔ Power Decay`, and
+  current code retains legacy constants/formula rather than the planned curve
+- Impact: the user cannot know which capital base, sizing rule, milestone path, or
+  simulation governs a live decision
+- Distinction: `F-MODEL-CRITICAL-001` concerns historical fields being rewritten;
+  this finding concerns contradictory present-tense product claims
+- Status: `OPEN`
+- Full owner phase: P7.1-P7.5, P9.2, P10.3-P10.4, P11
+- Closure evidence: one versioned model identity with parity-tested implementation
+  and a complete source/rendered-copy scan showing no legacy contradictions
+
+### F-CONTENT-HIGH-002: Projection outputs omit decision-critical assumptions
+
+- Domain: simulation interpretation
+- Severity: High
+- Frequency: every Projections and milestone-estimate review
+- Evidence: `EV-P1-DATA-001`, `EV-P3-MET-003`, `EV-P3-COPY-005`; projections show
+  win rate, gross 1:1 RR, curve, and paths but omit break-even share, fees, slippage,
+  funding, trade frequency/calendar horizon, and model version
+- Impact: precise-looking probabilities, cones, and dates can be interpreted as a
+  net/calendar forecast although the simulation is binary, gross, and trade-count
+  based
+- Status: `OPEN`
+- Full owner phase: P7.1-P7.5, P10.2-P10.3, P11.4
+- Closure evidence: co-located assumptions/provenance, canonical net/gross semantics,
+  and comprehension tests that distinguish simulation from forecast
+
+## P4 Mobile Visual Findings
+
+### F-UI-CRITICAL-001: Landscape Trade Entry is clipped and operationally unusable
+
+- Domain: mobile responsive layout
+- Severity: Critical
+- Evidence: `EV-P4-IMG-001`; at 844x390 the width breakpoint activates the desktop
+  rail while the sheet starts above the visible region and sticky actions obscure
+  lower content
+- Impact: outcome/header/close context is unavailable and the user cannot reliably
+  inspect or complete the record in phone landscape
+- Status: `OPEN`
+- Full owner phase: P5.3-P5.4, P8.4, P10.2-P10.3, P11.2-P11.3
+- Closure evidence: height-aware layout plus physical landscape/keyboard W03-W06 tests
+
+### F-UI-HIGH-002: The monument displaces repeated operational truth below the fold
+
+- Domain: mobile hierarchy
+- Severity: High
+- Evidence: `EV-P4-IMG-001`; on 320x568 the monument/equity/action consume nearly
+  the entire usable screen, while the risk/progress state is below fixed navigation
+- Impact: the repeated user sees ceremony before the decision needed for the next
+  trade, especially on smaller phones and drawdown states
+- Status: `EXPERIMENT_REQUIRED`
+- Full owner phase: P10.1-P10.3, P11.2, P12.2
+- Closure evidence: full versus operational monument comparison proving faster W01/W02
+  without loss of identity or reviewer preference
+
+### F-UI-HIGH-003: Color communicates conflicting meanings across risk and action states
+
+- Domain: visual semantics
+- Severity: High
+- Evidence: `EV-P4-COLOR-003`; green is both positive outcome and primary capture,
+  amber/gold is both achievement and exposure, and blue spans navigation/form/sync
+- Impact: color cannot reliably answer whether a value is realized, planned,
+  cautionary, pending, or verified; the green CTA dominates a 60% drawdown screen
+- Status: `OPEN`
+- Full owner phase: P10.3, P11.2-P11.4, P12.2-P12.3
+- Closure evidence: semantic token matrix and state/contrast tests without color-only
+  meaning
+
+## P5 Frontend Findings
+
+### F-FE-HIGH-004: Initial equity has two independent frontend sources of truth
+
+- Domain: state/model ownership
+- Severity: High
+- Evidence: `EV-P5-STATE-002`; Settings persists `initialEquity` separately while the
+  trade dataset also persists/syncs it, and remote merge/import does not reconcile
+  the Settings mirror
+- Impact: risk ledger, Settings, and projections can use different starting-capital
+  assumptions on one device or across devices
+- Distinction: `F-SYNC-HIGH-003` covers settings excluded from cloud generally; this
+  finding is the local domain ownership conflict for a model-critical field
+- Status: `OPEN`
+- Full owner phase: P6.1-P6.3, P7.1-P7.4, P10.4, P11.1-P11.3
+- Closure evidence: one declared authoritative model/account settings record with
+  migration and local/remote/import convergence tests
+
+### F-OPS-HIGH-003: Deployment has competing GitHub Pages and Cloudflare authorities
+
+- Domain: release operations
+- Severity: High
+- Evidence: `EV-P5-OPS-005`; GitHub Actions deploys `master` to GitHub Pages, while
+  package scripts manually deploy Pages/Worker to Cloudflare and the live URL is
+  Cloudflare-hosted
+- Impact: a successful CI deployment need not update the live app, frontend and
+  Worker versions can drift, and rollback provenance is ambiguous
+- Status: `OPEN`
+- Full owner phase: P10.4, P11.1/P11.6, P13.1-P13.2
+- Closure evidence: one documented promotion pipeline with artifact/commit/version
+  visibility and tested independent frontend/Worker rollback
+
+## P6 Backend, Data, and Sync Findings
+
+### F-SYNC-CRITICAL-009: Device wall clocks are the conflict authority
+
+- Domain: distributed data integrity
+- Severity: Critical
+- Evidence: `EV-P6-DATA-002`; equal timestamps resolve by input order, later client
+  timestamps resurrect deletes, and a future clock permanently dominates record and
+  dataset-level initial-equity selection
+- Impact: clock skew or request ordering can silently choose the wrong trade/model
+  truth with no conflict presented to the user
+- Status: `OPEN`
+- Full owner phase: P10.4, P11 backend vertical slice, P12.1/P12.4
+- Closure evidence: server-assigned monotonic revisions, idempotent commands, and
+  deterministic skew/tie/delete/edit concurrency tests
+
+### F-DATA-HIGH-003: Schema versioning has no migration or rejection semantics
+
+- Domain: data lifecycle
+- Severity: High
+- Evidence: `EV-P6-DATA-002`, `EV-P6-LIFE-003`; arbitrary incoming versions are
+  silently normalized to v2 and import commits immediately
+- Impact: incompatible or partially understood data can be rewritten and synced
+  without preview, quarantine, rollback, or explicit migration
+- Status: `OPEN`
+- Full owner phase: P7.4-P7.5, P10.4, P11.1, P13.2
+- Closure evidence: version registry, fixtures for every migration path, invalid/
+  future-version rejection, transactional rollback, and round-trip export tests
+
+### F-DATA-HIGH-004: Attachment deletion is not transactional with record deletion
+
+- Domain: media lifecycle
+- Severity: High
+- Evidence: `EV-P6-LIFE-003`; explicit delete and clear remove IndexedDB binaries
+  before the ledger tombstone is durably committed or acknowledged
+- Impact: partial failure can leave a visible record whose evidence has already been
+  destroyed, while another device never had the binary at all
+- Status: `OPEN`
+- Full owner phase: P6 target implementation, P10.4, P11.3-P11.4
+- Closure evidence: content-addressed synced media and two-phase garbage collection
+  tested across failure/retry/restore
+
+### F-SYNC-HIGH-010: Missing cloud data and transport failure are indistinguishable
+
+- Domain: sync protocol
+- Severity: High
+- Evidence: `EV-P6-SYNC-004`; GET 404, non-OK responses, parse/network errors all
+  become `null`, which `syncFromCloud` treats as no cloud dataset and follows with a
+  push attempt
+- Impact: recovery decisions and UI cannot distinguish first-device bootstrap from
+  remote outage/corruption; stale local state may be promoted during failure
+- Status: `OPEN`
+- Full owner phase: P10.4, P11 sync implementation, P12.1/P12.4
+- Closure evidence: typed transport results and tests for 404/401/403/409/413/429/
+  5xx/timeout/invalid payload with no unsafe fallback
+
+## P7 Mathematical Model Findings
+
+### F-MODEL-CRITICAL-003: Whole-wallet cross-margin liquidation invalidates capped-R projections
+
+- Domain: model validity/execution
+- Severity: Critical
+- Evidence: `EV-P7-SEM-003`; final research explicitly requires losses capped near
+  planned R, while whole-wallet cross-margin liquidation can consume collateral
+  beyond planned dollar risk
+- Impact: deadline, drawdown, and success probabilities can be materially overstated
+  if shown for the user's actual liquidation-as-stop workflow
+- Status: `OPEN`
+- Full owner phase: P10.2-P10.4, P11.3-P11.4, P12.1/P12.4
+- Closure evidence: operational equity/stop/collateral contract and UI that blocks or
+  clearly withholds capped-R projections when execution violates it
+
+### F-MODEL-CRITICAL-004: The live projection engine is not the approved model
+
+- Domain: implementation parity
+- Severity: Critical
+- Evidence: `EV-P1-DATA-001`, `EV-P7-MET-005`; live code uses the legacy `$20K`
+  piecewise/two-thirds curve, binary 500-path outcomes, no 10% BE, no costs, and no
+  3.5-trades/month calendar conversion
+- Impact: rendered probability cones, milestone dates, drawdowns, and risk tables do
+  not describe `100k-pchip-v1` or its published 60,000-path scenarios
+- Distinction: `F-CONTENT-CRITICAL-001` covers contradictory claims; this finding is
+  computational non-parity
+- Status: `OPEN`
+- Full owner phase: P11 model vertical slice, P12.1-P12.4
+- Closure evidence: shared canonical engine passing committed vectors and scenario
+  fixtures in risk, charts, projections, dates, exports, and Worker validation
 
 ## Status Vocabulary
 

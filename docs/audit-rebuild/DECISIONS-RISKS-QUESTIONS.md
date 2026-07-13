@@ -25,6 +25,20 @@ risks. It does not own task status or evidence.
 | D-016 | Do not run a separate human-review pilot | Codex performs structured task and design evaluation; the owner reviews and approves the prototype |
 | D-017 | Compare competing visual directions under controlled conditions | At least three directions use identical tasks, content, states, viewports, fidelity, and a fixed rubric before selection |
 | D-018 | Exclude Fable 5 and do everything else | Retire execution, unsealing, confluence, and prototype-critique dependencies; retain all other audit/prototype gates |
+| D-019 | Below `$100K`, hold risk at 15% of current strategy equity | Dollar exposure declines after losses; no loss-chasing percentage increase |
+| D-020 | At `$10M`, end the challenge recommendation | Any post-target sizing requires a separately versioned policy |
+| D-021 | Use explicit strategy-equity ledger as sizing input | Exchange wallet, cross collateral, and available margin do not silently drive the model |
+| D-022 | Separate modeled outcome from realized net P&L | Gross BE remains BE even when costs make net P&L negative |
+| D-023 | Preserve immutable execution-time model snapshots | New formulas may generate labeled comparisons but never rewrite historical risk/R |
+| D-024 | Treat whole-wallet cross-margin liquidation as outside capped-R projections | Approved deadline/drawdown probabilities require losses constrained near planned R |
+| D-025 | A failed current-product G8 quality gate does not block audit synthesis | P9 may synthesize evidenced failures; G8 failure still blocks claims that the current app or a future prototype passes mobile quality |
+| D-026 | Use route-backed Today, Journal, Insights, and System destinations plus global Capture | Every primary question has one owner; Back/reload restore safe context |
+| D-027 | Limit active analytics to performance, evidence review, drawdown, progress, and assumption-visible planning | Immediate consequence follows every trade; deeper review is due after four resolved trades or 30 active days |
+| D-028 | Defer Telegram until authenticated authoritative sync exists | Prototype and initial production foundation contain no Telegram write/read path |
+| D-029 | Use Summit Ledger and remove redundant capture/metric ownership first | Monument remains in compressed operational and earned ceremonial states; misleading generic Undo is replaced by object-specific recovery |
+| D-030 | Make ledger/model/routing/search/recovery real in fixtures while simulating network, conflicts, projections, media, and backup | Reviewers can judge interactions without mistaking prototype behavior for infrastructure |
+| D-031 | Build under an isolated prototype entry, storage namespace, fixture adapter, and output directory | Prototype cannot import production sync/store or target the production Worker |
+| D-032 | Keep the prototype projection horizon fixed at the only approved 65-month published row | Do not fabricate selectable horizon probabilities; production may add selection only after versioned approved rows exist |
 
 ## 2. Final Gap-Review Scope Dispositions
 
@@ -59,7 +73,7 @@ Assumptions are not decisions. They must be verified or replaced during executio
 | A-002 | Reviewers need deterministic synthetic scenarios, not personal accounts | P10 |
 | A-003 | Current and previous iOS Safari/Android Chrome cover the critical browser set | P1/P8 |
 | A-004 | The selected PDF/simulation artifacts are the latest approved model evidence | P7 |
-| A-005 | PCHIP dollar risk should clamp to anchor behavior outside the modeled range | P7 |
+| A-005 | `[RESOLVED D-019/D-020]` PCHIP dollar risk should clamp to anchor behavior outside the modeled range | P7 resolved boundaries instead of extrapolating |
 | A-006 | Historical realized P&L should never be rewritten by model migration | P7/P13 |
 | A-007 | Local-first save remains desirable even if sync architecture changes | P3/P6 |
 | A-008 | A code prototype provides better evidence than static mockups alone | P10/P11 |
@@ -72,19 +86,19 @@ output of the named phase.
 
 | ID | Question | Owner phase | Decision deadline |
 |---|---|---|---|
-| Q-001 | What exact sizing applies after equity falls below `$100K`? | P7 | before G7 |
-| Q-002 | What happens after equity reaches or exceeds `$10M`? | P7/P3 | before G9 |
-| Q-003 | Should historical trades preserve stored risk, show both model versions, or be recomputed? | P7 | before G10 |
-| Q-004 | How is a break-even trade classified when fees make net P&L negative? | P7 | before G7 |
-| Q-005 | Which execution-cost assumptions belong in operational UI versus projections only? | P7/P3 | before G9 |
-| Q-006 | Should next risk use total strategy equity, available balance, or a separately funded risk account? | P7 | before G7 |
-| Q-007 | Which analytics directly change behavior and which are decorative? | P3 | before G3 |
-| Q-008 | Does Telegram/reporting reduce review friction enough to justify an external layer? | P3/P9 | before G10 |
+| Q-001 | `[RESOLVED D-019]` What exact sizing applies after equity falls below `$100K`? | P7 | resolved |
+| Q-002 | `[RESOLVED D-020]` What happens after equity reaches or exceeds `$10M`? | P7/P3 | resolved for challenge |
+| Q-003 | `[RESOLVED D-023]` Should historical trades preserve stored risk, show both model versions, or be recomputed? | P7 | resolved |
+| Q-004 | `[RESOLVED D-022]` How is a break-even trade classified when fees make net P&L negative? | P7 | resolved |
+| Q-005 | `[RESOLVED D-022/D-024]` Which execution-cost assumptions belong in operational UI versus projections only? | P7/P3 | resolved |
+| Q-006 | `[RESOLVED D-021]` Should next risk use total strategy equity, available balance, or a separately funded risk account? | P7 | resolved |
+| Q-007 | `[RESOLVED D-027]` Which analytics directly change behavior and which are decorative? | P3/P10 | resolved |
+| Q-008 | `[RESOLVED D-028]` Does Telegram/reporting reduce review friction enough to justify an external layer? | P3/P9 | resolved |
 | Q-009 | Should screenshots/settings become cloud-synced in a production rebuild? | P6/P13 | before G13 |
-| Q-010 | Which visual direction best balances command-instrument clarity and emotional identity? | P4/P9 | before G10 |
-| Q-011 | Which current feature should be removed first if it competes with primary mobile tasks? | P3/P4 | before G9 |
-| Q-012 | What review cadence should the product actively facilitate? | P3 | before G10 |
-| Q-013 | Which prototype surfaces must be real versus simulated for reviewers to judge honestly? | P10 | before G10 |
+| Q-010 | `[RESOLVED D-029]` Which visual direction best balances command-instrument clarity and emotional identity? | P4/P9 | resolved |
+| Q-011 | `[RESOLVED D-029]` Which current feature should be removed first if it competes with primary mobile tasks? | P3/P4 | resolved |
+| Q-012 | `[RESOLVED D-027]` What review cadence should the product actively facilitate? | P3/P10 | resolved |
+| Q-013 | `[RESOLVED D-030/D-031]` Which prototype surfaces must be real versus simulated for reviewers to judge honestly? | P10 | resolved |
 
 ## 5. Program Risk Register
 

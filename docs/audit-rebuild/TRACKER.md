@@ -2,17 +2,17 @@
 
 This file is the sole authority for execution status.
 
-Program state: `P3_IN_PROGRESS`
+Program state: `P12_AWAITING_OWNER_REVIEW`
 
-Current phase: `P3_PRODUCT_AND_WORKFLOW_AUDIT`
+Current phase: `P12_PROTOTYPE_VALIDATION`
 
-Current gate: `G3_NOT_EVALUATED`
+Current gate: `G12_BLOCKED_OWNER_REVIEW`
 
-Next authorized action: `P3.1_JOBS_AND_OPERATING_LOOP`
+Next authorized action: `OWNER_REVIEW_STAGING_AND_DISPOSITION_FEEDBACK`
 
-Last execution update: 2026-07-12 16:20:35 PDT, America/Los_Angeles
+Last execution update: 2026-07-12 17:56:00 PDT, America/Los_Angeles
 
-Working branch: `codex/audit-mobile-first-2026-07-12`
+Working branch: `codex/summit-ledger-prototype-2026-07-12`
 
 Protected baseline: `CHECKPOINT-PRE-100K-MIGRATION-2026-07-12`
 
@@ -80,16 +80,16 @@ gate actually passed.
 | P0 Activation and isolation | `GATE_PASSED` | G0 | 5 | `AUDIT-P00-GATE-PASSED-2026-07-12` | start P1 after tag |
 | P1 Forensic baseline | `GATE_PASSED` | G1 | 11 | `AUDIT-P01-GATE-PASSED-2026-07-12` | preserve baseline |
 | P2 External-advisor scope disposition | `GATE_PASSED` | G2 | 4 | `AUDIT-P02-GATE-PASSED-2026-07-12` | preserve historical evidence |
-| P3 Product/workflow audit | `IN_PROGRESS` | G3 | 0 | none | audit jobs and operating loop |
-| P4 Mobile visual audit | `NOT_STARTED` | G4 | 0 | none | blocked by G3 |
-| P5 Frontend audit | `NOT_STARTED` | G5 | 0 | none | blocked by G4 |
-| P6 Backend/data/sync audit | `NOT_STARTED` | G6 | 0 | none | blocked by G5 |
-| P7 Mathematical model audit | `NOT_STARTED` | G7 | 0 | none | blocked by G6 |
-| P8 Performance/accessibility/resilience | `NOT_STARTED` | G8 | 0 | none | blocked by G7 |
-| P9 Synthesis and confluence | `NOT_STARTED` | G9 | 0 | none | blocked by G8 |
-| P10 Prototype specification | `NOT_STARTED` | G10 | 0 | none | blocked by G9 and owner alignment |
-| P11 Prototype build | `NOT_STARTED` | G11 | 0 | none | blocked by G10 |
-| P12 Prototype validation | `NOT_STARTED` | G12 | 0 | none | blocked by G11 |
+| P3 Product/workflow audit | `GATE_PASSED` | G3 | 9 | `AUDIT-P03-GATE-PASSED-2026-07-12` | preserve product/workflow audit |
+| P4 Mobile visual audit | `GATE_PASSED` | G4 | 8 | `AUDIT-P04-GATE-PASSED-2026-07-12` | preserve mobile visual audit |
+| P5 Frontend audit | `GATE_PASSED` | G5 | 5 | `AUDIT-P05-GATE-PASSED-2026-07-12` | preserve frontend audit |
+| P6 Backend/data/sync audit | `GATE_PASSED` | G6 | 5 | `AUDIT-P06-GATE-PASSED-2026-07-12` | preserve backend/data/sync audit |
+| P7 Mathematical model audit | `GATE_PASSED` | G7 | 5 | `AUDIT-P07-GATE-PASSED-2026-07-12` | preserve mathematical model audit |
+| P8 Performance/accessibility/resilience | `GATE_FAILED` | G8 | 5 | `AUDIT-P08-CURRENT-QUALITY-FAILED-2026-07-12` | preserve failed current-product quality evidence |
+| P9 Synthesis and confluence | `GATE_PASSED` | G9 | 5 | `AUDIT-P09-GATE-PASSED-2026-07-12` | preserve synthesis |
+| P10 Prototype specification | `GATE_PASSED` | G10 | 5 | `AUDIT-P10-GATE-PASSED-2026-07-12` | preserve specification |
+| P11 Prototype build | `GATE_PASSED` | G11 | 7 | `AUDIT-P11-GATE-PASSED-R2-2026-07-12` | preserve corrected prototype |
+| P12 Prototype validation | `BLOCKED` | G12 | 6 | none | owner reviews staging package |
 | P13 Final roadmap/handoff | `NOT_STARTED` | G13 | 0 | none | blocked by G12 |
 
 ## Subphase Ledger
@@ -110,62 +110,62 @@ gate actually passed.
 | P2.2 | Preserve contamination-audit evidence | `EVIDENCE_READY` | neutral-language check |
 | P2.3 | Preserve failed execution evidence | `EVIDENCE_READY` | three quota-attempt records |
 | P2.4 | Owner scope removal and dependency cleanup | `EVIDENCE_READY` | decision and control-document audit |
-| P3.1 | Jobs and operating loop | `IN_PROGRESS` | job/loop analysis |
-| P3.2 | Information architecture | `NOT_STARTED` | IA findings |
-| P3.3 | Workflow scripts | `NOT_STARTED` | task timing/tap evidence |
-| P3.4 | Feature portfolio | `NOT_STARTED` | feature disposition matrix |
-| P3.5 | Content and trust | `NOT_STARTED` | copy/claim findings |
-| P3.6 | Comparative product research | `NOT_STARTED` | dated comparison matrix |
-| P4.1 | Layout geometry | `NOT_STARTED` | annotated viewport evidence |
-| P4.2 | Typography and numeric scanning | `NOT_STARTED` | type audit |
-| P4.3 | Color and visual semantics | `NOT_STARTED` | token/contrast audit |
-| P4.4 | Components and touch behavior | `NOT_STARTED` | component/state audit |
-| P4.5 | Charts, progress, and monument | `NOT_STARTED` | chart/identity findings |
-| P4.6 | Motion and feedback | `NOT_STARTED` | motion inventory/profiles |
-| P4.7 | Visual direction alternatives | `NOT_STARTED` | at least three directions |
-| P4.8 | Structured direction comparison | `NOT_STARTED` | controlled comparison matrix |
-| P5.1 | Responsibility map | `NOT_STARTED` | component/import graph |
-| P5.2 | State and persistence | `NOT_STARTED` | state ownership findings |
-| P5.3 | Component/design-system architecture | `NOT_STARTED` | boundary proposal |
-| P5.4 | Rendering and delivery | `NOT_STARTED` | render/bundle findings |
-| P5.5 | Testability and maintainability | `NOT_STARTED` | test/migration proposal |
-| P6.1 | API and storage contract | `NOT_STARTED` | frontend/Worker contract |
-| P6.2 | Merge and conflict behavior | `NOT_STARTED` | scenario results |
-| P6.3 | Data lifecycle | `NOT_STARTED` | lifecycle/migration findings |
-| P6.4 | Sync UX truth | `NOT_STARTED` | state/claim comparison |
-| P6.5 | Informational threat/operations review | `NOT_STARTED` | risk/operations report |
-| P7.1 | Canonical model specification | `NOT_STARTED` | language-independent spec |
-| P7.2 | Boundary decisions | `NOT_STARTED` | resolved boundary table |
-| P7.3 | Outcome semantics | `NOT_STARTED` | gross/net/BE definitions |
-| P7.4 | Historical model versioning | `NOT_STARTED` | migration decision |
-| P7.5 | Parity and invariant tests | `NOT_STARTED` | test vectors/results |
-| P8.1 | Loading/runtime performance | `NOT_STARTED` | repeatable measurements |
-| P8.2 | Dataset scaling | `NOT_STARTED` | scale test results |
-| P8.3 | Accessibility | `NOT_STARTED` | scanner/manual results |
-| P8.4 | Browser/device compatibility | `NOT_STARTED` | compatibility matrix |
-| P8.5 | Resilience | `NOT_STARTED` | failure injection results |
-| P9.1 | Freeze complete audit | `NOT_STARTED` | hashed findings report |
-| P9.2 | Cross-domain contradiction audit | `NOT_STARTED` | contradiction register |
-| P9.3 | Evidence confluence matrix | `NOT_STARTED` | cross-domain matrix |
-| P9.4 | Prioritization | `NOT_STARTED` | scored findings registry |
-| P9.5 | Owner alignment gate | `NOT_STARTED` | recorded owner direction |
-| P10.1 | Information architecture | `NOT_STARTED` | approved IA spec |
-| P10.2 | Workflow specification | `NOT_STARTED` | complete stateful flows |
-| P10.3 | Design system | `NOT_STARTED` | token/component/motion spec |
-| P10.4 | Prototype architecture | `NOT_STARTED` | isolated architecture spec |
-| P10.5 | Prototype scope contract | `NOT_STARTED` | functional/simulated boundary |
-| P11.1 | Prototype checkpoint/scaffolding | `NOT_STARTED` | branch/env verification |
-| P11.2 | Foundation | `NOT_STARTED` | shell/tokens/primitives |
-| P11.3 | Core vertical slice | `NOT_STARTED` | interactive primary loop |
-| P11.4 | Review surfaces | `NOT_STARTED` | history/review/progress flows |
-| P11.5 | Review harness | `NOT_STARTED` | deterministic scenarios |
-| P11.6 | Staging delivery | `NOT_STARTED` | isolated staging URL/build |
-| P12.1 | Functional validation | `NOT_STARTED` | workflow test report |
-| P12.2 | Visual/device validation | `NOT_STARTED` | screenshot/regression corpus |
-| P12.3 | Performance/accessibility validation | `NOT_STARTED` | budget comparison |
-| P12.4 | Adversarial review | `NOT_STARTED` | failure/misuse report |
-| P12.5 | Evidence-isolated second-pass critique | `NOT_STARTED` | internal critique/disposition |
-| P12.6 | Owner prototype review | `NOT_STARTED` | structured owner feedback |
+| P3.1 | Jobs and operating loop | `EVIDENCE_READY` | job/loop analysis |
+| P3.2 | Information architecture | `EVIDENCE_READY` | IA findings |
+| P3.3 | Workflow scripts | `EVIDENCE_READY` | task timing/tap evidence |
+| P3.4 | Feature portfolio | `EVIDENCE_READY` | feature disposition matrix |
+| P3.5 | Content and trust | `EVIDENCE_READY` | copy/claim findings |
+| P3.6 | Comparative product research | `EVIDENCE_READY` | dated comparison matrix |
+| P4.1 | Layout geometry | `EVIDENCE_READY` | annotated viewport evidence |
+| P4.2 | Typography and numeric scanning | `EVIDENCE_READY` | type audit |
+| P4.3 | Color and visual semantics | `EVIDENCE_READY` | token/contrast audit |
+| P4.4 | Components and touch behavior | `EVIDENCE_READY` | component/state audit |
+| P4.5 | Charts, progress, and monument | `EVIDENCE_READY` | chart/identity findings |
+| P4.6 | Motion and feedback | `EVIDENCE_READY` | motion inventory/profiles |
+| P4.7 | Visual direction alternatives | `EVIDENCE_READY` | at least three directions |
+| P4.8 | Structured direction comparison | `EVIDENCE_READY` | controlled comparison matrix |
+| P5.1 | Responsibility map | `EVIDENCE_READY` | component/import graph |
+| P5.2 | State and persistence | `EVIDENCE_READY` | state ownership findings |
+| P5.3 | Component/design-system architecture | `EVIDENCE_READY` | boundary proposal |
+| P5.4 | Rendering and delivery | `EVIDENCE_READY` | render/bundle findings |
+| P5.5 | Testability and maintainability | `EVIDENCE_READY` | test/migration proposal |
+| P6.1 | API and storage contract | `EVIDENCE_READY` | frontend/Worker contract |
+| P6.2 | Merge and conflict behavior | `EVIDENCE_READY` | scenario results |
+| P6.3 | Data lifecycle | `EVIDENCE_READY` | lifecycle/migration findings |
+| P6.4 | Sync UX truth | `EVIDENCE_READY` | state/claim comparison |
+| P6.5 | Informational threat/operations review | `EVIDENCE_READY` | risk/operations report |
+| P7.1 | Canonical model specification | `EVIDENCE_READY` | language-independent spec |
+| P7.2 | Boundary decisions | `EVIDENCE_READY` | resolved boundary table |
+| P7.3 | Outcome semantics | `EVIDENCE_READY` | gross/net/BE definitions |
+| P7.4 | Historical model versioning | `EVIDENCE_READY` | migration decision |
+| P7.5 | Parity and invariant tests | `EVIDENCE_READY` | test vectors/results |
+| P8.1 | Loading/runtime performance | `EVIDENCE_READY` | repeatable measurements |
+| P8.2 | Dataset scaling | `EVIDENCE_READY` | scale test results |
+| P8.3 | Accessibility | `EVIDENCE_READY` | scanner/manual results |
+| P8.4 | Browser/device compatibility | `EVIDENCE_READY` | compatibility matrix |
+| P8.5 | Resilience | `EVIDENCE_READY` | failure injection results |
+| P9.1 | Freeze complete audit | `EVIDENCE_READY` | hashed findings report |
+| P9.2 | Cross-domain contradiction audit | `EVIDENCE_READY` | contradiction register |
+| P9.3 | Evidence confluence matrix | `EVIDENCE_READY` | cross-domain matrix |
+| P9.4 | Prioritization | `EVIDENCE_READY` | scored findings registry |
+| P9.5 | Owner alignment gate | `EVIDENCE_READY` | recorded owner direction |
+| P10.1 | Information architecture | `EVIDENCE_READY` | approved IA spec |
+| P10.2 | Workflow specification | `EVIDENCE_READY` | complete stateful flows |
+| P10.3 | Design system | `EVIDENCE_READY` | token/component/motion spec |
+| P10.4 | Prototype architecture | `EVIDENCE_READY` | isolated architecture spec |
+| P10.5 | Prototype scope contract | `EVIDENCE_READY` | functional/simulated boundary |
+| P11.1 | Prototype checkpoint/scaffolding | `EVIDENCE_READY` | branch/env verification |
+| P11.2 | Foundation | `EVIDENCE_READY` | shell/tokens/primitives |
+| P11.3 | Core vertical slice | `EVIDENCE_READY` | interactive primary loop |
+| P11.4 | Review surfaces | `EVIDENCE_READY` | history/review/progress flows |
+| P11.5 | Review harness | `EVIDENCE_READY` | deterministic scenarios |
+| P11.6 | Staging delivery | `EVIDENCE_READY` | isolated staging URL/build |
+| P12.1 | Functional validation | `EVIDENCE_READY` | workflow test report |
+| P12.2 | Visual/device validation | `EVIDENCE_READY` | screenshot/regression corpus |
+| P12.3 | Performance/accessibility validation | `EVIDENCE_READY` | budget comparison |
+| P12.4 | Adversarial review | `EVIDENCE_READY` | failure/misuse report |
+| P12.5 | Evidence-isolated second-pass critique | `EVIDENCE_READY` | internal critique/disposition |
+| P12.6 | Owner prototype review | `BLOCKED` | structured owner feedback |
 | P13.1 | Production architecture roadmap | `NOT_STARTED` | implementation waves |
 | P13.2 | Migration and rollback plan | `NOT_STARTED` | migration runbook |
 | P13.3 | Estimates and dependencies | `NOT_STARTED` | ranges/critical path |
@@ -179,16 +179,16 @@ gate actually passed.
 | G0 | `GATE_PASSED` | `gates/GATE-P00.md` | `43dd70f` | `AUDIT-P00-GATE-PASSED-2026-07-12` | none |
 | G1 | `GATE_PASSED` | `gates/GATE-P01.md` | `f2dc485` | `AUDIT-P01-GATE-PASSED-2026-07-12` | none |
 | G2 | `GATE_PASSED` | `gates/GATE-P02.md` | `986e9c6` | `AUDIT-P02-GATE-PASSED-2026-07-12` | none |
-| G3 | `IN_PROGRESS` | pending | none | none | none |
-| G4 | `NOT_STARTED` | none | none | none | none |
-| G5 | `NOT_STARTED` | none | none | none | none |
-| G6 | `NOT_STARTED` | none | none | none | none |
-| G7 | `NOT_STARTED` | none | none | none | none |
-| G8 | `NOT_STARTED` | none | none | none | none |
-| G9 | `NOT_STARTED` | none | none | none | none |
-| G10 | `NOT_STARTED` | none | none | none | none |
-| G11 | `NOT_STARTED` | none | none | none | none |
-| G12 | `NOT_STARTED` | none | none | none | none |
+| G3 | `GATE_PASSED` | `gates/GATE-P03.md` | `bd8af2a` | `AUDIT-P03-GATE-PASSED-2026-07-12` | none |
+| G4 | `GATE_PASSED` | `gates/GATE-P04.md` | `d584fb7` | `AUDIT-P04-GATE-PASSED-2026-07-12` | none |
+| G5 | `GATE_PASSED` | `gates/GATE-P05.md` | `074f6cb` | `AUDIT-P05-GATE-PASSED-2026-07-12` | none |
+| G6 | `GATE_PASSED` | `gates/GATE-P06.md` | `03b39cc` | `AUDIT-P06-GATE-PASSED-2026-07-12` | none |
+| G7 | `GATE_PASSED` | `gates/GATE-P07.md` | `870e7a9` | `AUDIT-P07-GATE-PASSED-2026-07-12` | none |
+| G8 | `GATE_FAILED` | `gates/GATE-P08.md` | `5dbc004` | `AUDIT-P08-CURRENT-QUALITY-FAILED-2026-07-12` | none |
+| G9 | `GATE_PASSED` | `gates/GATE-P09.md` | `749a9a5` | `AUDIT-P09-GATE-PASSED-2026-07-12` | none |
+| G10 | `GATE_PASSED` | `gates/GATE-P10.md` | `ea68c56` | `AUDIT-P10-GATE-PASSED-2026-07-12` | none |
+| G11 | `GATE_PASSED` | `gates/GATE-P11.md` | pending R2 gate commit | `AUDIT-P11-GATE-PASSED-R2-2026-07-12` | none; prior mistaken tag preserved |
+| G12 | `BLOCKED` | `gates/GATE-P12.md` | pending | none | owner prototype acceptance |
 | G13 | `NOT_STARTED` | none | none | none | none |
 
 ## Checkpoint Ledger
@@ -202,10 +202,21 @@ gate actually passed.
 | `AUDIT-P01-GATE-PASSED-2026-07-12` | Frozen forensic current-state baseline | `f2dc485` plus gate validation record | yes |
 | Remote G1 checkpoint branch | GitHub forensic-baseline recovery | `ef6af8c` / `5cb20aa` | yes by convention |
 | `AUDIT-P02-GATE-PASSED-2026-07-12` | Owner-approved removal of external-advisor dependency | `986e9c6` plus validation record | yes |
+| `AUDIT-P03-GATE-PASSED-2026-07-12` | Frozen product/workflow audit and canonical feature priorities | `bd8af2a` plus validation record | yes |
+| `AUDIT-P04-GATE-PASSED-2026-07-12` | Frozen mobile visual audit and Summit Ledger direction | `d584fb7` plus validation record | yes |
+| `AUDIT-P05-GATE-PASSED-2026-07-12` | Frozen frontend architecture, budgets, and verification contract | `074f6cb` plus validation record | yes |
+| `AUDIT-P06-GATE-PASSED-2026-07-12` | Frozen backend/data/sync audit and target consistency contract | `03b39cc` plus validation record | yes |
+| `AUDIT-P07-GATE-PASSED-2026-07-12` | Frozen `100k-pchip-v1` model, boundaries, semantics, and vectors | `870e7a9` plus validation record | yes |
+| `AUDIT-P08-CURRENT-QUALITY-FAILED-2026-07-12` | Frozen proof that the current app fails mobile quality under D-025 | `5dbc004` plus validation record | yes |
+| `AUDIT-P09-GATE-PASSED-2026-07-12` | Frozen cross-domain synthesis and approved prototype direction | `749a9a5` plus gate validation record | yes |
+| `AUDIT-P10-GATE-PASSED-2026-07-12` | Frozen mobile IA, workflows, design system, architecture, fixtures, and acceptance contract | `ea68c56` plus gate validation record | yes |
+| `AUDIT-P11-GATE-PASSED-2026-07-12` | Frozen isolated Summit Ledger source, deterministic fixtures, build, and staging deployment | `6391eb7` source plus gate validation record | yes |
+| `AUDIT-P11-GATE-PASSED-R2-2026-07-12` | Corrected G11 after transparent W03-W10/W15-W17 contract repair | `1d07674` source plus R2 gate validation record | yes |
 
 ## Active Blockers
 
-None. D-018 explicitly removes Fable 5 and authorizes all remaining non-Fable work.
+Owner prototype review is the only active blocker. D-018 removes every Fable 5
+dependency; no external-advisor work remains.
 
 ## Current Breadcrumb
 
@@ -213,8 +224,8 @@ None. D-018 explicitly removes Fable 5 and authorizes all remaining non-Fable wo
 - Owner greenlight `do it!` was received and recorded on 2026-07-12.
 - G0 passed at local tag `AUDIT-P00-GATE-PASSED-2026-07-12`; remote recovery
   snapshot is `c1e79b5`, with marker issue `#3`.
-- P1.1-P1.6 evidence is indexed and G1 passed on
-  `codex/audit-mobile-first-2026-07-12`; P3.1 is active.
+- P1-P7 are checkpointed; P8 is deliberately checkpointed as a failed current-
+  quality gate; P9 synthesis is checkpointed and P10 has passed pending checkpoint.
 - Reviewers are critics, not persistent multi-user account holders.
 - The `$100K` model is the planned product truth.
 - Final gap review includes only the controlled comparison of visual directions;
@@ -229,7 +240,15 @@ None. D-018 explicitly removes Fable 5 and authorizes all remaining non-Fable wo
 - Owner instruction `do everything else no fable 5 cause it's causing issues`
   supersedes D-009/D-010 through D-018 and retires every later Fable dependency.
 - G2 passes only the scope-disposition gate; it makes no external-validation claim.
-- No prototype code or staging deployment exists.
+- P3.1 defines the primary Act-Confirm-Understand-Review loop, records the three-
+  interaction minimum win path, and proves local save is blocked in the foreground
+  by later cloud work under slow sync.
+- P3.2 proves destination and nested-analysis context are not route-backed or
+  restored and records the current cross-destination ownership overlaps.
+- G9 and G10 are checkpointed; G11 freezes the isolated Summit Ledger source,
+  deterministic fixtures, build, and separate Cloudflare staging deployment.
+- Prototype staging is `https://summit-ledger-prototype.pages.dev/`; it is not a
+  production replacement and contains no production data connection.
 - Production remains unchanged.
 
 ## Tracker Update Protocol

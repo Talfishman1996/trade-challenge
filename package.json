@@ -1,21 +1,36 @@
 {
   "name": "tradevault",
   "version": "3.1.0",
-  "description": "Mobile-first trading risk dashboard with 2/3 Power Decay sizing and fixed 1:1 RR. Track trades from $20K to $10M.",
+  "description": "Mobile-first trading ledger and risk-model dashboard.",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
+    "dev:prototype": "vite --config vite.prototype.config.js",
     "build": "vite build",
+    "build:prototype": "COPYFILE_DISABLE=1 vite build --config vite.prototype.config.js && cp dist-prototype/prototype.html dist-prototype/index.html && find dist-prototype -name '._*' -type f -delete",
     "preview": "vite preview",
+    "preview:prototype": "vite preview --config vite.prototype.config.js",
+    "test:prototype": "node --test prototype/testing/*.test.js",
+    "deploy:prototype": "npm run build:prototype && wrangler pages deploy dist-prototype --project-name summit-ledger-prototype",
     "deploy:cloudflare": "wrangler pages deploy dist --project-name tradevault",
     "deploy:worker": "wrangler deploy --config worker/wrangler.toml",
     "deploy:all": "npm run build && npm run deploy:cloudflare"
   },
-  "keywords": ["trading", "risk-management", "position-sizing", "dashboard", "react", "vite"],
+  "keywords": [
+    "trading",
+    "risk-management",
+    "position-sizing",
+    "dashboard",
+    "react",
+    "vite"
+  ],
   "author": "Talfishman1996",
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@fontsource/barlow": "^5.2.8",
+    "@fontsource/barlow-semi-condensed": "^5.2.7",
+    "@fontsource/jetbrains-mono": "^5.2.8",
     "framer-motion": "^12.34.3",
     "lucide-react": "^0.575.0",
     "react": "^19.2.4",
