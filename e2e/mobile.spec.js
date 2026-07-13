@@ -105,13 +105,14 @@ const expectNoHorizontalOverflow = async page => {
 
 const firstLogTradeButton = page => page.getByRole('button', { name: 'Log Trade' }).first();
 
-test('fresh device requires a valid private link', async ({ page }) => {
+test('fresh device opens the shared vault without setup', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
+  await mockEncryptedVault(page);
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Open your private app link' })).toBeVisible();
-  await page.getByPlaceholder('Paste private TradeVault link').fill('https://example.com/not-a-vault');
-  await page.getByRole('button', { name: 'Open TradeVault' }).click();
-  await expect(page.getByText('incomplete or invalid')).toBeVisible();
+  await expect(firstLogTradeButton(page)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Open your private app link' })).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem('tradevault-capability-100k-v1'))).toBe(capability);
+  await expectNoHorizontalOverflow(page);
 });
 
 test('mobile user can log a trade without removed strategy or tag fields', async ({ page }) => {
@@ -195,7 +196,7 @@ test('production PWA registers and reloads its shell while offline', async ({ pa
   await expectNoHorizontalOverflow(page);
 });
 
-test('private-link rotation verifies a new vault before switching this device', async ({ page }) => {
+test('settings shares only the clean canonical app URL', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await connectVault(page);
   await mockEncryptedVault(page);
@@ -203,13 +204,16 @@ test('private-link rotation verifies a new vault before switching this device', 
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Rotate Private Link' }).click();
-  await page.getByRole('button', { name: 'Confirm Rotation' }).click();
-  await expect(page.getByText('Rotation succeeded')).toBeVisible();
-
-  const rotatedCapability = await page.evaluate(() => localStorage.getItem('tradevault-capability-100k-v1'));
-  expect(rotatedCapability).not.toBe(capability);
-  expect(rotatedCapability).toMatch(/^[A-Za-z0-9_-]{16,80}\.[A-Za-z0-9_-]{32,128}$/);
+  await page.evaluate(() => {
+    window.__copiedText = '';
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: async value => { window.__copiedText = value; } },
+    });
+  });
+  await page.getByRole('button', { name: 'Copy App Link' }).click();
+  expect(await page.evaluate(() => window.__copiedText)).toBe('http://127.0.0.1:4198/');
+  await expect(page.getByText('Private Link Rotation')).toHaveCount(0);
 });
 
 for (const viewport of [

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Archive, Check, Cloud, Copy, Download, FileSpreadsheet, RefreshCw, RotateCcw, Share2, ShieldCheck, Trash2, Upload } from 'lucide-react';
+import { Archive, Check, Cloud, Copy, Download, FileSpreadsheet, RefreshCw, RotateCcw, Share2, Trash2, Upload } from 'lucide-react';
 import {
   buildSyncUrl,
   createVaultBackup,
@@ -7,7 +7,6 @@ import {
   ensurePrimarySyncConfig,
   listVaultBackups,
   restoreVaultBackup,
-  rotateVaultCapability,
 } from '../sync.js';
 import { downloadJSONValue, exportJSON, exportCSV, importJSON } from '../utils/dataIO.js';
 import { todayLocalDate } from '../utils/tradeData.js';
@@ -39,7 +38,6 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
   const [backups, setBackups] = useState([]);
   const [backupBusy, setBackupBusy] = useState('');
   const [backupError, setBackupError] = useState('');
-  const [rotatedLink, setRotatedLink] = useState('');
 
   const refreshBackups = async () => {
     try {
@@ -124,7 +122,7 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
       if (onRunSync) await onRunSync();
       await createVaultBackup();
       await refreshBackups();
-      showToast?.('Encrypted backup created');
+      showToast?.('Cloud restore point created');
     } catch (error) {
       setBackupError(error.message || 'Backup failed');
       showToast?.('Backup failed', 'error');
@@ -138,8 +136,8 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
     setBackupError('');
     try {
       const backup = await downloadVaultBackup(backupId);
-      downloadJSONValue(backup, `tradevault-encrypted-backup-${todayLocalDate()}.json`);
-      showToast?.('Encrypted backup downloaded');
+      downloadJSONValue(backup, `tradevault-cloud-backup-${todayLocalDate()}.json`);
+      showToast?.('Cloud backup downloaded');
     } catch (error) {
       setBackupError(error.message || 'Backup download failed');
     } finally {
@@ -165,32 +163,6 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
     } finally {
       setBackupBusy('');
     }
-  };
-
-  const handleRotateVault = async () => {
-    setBackupBusy('rotate');
-    setBackupError('');
-    try {
-      const result = await rotateVaultCapability({
-        ...trades.syncDataset,
-        preferences: settings.syncPreferences,
-      });
-      setRotatedLink(result.privateLink);
-      setShowConfirm(null);
-      setSyncConfig(ensurePrimarySyncConfig());
-      showToast?.('New private vault link is ready');
-    } catch (error) {
-      setBackupError(error.message || 'Private link rotation failed');
-      showToast?.('Private link rotation failed', 'error');
-    } finally {
-      setBackupBusy('');
-    }
-  };
-
-  const handleCopyRotatedLink = () => {
-    navigator.clipboard.writeText(rotatedLink).catch(() => {});
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleClearAll = async () => {
@@ -455,7 +427,7 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
         </div>
 
         <p className="text-xs text-slate-500 leading-relaxed">
-          Your private app link connects every device to one strongly consistent vault. Trades and chart images are encrypted on your device before upload. Saves happen locally first, retry automatically if the connection drops, and sync quietly in the background.
+          Open the same clean app link on any device and your trades appear automatically. Saves happen locally first, retry if the connection drops, and sync quietly in the background.
         </p>
 
         <div className="grid grid-cols-2 gap-2">
@@ -517,16 +489,16 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
         )}
 
         <p className="text-center text-[10px] leading-relaxed text-slate-600">
-          The private link is the key to this vault. Keep it private; anyone who has it can open the data.
+          No login or setup step. The clean TradeVault URL always opens this shared data.
         </p>
       </div>
 
-      {/* Encrypted Recovery */}
+      {/* Cloud Recovery */}
       <div className="bg-surface rounded-2xl p-4 border border-line space-y-3">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <div className="text-xs text-slate-500 font-medium">Encrypted Recovery</div>
+            <Cloud className="w-4 h-4 text-emerald-400" />
+            <div className="text-xs text-slate-500 font-medium">Cloud Recovery</div>
           </div>
           <button
             type="button"
@@ -540,7 +512,7 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
         </div>
 
         <p className="text-xs text-slate-500 leading-relaxed">
-          The vault keeps a rolling encrypted daily backup after successful syncs. Cloudflare stores ciphertext only; your private app link is required to read it.
+          TradeVault keeps a rolling daily restore point after successful syncs. You can also create a restore point manually before an important change.
         </p>
 
         <button
@@ -572,7 +544,7 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
                     type="button"
                     onClick={() => handleDownloadBackup(backup.backup_id)}
                     disabled={Boolean(backupBusy)}
-                    aria-label="Download encrypted backup"
+                    aria-label="Download cloud backup"
                     className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl border border-line text-slate-400 active:scale-95 disabled:opacity-40"
                   >
                     <Download className="w-4 h-4" />
@@ -613,62 +585,12 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
           </div>
         ) : (
           <div className="rounded-xl border border-dashed border-line bg-deep/50 p-3 text-center text-[11px] text-slate-600">
-            No encrypted backup has been created yet.
+            No cloud restore point has been created yet.
           </div>
         )}
 
         {backupError && <div role="alert" className="text-[11px] text-rose-400/80 text-center">{backupError}</div>}
 
-        <div className="pt-3 border-t border-line space-y-2">
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Private Link Rotation</div>
-          <p className="text-[11px] leading-relaxed text-slate-600">
-            Use only if the private link may have leaked. TradeVault copies and verifies everything in a new encrypted vault; the old vault is retained for rollback.
-          </p>
-
-          {rotatedLink ? (
-            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 space-y-2">
-              <div className="text-[11px] leading-relaxed text-emerald-400/80">
-                Rotation succeeded. Copy this new link to every device before leaving this screen.
-              </div>
-              <button
-                type="button"
-                onClick={handleCopyRotatedLink}
-                className="w-full min-h-11 flex items-center justify-center gap-2 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-xs font-semibold text-emerald-400"
-              >
-                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                {copied ? 'New Link Copied' : 'Copy New Private Link'}
-              </button>
-            </div>
-          ) : showConfirm === 'rotate-vault' ? (
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={handleRotateVault}
-                disabled={Boolean(backupBusy)}
-                className="min-h-11 rounded-xl border border-amber-500/30 bg-amber-500/10 text-xs font-semibold text-amber-400 disabled:opacity-40"
-              >
-                {backupBusy === 'rotate' ? 'Verifying...' : 'Confirm Rotation'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowConfirm(null)}
-                disabled={Boolean(backupBusy)}
-                className="min-h-11 rounded-xl border border-line text-xs font-medium text-slate-400 disabled:opacity-40"
-              >
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShowConfirm('rotate-vault')}
-              disabled={Boolean(backupBusy)}
-              className="w-full min-h-11 flex items-center justify-center gap-2 rounded-xl border border-line text-xs text-slate-500 disabled:opacity-40"
-            >
-              <RotateCcw className="w-3.5 h-3.5" /> Rotate Private Link
-            </button>
-          )}
-        </div>
       </div>
 
       {/* Data Management */}
@@ -735,7 +657,7 @@ export default function Settings({ settings, trades, showToast, syncInfo, syncSt
       <div className="bg-surface rounded-2xl p-4 border border-line space-y-2">
         <div className="text-xs text-slate-500 font-medium">About</div>
         <div className="text-sm text-slate-400">
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-white font-bold tracking-widest">TRADEVAULT</span> <span className="text-slate-600">v3.1</span>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-white font-bold tracking-widest">TRADEVAULT</span> <span className="text-slate-600">v3.2</span>
         </div>
         <p className="text-xs text-slate-500 font-medium mt-0.5">$100K {'\u2192'} $10M</p>
         <p className="text-xs text-slate-500 leading-relaxed mt-1">

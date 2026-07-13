@@ -1,6 +1,6 @@
 {
   "name": "tradevault",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "Mobile-first TradeVault dashboard using the 100k-pchip-v1 sizing model and fixed gross 1:1 RR.",
   "main": "index.js",
   "scripts": {
@@ -15,9 +15,10 @@
     "preview": "vite preview",
     "deploy:cloudflare": "wrangler pages deploy dist --project-name tradevault100k --branch master",
     "deploy:compatibility": "wrangler pages deploy dist --project-name tradevault --branch master",
+    "deploy:pages": "npm run build && npm run deploy:cloudflare && npm run deploy:compatibility",
     "deploy:prototype": "wrangler pages deploy dist --project-name tradevault-100k-prototype",
     "deploy:worker": "wrangler deploy --config worker/wrangler.toml",
-    "deploy:all": "npm run check && npm run deploy:worker && npm run test:sync-backend && npm run deploy:cloudflare && npm run deploy:compatibility"
+    "deploy:all": "npm run check && npm run deploy:worker && npm run test:sync-backend && npm run deploy:pages"
   },
   "keywords": [
     "trading",

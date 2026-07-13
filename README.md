@@ -41,10 +41,11 @@ fees, funding, and slippage.
 - New records store their execution-time model ID, risk percentage, and dollar risk.
 - Historical model snapshots are not rewritten when the equity chain is recalculated.
 - Every mutation saves locally before background cloud synchronization.
-- Every cloud record and chart image is encrypted in the browser before upload.
+- Every device automatically connects to the same cloud dataset from the clean app URL.
+- Cloud payload sealing remains an internal implementation detail, not a login or setup step.
 - The app uses isolated local-storage and cloud-vault namespaces.
 - Record IDs, update timestamps, revisions, and tombstones support cross-device merges.
-- Rolling encrypted backups, guarded restore, and verified capability rotation live in Settings.
+- Rolling cloud restore points and guarded restore live in Settings.
 - The installable PWA shell supports offline relaunch while the local outbox preserves disconnected edits.
 
 ## Architecture
@@ -57,7 +58,7 @@ src/crypto/       Vault-scoped key derivation and AES-256-GCM encryption
 src/utils/        Data normalization, merge, import/export, and image caching
 worker/           Cloudflare Worker + SQLite Durable Object vault backend
 test/             Node model and data-integrity tests
-e2e/              Playwright mobile, PWA, export, and rotation tests
+e2e/              Playwright mobile, PWA, export, and zero-setup sync tests
 ```
 
 The immutable pre-migration checkpoint is

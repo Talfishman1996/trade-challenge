@@ -3,7 +3,7 @@ import { Home as HomeIcon, List, BarChart3, Settings as SettingsIcon, AlertTrian
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSettings } from '../store/settings.js';
 import { useTrades } from '../store/trades.js';
-import { ensurePrimarySyncConfig, hasVaultCapability, saveSyncConfig, setVaultCapability } from '../sync.js';
+import { ensurePrimarySyncConfig, hasVaultCapability, saveSyncConfig } from '../sync.js';
 import { todayLocalDate } from '../utils/tradeData.js';
 import { recordSyncActivity, readSyncActivity } from '../utils/syncActivity.js';
 import Home from './Home.jsx';
@@ -106,9 +106,7 @@ export default function App() {
   const [syncInfo, setSyncInfo] = useState(() => ensurePrimarySyncConfig());
   const [syncPillStatus, setSyncPillStatus] = useState(() => (navigator.onLine ? 'ready' : 'offline'));
   const [syncActivity, setSyncActivity] = useState(() => readSyncActivity());
-  const [vaultReady, setVaultReady] = useState(() => hasVaultCapability());
-  const [privateLinkInput, setPrivateLinkInput] = useState('');
-  const [privateLinkError, setPrivateLinkError] = useState('');
+  const vaultReady = hasVaultCapability();
   const [isForeground, setIsForeground] = useState(() => document.visibilityState === 'visible' && document.hasFocus());
   const toastTimer = useRef(null);
   const syncNoticeTimer = useRef(null);
@@ -191,7 +189,7 @@ export default function App() {
     }
   }, [pushSyncActivity, refreshSyncInfo, showSyncNotice, showToast, syncRef]);
 
-  // The capability was captured from the private URL before React mounted.
+  // The production build connects this device to the shared vault before React mounts.
   useEffect(() => {
     if (!vaultReady) return;
     ensurePrimarySyncConfig();
@@ -327,55 +325,6 @@ export default function App() {
     }
   };
 
-  const connectPrivateLink = () => {
-    if (!setVaultCapability(privateLinkInput)) {
-      setPrivateLinkError('That private app link is incomplete or invalid.');
-      return;
-    }
-    setPrivateLinkError('');
-    setVaultReady(true);
-    window.location.reload();
-  };
-
-  if (!vaultReady) {
-    return (
-      <div className="min-h-screen bg-deep text-slate-200 flex items-center justify-center px-5 py-10">
-        <div className="w-full max-w-sm rounded-3xl border border-line bg-surface p-6 shadow-2xl">
-          <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-blue-500/20 bg-blue-500/10">
-            <Shield className="h-6 w-6 text-blue-400" />
-          </div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">Private Vault</p>
-          <h1 className="text-2xl font-bold text-white">Open your private app link</h1>
-          <p className="mt-2 text-sm leading-relaxed text-slate-400">
-            This device has not been connected yet. Paste the full private TradeVault link once; future visits on this device open Home automatically.
-          </p>
-          <input
-            type="url"
-            value={privateLinkInput}
-            onChange={event => { setPrivateLinkInput(event.target.value); setPrivateLinkError(''); }}
-            onKeyDown={event => { if (event.key === 'Enter') connectPrivateLink(); }}
-            placeholder="Paste private TradeVault link"
-            autoCapitalize="none"
-            autoCorrect="off"
-            className="mt-5 min-h-12 w-full rounded-xl border border-line bg-deep px-3.5 text-sm text-white outline-none transition-all placeholder:text-slate-600 focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/15"
-          />
-          {privateLinkError && <p className="mt-2 text-xs text-red-400">{privateLinkError}</p>}
-          <button
-            type="button"
-            onClick={connectPrivateLink}
-            disabled={!privateLinkInput.trim()}
-            className="mt-3 min-h-12 w-full rounded-xl bg-blue-500 px-4 text-sm font-bold text-white transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Open TradeVault
-          </button>
-          <p className="mt-4 text-center text-[11px] leading-relaxed text-slate-600">
-            No account or login. Anyone with the private link can access this vault, so keep it private.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-deep text-slate-200 flex flex-col md:flex-row">
       <style dangerouslySetInnerHTML={{ __html: [
@@ -389,7 +338,6 @@ export default function App() {
         'input[type="date"]::-webkit-calendar-picker-indicator{background:transparent;color:transparent;cursor:pointer;position:absolute;inset:0;width:auto;height:auto}',
       ].join('') }} />
 
-      {/* Sync Gate — shown on fresh device with no data */}
       {/* Desktop Sidebar (md+) */}
       <aside className="hidden md:flex flex-col items-center fixed left-0 top-0 bottom-0 w-16 bg-surface border-r border-line z-50 py-5 gap-1">
         {/* Logo */}

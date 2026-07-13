@@ -5,9 +5,10 @@
 The app is now a credible single-user, mobile-first internal tool rather than a
 prototype pretending browser storage is synchronization. The original mountain
 design remains stronger than the attempted redesigns, and it has been preserved.
-The important change is beneath the visuals: local-first records, authenticated
-revisioned sync, client-side encryption, synced images, recovery points, rotation,
-offline relaunch, and repeatable mobile tests now form one coherent pipeline.
+The important change is beneath the visuals: local-first records, revisioned
+cross-device sync, synced images, recovery points, offline relaunch, and repeatable
+mobile tests now form one coherent pipeline. Device setup friction has also been
+removed: the clean canonical URL opens the same shared data everywhere.
 
 It is not perfect or appropriate for public multi-user deployment. The remaining
 risks are explicit below rather than hidden behind the word "secure."
@@ -15,10 +16,10 @@ risks are explicit below rather than hidden behind the word "secure."
 ## Problems Eliminated
 
 1. Whole-document cloud overwrites could erase newer mobile records.
-2. A fixed unauthenticated cloud ID exposed the ledger to direct HTTP access.
-3. Cloudflare stored readable trade and preference content.
+2. A fresh device required a private-link paste before the app could render.
+3. Origin-scoped browser storage made the clean canonical URL appear broken on a new device.
 4. Chart images were silently trapped on one device.
-5. A leaked private link had no in-app rotation path.
+5. Copy/share actions distributed a long capability URL instead of the clean app URL.
 6. Recovery depended on exports and hope rather than rolling restore points.
 7. Fresh offline launch was not supported.
 8. JSON/CSV mobile downloads were not automated.
@@ -38,8 +39,8 @@ risks are explicit below rather than hidden behind the word "secure."
   network request.
 - Each record has an independent revision; stale devices cannot replace a newer
   different-device mutation.
-- Cloud content is encrypted before upload, including chart images and backups.
-- Recovery and private-link rotation are self-service and deliberately guarded.
+- Every clean-URL visit connects to the shared cloud dataset before React mounts.
+- Cloud restore points are self-service and deliberately guarded.
 - The PWA cache is generated from the actual build output, avoiding stale hashed
   chunk names.
 - Mobile layout, downloads, encryption, Worker routes, and offline relaunch are
@@ -47,12 +48,13 @@ risks are explicit below rather than hidden behind the word "secure."
 
 ## Residual Risks
 
-### Capability security
+### Access control
 
-The full private link is equivalent to a master key. Anyone with it can decrypt,
-edit, restore, and rotate the vault. Encryption does not help if the link, browser,
-or device is compromised. This is accepted because the user explicitly rejected
-a login flow. Rotation is mitigation, not prevention.
+There is intentionally no meaningful access boundary. The shared capability is
+bundled into the deployed frontend, so anyone who can load the app can read,
+edit, or restore its data. Client payload sealing may reduce accidental plaintext
+exposure in storage, but it is not security against an app visitor. This is the
+explicit tradeoff for a clean URL with no login or device setup.
 
 ### Metadata leakage
 
@@ -67,9 +69,9 @@ Durable Object storage even after trades are deleted.
 
 ### Backup boundaries
 
-Backup downloads contain encrypted record snapshots; image bytes remain encrypted
-in the vault asset store. A complete independent disaster archive would also need
-an asset bundle plus an import path.
+Backend backup downloads contain sealed record snapshots; image bytes remain in
+the vault asset store. JSON export is the readable portable journal copy. A
+complete independent disaster archive would still need an asset bundle and import path.
 
 ### Operational verification
 

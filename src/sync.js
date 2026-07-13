@@ -4,7 +4,6 @@ import {
   openVaultJson,
   sealVaultBytes,
   sealVaultJson,
-  generateVaultSecret,
 } from './crypto/vaultCrypto.js';
 import { getImageBlob, hasImage, saveImage } from './utils/imageDB.js';
 
@@ -16,6 +15,17 @@ const SIGNATURE_KEY = 'tradevault-sync-signatures-100k-v3';
 const ASSET_STATE_KEY = 'tradevault-sync-assets-100k-v1';
 const CLIENT_KEY = 'tradevault-client-id-100k-v1';
 const MAX_BATCH_SIZE = 500;
+const CANONICAL_APP_URL = 'https://tradevault100k.pages.dev/';
+
+const bundledSharedCapability = () => {
+  try {
+    return typeof __TRADEVAULT_SHARED_CAPABILITY__ === 'string'
+      ? __TRADEVAULT_SHARED_CAPABILITY__
+      : '';
+  } catch {
+    return '';
+  }
+};
 
 let writeQueue = Promise.resolve();
 
@@ -439,6 +449,15 @@ export const setVaultCapability = (input) => {
 
 export const initializeVaultCapability = () => {
   if (typeof window === 'undefined') return getVaultCapability();
+  const shared = parseVaultCapability(bundledSharedCapability());
+  if (shared) {
+    setVaultCapability(shared.value);
+    if (window.location.hash) {
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+    }
+    return shared;
+  }
+
   const fromUrl = parseVaultCapability(window.location.href);
   if (fromUrl) {
     setVaultCapability(fromUrl.value);
@@ -485,9 +504,10 @@ export const ensurePrimarySyncConfig = () => {
 };
 
 export const buildSyncUrl = () => {
-  const capability = getVaultCapability();
-  if (!capability || typeof window === 'undefined') return '';
-  return `${window.location.origin}${window.location.pathname}#vault=${encodeURIComponent(capability.value)}`;
+  if (typeof window === 'undefined') return CANONICAL_APP_URL;
+  return window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'
+    ? `${window.location.origin}${window.location.pathname}`
+    : CANONICAL_APP_URL;
 };
 
 const enqueueWrite = (task) => {
@@ -573,7 +593,7 @@ export const pullFromCloud = async (data = null) => {
 
 const vaultRequest = async (path, options = {}) => {
   const capability = getVaultCapability();
-  if (!capability) throw new Error('private vault link is missing');
+  if (!capability) throw new Error('shared cloud vault is unavailable');
   const response = await fetch(`${API}/v3/vault/${capability.vaultId}/${path}`, {
     ...options,
     headers: {
@@ -612,121 +632,6 @@ export const restoreVaultBackup = async backupId => {
     body: JSON.stringify({ backupId: normalizeBackupId(backupId), confirmation: 'RESTORE' }),
   });
   return result?.snapshot ? decryptVaultSnapshot(result.snapshot, capability) : null;
-};
-
-export const rotateVaultCapability = async data => {
-  const sourceCapability = getVaultCapability();
-  if (!sourceCapability) throw new Error('private vault link is missing');
-
-  const source = await pullFromCloud(data);
-  if (!source?.trades || !source._encryption?.allEncrypted) {
-    throw new Error('current vault must finish encrypted sync before rotation');
-  }
-
-  const nextCapability = {
-    vaultId: generateVaultSecret(24),
-    secret: generateVaultSecret(32),
-  };
-
-  const imageKeys = [...new Set(source.trades.flatMap(trade =>
-    Array.isArray(trade.images) ? trade.images : []
-  ))];
-  const imageResults = await Promise.all(imageKeys.map(key => uploadImageAsset(key, nextCapability)));
-  if (imageResults.some(result => !result)) throw new Error('one or more chart images could not be copied');
-
-  const operations = [];
-  for (const trade of source.trades) {
-    operations.push(makeOperation(
-      'upsert_trade',
-      trade.uid,
-      await encryptedPayload(cloudTrade(trade), 'trade', trade.uid, nextCapability),
-      0
-    ));
-  }
-
-  operations.push(makeOperation(
-    'set_initial_equity',
-    'settings:initial-equity',
-    await encryptedPayload(
-      { initialEquity: source.initialEquity, updatedAt: Date.now() },
-      'initial-equity',
-      'settings:initial-equity',
-      nextCapability
-    ),
-    0
-  ));
-
-  if (source.preferences) {
-    const { serverRevision, serverUpdatedAt, ...preferences } = source.preferences;
-    operations.push(makeOperation(
-      'set_preferences',
-      'settings:preferences',
-      await encryptedPayload(preferences, 'preferences', 'settings:preferences', nextCapability),
-      0
-    ));
-  }
-
-  let result = null;
-  for (let index = 0; index < operations.length; index += MAX_BATCH_SIZE) {
-    const batch = operations.slice(index, index + MAX_BATCH_SIZE);
-    const response = await fetch(`${API}/v3/vault/${nextCapability.vaultId}/sync`, {
-      method: 'POST',
-      headers: {
-        ...authHeaders(nextCapability),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        clientId: `${getClientId()}:rotation`,
-        operations: batch.map(({ queuedAt, ...operation }) => operation),
-      }),
-    });
-    if (!response.ok) throw new Error(`new vault verification failed (${response.status})`);
-    result = await response.json();
-    if ((result.acknowledged || []).some(item => !['applied', 'duplicate'].includes(item.status))) {
-      throw new Error('new vault rejected one or more records');
-    }
-  }
-  if (!result?.snapshot) throw new Error('new vault returned no verification snapshot');
-  const verified = await decryptVaultSnapshot(result.snapshot, nextCapability);
-  const expectedUids = new Set(source.trades.map(trade => trade.uid));
-  const verifiedUids = new Set(verified.trades.map(trade => trade.uid));
-  if (!verified._encryption?.allEncrypted ||
-      expectedUids.size !== verifiedUids.size ||
-      [...expectedUids].some(uid => !verifiedUids.has(uid))) {
-    throw new Error('new vault did not pass record verification');
-  }
-
-  const backupResponse = await fetch(`${API}/v3/vault/${nextCapability.vaultId}/backup`, {
-    method: 'POST',
-    headers: { ...authHeaders(nextCapability), 'Content-Type': 'application/json' },
-    body: '{}',
-  });
-  if (!backupResponse.ok) throw new Error('new vault backup verification failed');
-
-  setVaultCapability(`${nextCapability.vaultId}.${nextCapability.secret}`);
-  try {
-    localStorage.setItem(`tradevault-data-100k-v1:${nextCapability.vaultId}`, JSON.stringify({
-      ...verified,
-      _lastModified: Date.now(),
-    }));
-    localStorage.setItem(`tradevault-legacy-local-migrated-100k-v1:${nextCapability.vaultId}`, String(Date.now()));
-  } catch {}
-  saveSyncConfig({
-    vaultId: nextCapability.vaultId,
-    lastSync: Date.now(),
-    pendingOperations: 0,
-    encryptionVersion: 1,
-    fullyEncrypted: true,
-    rotatedFromVaultId: sourceCapability.vaultId,
-  });
-
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://tradevault100k.pages.dev';
-  const pathname = typeof window !== 'undefined' ? window.location.pathname : '/';
-  return {
-    oldVaultId: sourceCapability.vaultId,
-    newVaultId: nextCapability.vaultId,
-    privateLink: `${origin}${pathname}#vault=${nextCapability.vaultId}.${nextCapability.secret}`,
-  };
 };
 
 export const getPendingOperationCount = () => readOutbox().length;

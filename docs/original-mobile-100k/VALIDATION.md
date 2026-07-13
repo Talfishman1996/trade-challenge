@@ -18,9 +18,9 @@ Captured: 2026-07-13 PDT
 - Local Worker black-box verification passes: ciphertext-only content, encrypted
   images, unauthorized rejection, automatic/manual backups, conflict handling,
   restore, and asset retention.
-- 8 Playwright tests pass: fresh-device private-link gate, phone trade entry,
+- 8 Playwright tests pass: fresh-device zero-setup shared access, phone trade entry,
   removed strategy/tags, real JSON/CSV downloads, service-worker offline relaunch,
-  verified capability rotation, and overflow checks at three viewports.
+  clean canonical link sharing, and overflow checks at three viewports.
 - Production build completes and injects all hashed JS/CSS assets into the service
   worker cache list.
 - Dependency audit reports zero vulnerabilities.
@@ -32,7 +32,7 @@ Captured: 2026-07-13 PDT
 |---|---|---|
 | 320x568 | Trade Entry | pass; sticky actions, scrollable content, no lateral overflow |
 | 390x844 | Home | pass; original mountain hierarchy and milestones preserved |
-| 390x844 | Settings | pass; sync/recovery/rotation readable and nonblocking |
+| 390x844 | Settings | pass; sync/recovery and zero-setup guidance readable and nonblocking |
 | 390x844 | Trade Entry | pass; removed fields absent and controls remain touchable |
 | 844x390 | Home | pass; compact side rail and hero action remain usable |
 
@@ -44,6 +44,7 @@ Current evidence:
 - `evidence-hardening/04-trade-entry-320x568.jpg`
 - `evidence-hardening/05-home-landscape-844x390.jpg`
 - `evidence-hardening/06-live-production-v3-settings.png`
+- `evidence-hardening/07-live-zero-setup-settings.png`
 
 The current visual browser audit produced no console warnings or errors. The
 settings screenshot intentionally shows a sync error because it was rendered
@@ -61,11 +62,12 @@ mocked and local v3 automated flows pass.
 - Two legacy settings records were encrypted; 16 tombstones were preserved; the
   server revision advanced from 18 to 20; an encrypted daily backup was created.
 - The real vault's v2 endpoint returns HTTP 426 after encryption.
-- Live private-link launch strips the fragment and reaches synced Settings with
-  one backup card, no horizontal overflow, and zero console errors.
+- A fresh browser at the clean canonical URL receives the shared configuration,
+  reaches Home and synced Settings without setup, has no fragment or horizontal
+  overflow, and emits zero console errors.
 - Cloudflare Pages immutable deployment:
-  `https://287e240f.tradevault100k.pages.dev/`.
-- Compatibility deployment `https://96b81c73.tradevault-b7t.pages.dev/` serves
+  `https://8146301a.tradevault100k.pages.dev/`.
+- Compatibility deployment `https://2cf30c5f.tradevault-b7t.pages.dev/` serves
   the same JS bundle and service worker as the canonical origin.
 
 ## Data Guarantees Exercised
@@ -78,7 +80,6 @@ mocked and local v3 automated flows pass.
 - A stale v2 client receives HTTP 426 after the vault is fully encrypted, blocking
   plaintext downgrade writes.
 - Restore creates newer revisions and preserves encrypted image assets.
-- Capability rotation verifies all record IDs before switching the current device.
 - JSON and CSV exports are generated and read back by the browser test.
 - Offline application-shell reload works after service-worker control.
 

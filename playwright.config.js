@@ -1,5 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
+const testCapability = `${'v'.repeat(32)}.${'s'.repeat(43)}`;
+
 export default defineConfig({
   testDir: './e2e',
   testIgnore: ['**/._*'],
@@ -16,7 +18,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm run build && npm run preview -- --host 127.0.0.1 --port 4198',
+    command: `TRADEVAULT_SHARED_CAPABILITY=${testCapability} npm run build && npm run preview -- --host 127.0.0.1 --port 4198`,
     url: 'http://127.0.0.1:4198',
     reuseExistingServer: false,
     timeout: 120000,
