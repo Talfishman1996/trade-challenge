@@ -11,7 +11,7 @@ Status: v3 hardened release live; immutable original checkpoint preserved
 - Cloudflare Pages project: `tradevault100k`
 - Worker: `tradevault-sync`
 - Worker version: `3acd0bbe-bedf-4979-ac44-78a5f23417a8`
-- Pages deployment: `https://40ed5b1c.tradevault100k.pages.dev/`
+- Pages deployment: `https://287e240f.tradevault100k.pages.dev/`
 - Durable Object binding/class: `TRADE_VAULTS` / `TradeVault`
 - Private capability source: `tmp/tradevault-production.local` (Git-ignored)
 - Git branch: `codex/tradevault-original-mobile-100k`
@@ -162,6 +162,8 @@ trade after both devices agree.
   Settings, recorded successful sync, showed the encrypted backup, had no lateral
   overflow at 390x844, and logged zero console errors.
 - Canonical and compatibility origins serve the same production asset hash.
+- The production service worker precaches HTML plus every hashed JS/CSS chunk and
+  serves cached navigation immediately while revalidating in the background.
 
 ## Intentional Limits
 

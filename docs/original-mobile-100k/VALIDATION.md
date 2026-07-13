@@ -64,7 +64,7 @@ mocked and local v3 automated flows pass.
 - Live private-link launch strips the fragment and reaches synced Settings with
   one backup card, no horizontal overflow, and zero console errors.
 - Cloudflare Pages immutable deployment:
-  `https://40ed5b1c.tradevault100k.pages.dev/`.
+  `https://287e240f.tradevault100k.pages.dev/`.
 
 ## Data Guarantees Exercised
 

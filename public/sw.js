@@ -36,14 +36,18 @@ self.addEventListener('fetch', event => {
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === 'navigate') {
+    const network = fetch(request).then(async response => {
+      if (response.ok) {
+        const cache = await caches.open(CACHE_NAME);
+        await cache.put('/index.html', response.clone());
+      }
+      return response;
+    });
+    event.waitUntil(network.catch(() => undefined));
     event.respondWith(
-      fetch(request)
-        .then(response => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put('/index.html', copy));
-          return response;
-        })
-        .catch(() => caches.match('/index.html', { ignoreVary: true }))
+      caches.match('/index.html', { ignoreVary: true })
+        .then(cached => cached || network)
+        .catch(() => network)
     );
     return;
   }
